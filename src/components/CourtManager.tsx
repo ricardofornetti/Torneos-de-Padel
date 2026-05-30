@@ -10,7 +10,8 @@ import {
   Sparkles,
   Save,
   CheckCircle,
-  X
+  X,
+  Edit
 } from 'lucide-react';
 import { repository } from '../lib/repository';
 import { Court, Match, Pair, Player } from '../types';
@@ -26,6 +27,10 @@ export const CourtManager: React.FC<{ userRole: "admin" | "player" }> = ({ userR
   const [isCourtFormOpen, setIsCourtFormOpen] = useState(false);
   const [courtName, setCourtName] = useState("");
   const [courtClub, setCourtClub] = useState("");
+  const [editCourtName, setEditCourtName] = useState("");
+  const [editCourtClub, setEditCourtClub] = useState("");
+  const [editingCourtId, setEditingCourtId] = useState<string | null>(null);
+  const [isManageModalOpen, setIsManageModalOpen] = useState(false);
   const [deleteCourtConfirm, setDeleteCourtConfirm] = useState<{ id: string; name: string } | null>(null);
 
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
@@ -76,6 +81,22 @@ export const CourtManager: React.FC<{ userRole: "admin" | "player" }> = ({ userR
 
   const handleDeleteCourt = async (id: string, name: string) => {
     setDeleteCourtConfirm({ id, name });
+  };
+
+  const handleSaveEditCourt = async (id: string, name: string, club: string) => {
+    if (!name || !club) {
+      alert("Por favor completa todos los campos.");
+      return;
+    }
+    const updatedCourt: Court = {
+      id,
+      name,
+      club,
+      active: true
+    };
+    await repository.saveCourt(updatedCourt);
+    await repository.addNotification("Pista Actualizada", `Cancha '${name}' modificada con éxito.`, "info");
+    loadData();
   };
 
   const executeDeleteCourt = async () => {
@@ -197,12 +218,31 @@ export const CourtManager: React.FC<{ userRole: "admin" | "player" }> = ({ userR
         </div>
 
         {userRole === "admin" && (
-          <button
-            onClick={() => setIsCourtFormOpen(true)}
-            className="bg-[#d4fc34] hover:bg-[#c5f015] text-slate-950 text-xs font-black px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition ml-auto cursor-pointer uppercase tracking-wider"
-          >
-            <Plus className="w-4 h-4 text-slate-950" /> Agregar Cancha
-          </button>
+          <div className="flex flex-wrap items-center gap-2 md:gap-3 md:ml-auto">
+            <button
+              onClick={() => {
+                setEditingCourtId(null);
+                setCourtName("");
+                setCourtClub("");
+                setIsCourtFormOpen(true);
+              }}
+              className="bg-[#d4fc34] hover:bg-[#c5f015] text-slate-950 text-xs font-black px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition cursor-pointer uppercase tracking-wider"
+            >
+              <Plus className="w-4 h-4 text-slate-950" /> Agregar Cancha
+            </button>
+            <button
+              onClick={() => {
+                if (courts.length === 0) {
+                  alert("No hay canchas registradas para gestionar.");
+                  return;
+                }
+                setIsManageModalOpen(true);
+              }}
+              className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition cursor-pointer uppercase tracking-wider shadow"
+            >
+              <Edit className="w-4 h-4 text-white" /> Modificar y Eliminar
+            </button>
+          </div>
         )}
       </div>
 
@@ -219,13 +259,28 @@ export const CourtManager: React.FC<{ userRole: "admin" | "player" }> = ({ userR
 
               <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs">
                 <span className="text-indigo-400 font-mono font-medium">{bookedCount} Activos</span>
-                {userRole === "admin" && courts.length > 3 && (
-                  <button 
-                    onClick={() => handleDeleteCourt(c.id, c.name)}
-                    className="text-slate-500 hover:text-red-400 transition"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                {userRole === "admin" && (
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={() => {
+                        setEditingCourtId(c.id);
+                        setEditCourtName(c.name);
+                        setEditCourtClub(c.club);
+                        setIsManageModalOpen(true);
+                      }}
+                      className="text-slate-500 hover:text-[#d4fc34] transition p-1 rounded hover:bg-slate-800 cursor-pointer"
+                      title="Modificar cancha"
+                    >
+                      <Edit className="w-3.5 h-3.5" />
+                    </button>
+                    <button 
+                      onClick={() => handleDeleteCourt(c.id, c.name)}
+                      className="text-slate-500 hover:text-red-400 transition p-1 rounded hover:bg-slate-800 cursor-pointer"
+                      title="Eliminar cancha"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
@@ -503,6 +558,120 @@ export const CourtManager: React.FC<{ userRole: "admin" | "player" }> = ({ userR
                 className="flex-1 bg-red-600 hover:bg-red-500 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition cursor-pointer"
               >
                 Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* FORM MODAL: MANAGE COURTS */}
+      {isManageModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
+            <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+              <span className="font-extrabold text-sm text-white flex items-center gap-1.5">
+                <Edit className="w-4 h-4 text-indigo-400" /> Modificar o Eliminar Canchas
+              </span>
+              <button onClick={() => setIsManageModalOpen(false)} className="text-slate-400 hover:text-white">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            
+            <div className="p-5 max-h-[60vh] overflow-y-auto space-y-4 divide-y divide-slate-800/60 font-sans">
+              {courts.map((c, idx) => {
+                const isCurrentEditing = editingCourtId === c.id;
+                return (
+                  <div key={c.id} className={`pt-4 ${idx === 0 ? 'pt-0' : ''}`}>
+                    {isCurrentEditing ? (
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <label className="block text-[9px] uppercase tracking-wider text-slate-400 font-mono">Nombre de Cancha</label>
+                            <input
+                              type="text"
+                              value={editCourtName}
+                              onChange={(e) => setEditCourtName(e.target.value)}
+                              className="w-full bg-slate-950 border border-slate-850 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-indigo-500"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="block text-[9px] uppercase tracking-wider text-slate-400 font-mono">Complejo / Club</label>
+                            <input
+                              type="text"
+                              value={editCourtClub}
+                              onChange={(e) => setEditCourtClub(e.target.value)}
+                              className="w-full bg-slate-950 border border-slate-850 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-indigo-500"
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="flex gap-2 justify-end">
+                          <button
+                            type="button"
+                            onClick={() => setEditingCourtId(null)}
+                            className="bg-slate-800 text-slate-350 text-[10px] font-bold px-3 py-1.5 rounded-lg hover:bg-slate-750 transition cursor-pointer"
+                          >
+                            Cancelar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              await handleSaveEditCourt(c.id, editCourtName, editCourtClub);
+                              setEditingCourtId(null);
+                            }}
+                            className="bg-[#d4fc34] text-slate-950 text-[10px] font-black px-3.5 py-1.5 rounded-lg hover:bg-[#c5f015] transition uppercase tracking-wider cursor-pointer"
+                          >
+                            Guardar
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between gap-4">
+                        <div>
+                          <span className="text-[10px] text-indigo-400 font-mono font-bold uppercase">{c.club}</span>
+                          <h4 className="font-extrabold text-xs text-white mt-0.5">{c.name}</h4>
+                        </div>
+                        
+                        <div className="flex items-center gap-2 shrink-0 font-sans">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingCourtId(c.id);
+                              setEditCourtName(c.name);
+                              setEditCourtClub(c.club);
+                            }}
+                            className="bg-slate-800 hover:bg-slate-750 text-slate-200 text-[10px] font-bold px-2.5 py-1.5 rounded-lg transition cursor-pointer"
+                          >
+                            Modificar
+                          </button>
+                          
+                          <button
+                            type="button"
+                            onClick={() => {
+                              handleDeleteCourt(c.id, c.name);
+                            }}
+                            className="bg-red-950/30 hover:bg-red-900/40 text-red-400 text-[10px] font-bold px-2.5 py-1.5 rounded-lg border border-red-900/20 transition cursor-pointer"
+                          >
+                            Eliminar
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            
+            <div className="p-4 border-t border-slate-800 bg-slate-950/45 text-right flex justify-between items-center text-xs">
+              <span className="text-[10px] text-slate-500 font-mono">
+                Total canchas: {courts.length}
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsManageModalOpen(false)}
+                className="bg-slate-800 text-slate-300 py-1.5 px-4 rounded-xl font-bold hover:bg-slate-700 transition cursor-pointer"
+              >
+                Cerrar
               </button>
             </div>
           </div>
