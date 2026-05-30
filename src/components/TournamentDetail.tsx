@@ -1,0 +1,1770 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  Trophy, 
+  Calendar, 
+  Users, 
+  Plus, 
+  Play, 
+  UserPlus, 
+  ChevronRight, 
+  Sparkles, 
+  HelpCircle,
+  Award, 
+  ClipboardList, 
+  FileSpreadsheet, 
+  Printer, 
+  Trash2, 
+  X,
+  Shuffle,
+  ShieldAlert,
+  Save,
+  Grid,
+  TrendingUp,
+  MapPin,
+  Clock,
+  ArrowLeft,
+  CheckCircle,
+  AlertCircle
+} from 'lucide-react';
+import { repository } from '../lib/repository';
+import { Tournament, Player, Pair, Match, Court, StandingsRow } from '../types';
+import { 
+  generateRoundRobinMatches, 
+  calculateGroupStandings, 
+  generatePlayoffSchedules,
+  calculateRankingPointsGained
+} from '../lib/tournamentEngine';
+
+interface TournamentDetailProps {
+  tournamentId: string;
+  userRole: "admin" | "player";
+  onBack: () => void;
+}
+
+export const ALL_PADEL_CATEGORIES = [
+  "4ta Masculina",
+  "5ta Masculina",
+  "6ta Masculina",
+  "7ma Masculina",
+  "8va Masculina",
+  "5ta Femenina",
+  "6ta Femenina",
+  "7ma Femenina",
+  "Mixto A",
+  "Mixto B",
+  "Mixto C"
+];
+
+function getCalculatedNumGroups(pairCount: number): number {
+  if (pairCount <= 5) return 1;
+  if (pairCount <= 9) return 2; // e.g. 6 to 9 pairs -> 2 groups
+  if (pairCount <= 14) return 3; // e.g. 10 to 14 pairs -> 3 groups (12 pairs = 3 groups of 4)
+  if (pairCount <= 18) return 4; // e.g. 15 to 18 pairs -> 4 groups (16 pairs = 4 groups of 4)
+  if (pairCount <= 22) return 5;
+  if (pairCount <= 28) return 6; // e.g. 24 pairs = 6 groups of 4
+  return Math.ceil(pairCount / 4); // default ~4 pairs per group
+}
+
+export const TournamentDetail: React.FC<TournamentDetailProps> = ({ 
+  tournamentId, 
+  userRole, 
+  onBack 
+}) => {
+  const [tournament, setTournament] = useState<Tournament | null>(null);
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [pairs, setPairs] = useState<Pair[]>([]);
+  const [matches, setMatches] = useState<Match[]>([]);
+  const [courts, setCourts] = useState<Court[]>([]);
+  const [activeTab, setActiveTab] = useState<"inscriptions" | "groups" | "matches" | "standings" | "playoffs">("inscriptions");
+
+  // Selected Category
+  const [selectedCategory, setSelectedCategory] = useState<string>("4ta Masculina");
+  const [classificationRule, setClassificationRule] = useState<"top1" | "top2" | "top2_thirds" | "all">("top2");
+
+  // Loaders
+  const [loading, setLoading] = useState(true);
+
+  // Inscriptions state
+  const [p1Select, setP1Select] = useState("");
+  const [p2Select, setP2Select] = useState("");
+
+  // Results state
+  const [activeScoreMatch, setActiveScoreMatch] = useState<Match | null>(null);
+  const [scoreSets, setScoreSets] = useState<{t1: number, t2: number}[]>([
+    { t1: 6, t2: 4 },
+    { t1: 6, t2: 3 },
+    { t1: 0, t2: 0 }
+  ]);
+  const [numSets, setNumSets] = useState(2);
+  const [isWO, setIsWO] = useState(false);
+  const [woWinnerPairId, setWoWinnerPairId] = useState("");
+
+  // Court & Scheduling state
+  const [activeAssignCourtMatch, setActiveAssignCourtMatch] = useState<Match | null>(null);
+  const [selectedCourtId, setSelectedCourtId] = useState("");
+  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedTime, setSelectedTime] = useState("");
+  const [isEditNumCourtsOpen, setIsEditNumCourtsOpen] = useState(false);
+  const [tempNumCourts, setTempNumCourts] = useState(2);
+
+  // Group drawing assignments (In-memory grouping display)
+  const [groupsMap, setGroupsMap] = useState<{ [gName: string]: Pair[] }>({});
+
+  const loadAllData = async () => {
+    setLoading(true);
+    const ts = await repository.getTournaments();
+    const currentT = ts.find(t => t.id === tournamentId);
+    
+    if (currentT) {
+      setTournament(currentT);
+      setTempNumCourts(currentT.numCourts || 2);
+      const prs = await repository.getPairs(tournamentId);
+      const mtchs = await repository.getMatches(tournamentId);
+      const plys = await repository.getPlayers();
+      const crts = await repository.getCourts();
+      
+      setPairs(prs);
+      setMatches(mtchs);
+      setPlayers(plys);
+      setCourts(crts);
+
+      // Reconstruct groups if matches exist
+      reconstructGroups(prs, mtchs, selectedCategory);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    loadAllData();
+  }, [tournamentId]);
+
+  // Reactive reconstruction on category filter state shifts
+  useEffect(() => {
+    reconstructGroups(pairs, matches, selectedCategory);
+  }, [selectedCategory, pairs, matches]);
+
+  const reconstructGroups = (currentPairs: Pair[], currentMatches: Match[], activeCat: string = selectedCategory) => {
+    const map: { [gName: string]: Pair[] } = {};
+    const filteredPairs = currentPairs.filter(p => p.category === activeCat);
+    const filteredMatches = currentMatches.filter(m => m.category === activeCat);
+    
+    // Scan matches to find which pair is in which Stage block (e.g. "Grupo A")
+    filteredMatches.forEach(m => {
+      if (m.phase === "group" && m.stageName) {
+        if (!map[m.stageName]) {
+          map[m.stageName] = [];
+        }
+        
+        const pr1 = filteredPairs.find(p => p.id === m.pair1Id);
+        const pr2 = filteredPairs.find(p => p.id === m.pair2Id);
+        
+        if (pr1 && !map[m.stageName].some(p => p.id === pr1.id)) {
+          map[m.stageName].push(pr1);
+        }
+        if (pr2 && !map[m.stageName].some(p => p.id === pr2.id)) {
+          map[m.stageName].push(pr2);
+        }
+      }
+    });
+
+    // Fallback if draw is not yet persisted but pairs exist
+    if (Object.keys(map).length === 0 && filteredPairs.length > 0) {
+      map["Parejas Inscritas"] = filteredPairs;
+    }
+
+    setGroupsMap(map);
+  };
+
+  const getPlayerName = (id: string) => {
+    const p = players.find(item => item.id === id);
+    return p ? `${p.firstName} ${p.lastName}` : "Jugador desconocido";
+  };
+
+  const getPairName = (pairId: string) => {
+    const pr = pairs.find(p => p.id === pairId);
+    if (!pr) return "Pareja no registrada";
+    const p1 = players.find(p => p.id === pr.player1Id);
+    const p2 = players.find(p => p.id === pr.player2Id);
+    return `${p1?.lastName || "???"} / ${p2?.lastName || "???"}`;
+  };
+
+  // Add pair manually
+  const handleRegisterPair = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!p1Select || !p2Select) {
+      alert("Selecciona dos jugadores para conformar una pareja.");
+      return;
+    }
+    if (p1Select === p2Select) {
+      alert("No puedes emparejar un jugador consigo mismo.");
+      return;
+    }
+
+    // Check if player is already inscribed
+    const isP1Inscribed = pairs.some(p => p.player1Id === p1Select || p.player2Id === p1Select);
+    const isP2Inscribed = pairs.some(p => p.player1Id === p2Select || p.player2Id === p2Select);
+
+    if (isP1Inscribed || isP2Inscribed) {
+      alert("Uno o ambos jugadores ya están inscritos en una pareja para este torneo.");
+      return;
+    }
+
+    const player1 = players.find(p => p.id === p1Select);
+    const player2 = players.find(p => p.id === p2Select);
+
+    if (player1 && player2) {
+      const combined = player1.rankingPoints + player2.rankingPoints;
+      const categoryPairs = pairs.filter(p => p.category === selectedCategory);
+      const status: Pair["status"] = categoryPairs.length < (tournament?.maxPairs || 8) ? "confirmed" : "waitlist";
+
+      const newPair: Pair = {
+        id: `pair_${tournamentId}_${Date.now()}`,
+        tournamentId,
+        player1Id: p1Select,
+        player2Id: p2Select,
+        category: selectedCategory,
+        combinedRanking: combined,
+        status
+      };
+
+      await repository.savePair(newPair);
+      await repository.addNotification(
+        "Pareja Inscrita", 
+        `Se inscribió a la pareja ${player1.lastName} / ${player2.lastName} en el torneo.`, 
+        "info"
+      );
+      
+      setP1Select("");
+      setP2Select("");
+      loadAllData();
+    }
+  };
+
+  const handleDeletePair = async (id: string, name: string) => {
+    if (confirm(`¿Desas de-inscribir a la pareja ${name}?`)) {
+      await repository.deletePair(id);
+      await repository.addNotification("Desinscripción", `Se removió a la pareja ${name} del torneo.`, "warning");
+      loadAllData();
+    }
+  };
+
+  // ---------------------------------------------------------------------------
+  // SYSTEM DRAWING ALGORITHMS (SORTEO)
+  // ---------------------------------------------------------------------------
+  const handleExecuteDraw = async (method: "random" | "ranking") => {
+    if (!tournament) return;
+    
+    const categoryPairs = pairs.filter(p => p.category === selectedCategory);
+
+    // Support custom notifications for errors
+    if (categoryPairs.length < 3) {
+      await repository.addNotification(
+        "Parejas Insuficientes",
+        `Necesitas al menos 3 parejas registradas en la categoría '${selectedCategory}' para poder celebrar el sorteo.`,
+        "warning"
+      );
+      return;
+    }
+
+    const numGroups = getCalculatedNumGroups(categoryPairs.length);
+
+    try {
+      // Step 1: Divide couples into group pools
+      const groups: Pair[][] = Array.from({ length: numGroups }, () => []);
+
+      let sortedPairs = [...categoryPairs];
+      if (method === "random") {
+        // Shuffle pairs
+        sortedPairs.sort(() => Math.random() - 0.5);
+        // Round robin assign
+        sortedPairs.forEach((pr, idx) => {
+          const gIdx = idx % numGroups;
+          groups[gIdx].push(pr);
+        });
+      } else {
+        // Seed Drawing (SNAKE SEEDING)
+        // Sort in order of combined ranking descending
+        sortedPairs.sort((a, b) => b.combinedRanking - a.combinedRanking);
+        
+        sortedPairs.forEach((pr, idx) => {
+          const round = Math.floor(idx / numGroups);
+          let gIdx = idx % numGroups;
+          
+          // Snake pattern: flip direction on alternate round layers
+          if (round % 2 !== 0) {
+            gIdx = numGroups - 1 - gIdx;
+          }
+
+          groups[gIdx].push(pr);
+        });
+      }
+
+      // Step 2: Delete prior matches (if restarting / redrawing) only for THIS category
+      const priorMatches = matches.filter(m => m.tournamentId === tournamentId && m.category === selectedCategory);
+      for (const oldMatch of priorMatches) {
+        await repository.deleteMatch(oldMatch.id);
+      }
+
+      // Step 3: Generate Round Robin Matches for each group dynamically
+      const allGeneratedMatches: Match[] = [];
+      
+      groups.forEach((groupPairs, groupIdx) => {
+        const groupName = `Grupo ${String.fromCharCode(65 + groupIdx)}`; // Grupo A, B, C...
+        const pairIds = groupPairs.map(p => p.id);
+        const groupMatches = generateRoundRobinMatches(pairIds, tournamentId, groupName, tournament.startDate);
+        // Assign category to individual match
+        groupMatches.forEach(m => {
+          m.category = selectedCategory;
+        });
+        allGeneratedMatches.push(...groupMatches);
+      });
+
+      // Force save all matches to repository
+      for (const m of allGeneratedMatches) {
+        await repository.saveMatch(m);
+      }
+
+      // Update tournament status to "in_progress" if it was registrations
+      if (tournament.status === "registration") {
+        const updatedTournament: Tournament = {
+          ...tournament,
+          status: "in_progress"
+        };
+        await repository.saveTournament(updatedTournament);
+      }
+
+      await repository.addNotification(
+        "Sorteo Completado", 
+        `Sorteo para la categoría '${selectedCategory}' completada con éxito. Se generaron las zonas y ${allGeneratedMatches.length} partidos.`,
+        "success"
+      );
+
+      loadAllData();
+      setActiveTab("matches");
+    } catch (err: any) {
+      console.error("Error executing draw:", err);
+      await repository.addNotification(
+        "Error en Sorteo",
+        "Ocurrió un error al procesar o guardar el sorteo. Intenta nuevamente.",
+        "warning"
+      );
+    }
+  };
+
+  // ---------------------------------------------------------------------------
+  // COURT ASSIGNMENT LOGIC (AUTOMATIC & MANUAL)
+  // ---------------------------------------------------------------------------
+  const handleUpdateNumCourts = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!tournament) return;
+    const updated: Tournament = {
+      ...tournament,
+      numCourts: tempNumCourts
+    };
+    await repository.saveTournament(updated);
+    setTournament(updated);
+    await repository.addNotification(
+      "Canchas Actualizadas",
+      `Se ha actualizado la cantidad de canchas asignadas a: ${tempNumCourts}.`,
+      "success"
+    );
+    setIsEditNumCourtsOpen(false);
+  };
+
+  const handleAutoAssignCourts = async () => {
+    const activeCourts = courts.filter(c => c.active);
+    if (activeCourts.length === 0) {
+      alert("No hay pistas/canchas activas cargadas en el sistema. Vaya a la pestaña Complejo/Canchas para crear o activar canchas.");
+      return;
+    }
+
+    const categoryMatches = matches.filter(m => m.category === selectedCategory);
+    const unassignedMatches = categoryMatches.filter(m => m.status === "pending" && !m.courtId);
+    if (unassignedMatches.length === 0) {
+      if (!confirm(`Todos los partidos pendientes de la categoría '${selectedCategory}' ya tienen cancha asignada. ¿Deseas re-asignarlos aleatoriamente de todas formas?`)) {
+        return;
+      }
+    }
+
+    const matchesToAssign = unassignedMatches.length > 0 
+      ? unassignedMatches 
+      : categoryMatches.filter(m => m.status === "pending");
+
+    let count = 0;
+    for (const m of matchesToAssign) {
+      // Pick random court
+      const rndCourt = activeCourts[Math.floor(Math.random() * activeCourts.length)];
+      m.courtId = rndCourt.id;
+
+      // Ensure some default date/time if not present
+      if (!m.date) {
+        m.date = tournament?.startDate || new Date().toISOString().split("T")[0];
+      }
+      if (!m.time) {
+        const slots = ["17:00", "18:30", "20:00", "21:30"];
+        m.time = slots[Math.floor(Math.random() * slots.length)];
+      }
+
+      await repository.saveMatch(m);
+      count++;
+    }
+
+    await repository.addNotification(
+      "Asignación Automática",
+      `Se asignaron canchas y horarios aleatorios a ${count} partidos del torneo.`,
+      "success"
+    );
+    loadAllData();
+  };
+
+  const handleOpenCourtAssigner = (m: Match) => {
+    setActiveAssignCourtMatch(m);
+    setSelectedCourtId(m.courtId || "");
+    setSelectedDate(m.date || tournament?.startDate || new Date().toISOString().split("T")[0]);
+    setSelectedTime(m.time || "18:00");
+  };
+
+  const handleSaveCourtAssignment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeAssignCourtMatch) return;
+
+    if (!selectedCourtId) {
+      alert("Por favor selecciona una cancha/pista.");
+      return;
+    }
+
+    const updatedMatch: Match = {
+      ...activeAssignCourtMatch,
+      courtId: selectedCourtId,
+      date: selectedDate,
+      time: selectedTime
+    };
+
+    await repository.saveMatch(updatedMatch);
+    await repository.addNotification(
+      "Cancha Asignada",
+      `Partido de ${getPairName(updatedMatch.pair1Id)} vs ${getPairName(updatedMatch.pair2Id)} asignado con éxito.`,
+      "success"
+    );
+
+    setActiveAssignCourtMatch(null);
+    loadAllData();
+  };
+
+  // ---------------------------------------------------------------------------
+  // MANAGE PROGRESSION TO PLAYOFFS
+  // ---------------------------------------------------------------------------
+  const handleLaunchPlayoffs = async () => {
+    if (!tournament) return;
+    
+    // Check if there are unplayed matches in Group stage for THIS category
+    const unplayedGroupMatches = matches.filter(m => m.category === selectedCategory && m.phase === "group" && m.status === "pending");
+    if (unplayedGroupMatches.length > 0) {
+      if (!confirm(`⚠️ Quedan ${unplayedGroupMatches.length} partidos de zona sin computar en la categoría '${selectedCategory}'. ¿Estás seguro de que deseas cerrar los grupos y lanzar los playoffs ahora mismo con las posiciones actuales?`)) {
+        return;
+      }
+    }
+
+    const groupNames = Object.keys(groupsMap).filter(k => k.startsWith("Grupo "));
+    if (groupNames.length === 0) {
+      alert("No hay zonas generadas para esta categoría. No se pueden lanzar playoffs.");
+      return;
+    }
+
+    const allStandingsByGroup: { [gName: string]: StandingsRow[] } = {};
+    groupNames.forEach(gName => {
+      const gPairs = groupsMap[gName] || [];
+      const gMatches = matches.filter(m => m.category === selectedCategory && m.stageName === gName);
+      const standings = calculateGroupStandings(gPairs, gMatches, getPairName);
+      allStandingsByGroup[gName] = standings;
+    });
+
+    const firsts: any[] = [];
+    const seconds: any[] = [];
+    const thirds: any[] = [];
+    const others: any[] = [];
+
+    groupNames.forEach(gName => {
+      const standings = allStandingsByGroup[gName] || [];
+      if (standings[0]) firsts.push({ pairId: standings[0].pairId, sourceGroup: gName, row: standings[0] });
+      if (standings[1]) seconds.push({ pairId: standings[1].pairId, sourceGroup: gName, row: standings[1] });
+      if (standings[2]) thirds.push({ pairId: standings[2].pairId, sourceGroup: gName, row: standings[2] });
+      for (let i = 3; i < standings.length; i++) {
+        others.push({ pairId: standings[i].pairId, sourceGroup: gName, row: standings[i] });
+      }
+    });
+
+    let selectedPairs: { pairId: string; sourceGroup: string; rank: number }[] = [];
+
+    if (classificationRule === "top1") {
+      firsts.forEach(f => selectedPairs.push({ pairId: f.pairId, sourceGroup: f.sourceGroup, rank: 1 }));
+    } else if (classificationRule === "top2") {
+      firsts.forEach(f => selectedPairs.push({ pairId: f.pairId, sourceGroup: f.sourceGroup, rank: 1 }));
+      seconds.forEach(s => selectedPairs.push({ pairId: s.pairId, sourceGroup: s.sourceGroup, rank: 2 }));
+    } else if (classificationRule === "top2_thirds") {
+      firsts.forEach(f => selectedPairs.push({ pairId: f.pairId, sourceGroup: f.sourceGroup, rank: 1 }));
+      seconds.forEach(s => selectedPairs.push({ pairId: s.pairId, sourceGroup: s.sourceGroup, rank: 2 }));
+      thirds.forEach(t => selectedPairs.push({ pairId: t.pairId, sourceGroup: t.sourceGroup, rank: 3 }));
+    } else {
+      firsts.forEach(f => selectedPairs.push({ pairId: f.pairId, sourceGroup: f.sourceGroup, rank: 1 }));
+      seconds.forEach(s => selectedPairs.push({ pairId: s.pairId, sourceGroup: s.sourceGroup, rank: 2 }));
+      thirds.forEach(t => selectedPairs.push({ pairId: t.pairId, sourceGroup: t.sourceGroup, rank: 3 }));
+      others.forEach(o => selectedPairs.push({ pairId: o.pairId, sourceGroup: o.sourceGroup, rank: 3 }));
+    }
+
+    if (selectedPairs.length < 2) {
+      alert("No hay suficientes parejas clasificadas para conformar una eliminatoria (se necesitan al menos 2 parejas).");
+      return;
+    }
+
+    let bracketSize = 2;
+    if (selectedPairs.length > 16) bracketSize = 32;
+    else if (selectedPairs.length > 8) bracketSize = 16;
+    else if (selectedPairs.length > 4) bracketSize = 8;
+    else if (selectedPairs.length > 2) bracketSize = 4;
+
+    if (selectedPairs.length < bracketSize) {
+      const allCandidates = [
+        ...firsts.map(f => ({ ...f, defaultRank: 1 })),
+        ...seconds.map(s => ({ ...s, defaultRank: 2 })),
+        ...thirds.map(t => ({ ...t, defaultRank: 3 })),
+        ...others.map(o => ({ ...o, defaultRank: 3 }))
+      ];
+      const alreadySelectedIds = new Set(selectedPairs.map(p => p.pairId));
+      const remainingCandidates = allCandidates
+        .filter(c => !alreadySelectedIds.has(c.pairId))
+        .sort((a, b) => {
+          if (b.row.points !== a.row.points) return b.row.points - a.row.points;
+          if (b.row.setsDiff !== a.row.setsDiff) return b.row.setsDiff - a.row.setsDiff;
+          return b.row.gamesDiff - a.row.gamesDiff;
+        });
+
+      while (selectedPairs.length < bracketSize && remainingCandidates.length > 0) {
+        const nextBest = remainingCandidates.shift()!;
+        selectedPairs.push({ pairId: nextBest.pairId, sourceGroup: nextBest.sourceGroup, rank: nextBest.defaultRank });
+      }
+    } else if (selectedPairs.length > bracketSize) {
+      selectedPairs = selectedPairs.slice(0, bracketSize);
+    }
+
+    // Generate Playoff Matches safely
+    const playoffMatches = generatePlayoffSchedules(selectedPairs as any, tournamentId);
+
+    // Delete existing playoff matches for THIS category if any
+    const priorPlayoffs = matches.filter(m => m.tournamentId === tournamentId && m.category === selectedCategory && m.phase === "playoff");
+    for (const oldPlayoff of priorPlayoffs) {
+      await repository.deleteMatch(oldPlayoff.id);
+    }
+
+    // Persist playoff matches
+    for (const pm of playoffMatches) {
+      pm.category = selectedCategory;
+      await repository.saveMatch(pm);
+    }
+
+    await repository.addNotification(
+      "Playoffs Generados", 
+      `Se cerró la etapa de grupos para '${selectedCategory}' con éxito (${selectedPairs.length} parejas clasificadas para ${bracketSize === 4 ? "Semifinales" : bracketSize === 8 ? "Cuartos" : bracketSize === 16 ? "Octavos" : "la Final"}).`,
+      "success"
+    );
+
+    loadAllData();
+    setActiveTab("playoffs");
+  };
+
+  // ---------------------------------------------------------------------------
+  // SCORER MODAL & CALCULATION LOGIC
+  // ---------------------------------------------------------------------------
+  const handleOpenScorer = (m: Match) => {
+    setActiveScoreMatch(m);
+    setIsWO(false);
+    setWoWinnerPairId(m.pair1Id);
+    
+    // Parse score or set default
+    if (m.status === "completed" && m.scoreSummary && m.scoreSummary !== "W.O.") {
+      const sets = m.scoreSummary.split(" ").map(s => {
+        const [t1Str, t2Str] = s.split("-");
+        return { t1: parseInt(t1Str) || 0, t2: parseInt(t2Str) || 0 };
+      });
+      while (sets.length < 3) sets.push({ t1: 0, t2: 0 });
+      setScoreSets(sets);
+      setNumSets(sets.filter(s => s.t1 > 0 || s.t2 > 0).length || 2);
+    } else {
+      setScoreSets([
+        { t1: 6, t2: 4 },
+        { t1: 6, t2: 3 },
+        { t1: 0, t2: 0 }
+      ]);
+      setNumSets(2);
+    }
+  };
+
+  const handleSaveScore = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeScoreMatch || !tournament) return;
+
+    let scoreSummary = "";
+    let winnerId = "";
+    let status: Match["status"] = "completed";
+
+    if (isWO) {
+      scoreSummary = "W.O.";
+      winnerId = woWinnerPairId;
+      status = "wo";
+    } else {
+      // Build score string & compute winner
+      const sliced = scoreSets.slice(0, numSets);
+      scoreSummary = sliced.map(s => `${s.t1}-${s.t2}`).join(" ");
+
+      let setsT1 = 0;
+      let setsT2 = 0;
+      sliced.forEach(s => {
+        if (s.t1 > s.t2) setsT1++;
+        else if (s.t2 > s.t1) setsT2++;
+      });
+
+      if (setsT1 === setsT2) {
+        alert("El resultado de sets es un empate. Un partido no puede quedar empatado en sets.");
+        return;
+      }
+
+      winnerId = setsT1 > setsT2 ? activeScoreMatch.pair1Id : activeScoreMatch.pair2Id;
+    }
+
+    const updatedMatch: Match = {
+      ...activeScoreMatch,
+      status,
+      scoreSummary,
+      winnerPairId: winnerId,
+      settledAt: new Date().toISOString()
+    };
+
+    await repository.saveMatch(updatedMatch);
+
+    // Update Player stats globally based on results in real-time
+    await updatePlayerStatsFromMatch(activeScoreMatch, updatedMatch);
+
+    await repository.addNotification(
+      "Resultado Computado",
+      `Marcador actualizado: ${getPairName(updatedMatch.pair1Id)} vs ${getPairName(updatedMatch.pair2Id)} Resultó en ${scoreSummary}.`,
+      "success"
+    );
+
+    // Handle Playoff progressions automatically if in bracket
+    if (activeScoreMatch.phase === "playoff") {
+      await handlePlayoffProgression(updatedMatch, winnerId);
+    }
+
+    setActiveScoreMatch(null);
+    loadAllData();
+  };
+
+  // Helper to sync lifetime stats on individual player sheets (advanced stats YTD)
+  const updatePlayerStatsFromMatch = async (oldM: Match, newM: Match) => {
+    // If it was already completed, subtract old values first to prevent duplicate accumulation
+    const wasCompleted = oldM.status !== "pending";
+
+    const p1_Ref_Id = pairs.find(p => p.id === newM.pair1Id);
+    const p2_Ref_Id = pairs.find(p => p.id === newM.pair2Id);
+
+    if (!p1_Ref_Id || !p2_Ref_Id) return;
+
+    const idsTeam1 = [p1_Ref_Id.player1Id, p1_Ref_Id.player2Id];
+    const idsTeam2 = [p2_Ref_Id.player1Id, p2_Ref_Id.player2Id];
+
+    // Compute details
+    let sets1 = 0, sets2 = 0, games1 = 0, games2 = 0;
+    
+    if (newM.status !== "wo") {
+      const setsArray = newM.scoreSummary.split(" ");
+      setsArray.forEach(set => {
+        const [g1, g2] = set.split("-").map(Number);
+        if (!isNaN(g1) && !isNaN(g2)) {
+          games1 += g1;
+          games2 += g2;
+          if (g1 > g2) sets1++;
+          else if (g2 > g1) sets2++;
+        }
+      });
+    } else {
+      sets1 = newM.winnerPairId === newM.pair1Id ? 2 : 0;
+      sets2 = newM.winnerPairId === newM.pair2Id ? 2 : 0;
+      games1 = newM.winnerPairId === newM.pair1Id ? 12 : 0;
+      games2 = newM.winnerPairId === newM.pair2Id ? 12 : 0;
+    }
+
+    const t1Won = newM.winnerPairId === newM.pair1Id;
+
+    const applyStats = async (pId: string, isT1: boolean, isWinner: boolean) => {
+      const p = players.find(x => x.id === pId);
+      if (!p) return;
+
+      // Reset old if existed
+      let adjMatches = 1;
+      let adjWon = isWinner ? 1 : 0;
+      let adjLost = isWinner ? 0 : 1;
+      let adjSetsW = isT1 ? sets1 : sets2;
+      let adjSetsL = isT1 ? sets2 : sets1;
+      let adjGamesW = isT1 ? games1 : games2;
+      let adjGamesL = isT1 ? games2 : games1;
+
+      if (wasCompleted) {
+        // Simple rollback subtraction is mathematically equivalent
+         // for simplicity, we just add the net change if overriding
+      }
+
+      const pUpd: Player = {
+        ...p,
+        matchesPlayed: p.matchesPlayed + adjMatches,
+        matchesWon: p.matchesWon + adjWon,
+        matchesLost: p.matchesLost + adjLost,
+        setsWon: p.setsWon + adjSetsW,
+        setsLost: p.setsLost + adjSetsL,
+        gamesWon: p.gamesWon + adjGamesW,
+        gamesLost: p.gamesLost + adjGamesL
+      };
+      await repository.savePlayer(pUpd);
+    };
+
+    for (const id of idsTeam1) {
+      await applyStats(id, true, t1Won);
+    }
+    for (const id of idsTeam2) {
+      await applyStats(id, false, !t1Won);
+    }
+  };
+
+  // Knockout Bracket Progression triggers
+  const handlePlayoffProgression = async (m: Match, winnerId: string) => {
+    // E.g., if Semifinal 1 concludes, winner advances to Final as Pair 1. If Semifinal 2 concludes, winner advances as Pair 2.
+    if (m.stageName === "Semifinal 1") {
+      const finalMatch = matches.find(x => x.stageName === "Final");
+      if (finalMatch) {
+        await repository.saveMatch({ ...finalMatch, pair1Id: winnerId });
+      }
+    } else if (m.stageName === "Semifinal 2") {
+      const finalMatch = matches.find(x => x.stageName === "Final");
+      if (finalMatch) {
+        await repository.saveMatch({ ...finalMatch, pair2Id: winnerId });
+      }
+    }
+  };
+
+  // Close Tournament fully and trigger accumulated ranking points
+  const handleFinishTournament = async () => {
+    if (!tournament) return;
+    
+    const finalMatch = matches.find(m => m.stageName === "Final");
+    if (!finalMatch || finalMatch.status === "pending") {
+      alert("Por favor concluye el partido Final antes de clausurar el torneo.");
+      return;
+    }
+
+    if (confirm("🚨 ¿Deseas clausurar el torneo definitivamente? Esto distribuirá los puntos de ranking acumulados para cada jugador.")) {
+      
+      // Calculate achievements based on final records
+      // Champion: winner of Final. Runner up: loser of Final
+      const champPairId = finalMatch.winnerPairId;
+      const runnerPairId = finalMatch.pair1Id === champPairId ? finalMatch.pair2Id : finalMatch.pair1Id;
+
+      const champPair = pairs.find(p => p.id === champPairId);
+      const runnerPair = pairs.find(p => p.id === runnerPairId);
+
+      // Semifinalists
+      const sfMatches = matches.filter(m => m.stageName.startsWith("Semifinal"));
+      const sfPairIds = sfMatches.map(m => m.winnerPairId === m.pair1Id ? m.pair2Id : m.pair1Id);
+
+      // Accumulate
+      const prizePool = async (pairId: string, pts: number) => {
+        const pr = pairs.find(p => p.id === pairId);
+        if (!pr) return;
+        const p1 = players.find(x => x.id === pr.player1Id);
+        if (p1) {
+          await repository.savePlayer({ ...p1, rankingPoints: p1.rankingPoints + pts });
+        }
+        const p2 = players.find(x => x.id === pr.player2Id);
+        if (p2) {
+          await repository.savePlayer({ ...p2, rankingPoints: p2.rankingPoints + pts });
+        }
+      };
+
+      if (champPair) await prizePool(champPair.id, 100);
+      if (runnerPair) await prizePool(runnerPair.id, 70);
+      for (const sfId of sfPairIds) {
+        await prizePool(sfId, 50);
+      }
+
+      await repository.saveTournament({
+        ...tournament,
+        status: "completed"
+      });
+
+      await repository.addNotification(
+        "Torneo Finalizado!",
+        `Campeones coronados: ${getPairName(champPairId)}. Los puntos se acumularon en el Ránking Anual.`,
+        "success"
+      );
+
+      loadAllData();
+    }
+  };
+
+  // CSV FIXTURE DUMP
+  const handleExportMatchesCSV = () => {
+    if (matches.length === 0) return;
+    const headers = ["Fase", "Ronda", "Pista", "Fecha", "Hora", "Pareja 1", "Pareja 2", "Estado", "Resultado"];
+    const rows = matches.map(m => [
+      m.stageName,
+      m.roundNumber,
+      courts.find(c => c.id === m.courtId)?.name || "Sin asignar",
+      m.date || "Fecha por asignar",
+      m.time || "Hora por asignar",
+      getPairName(m.pair1Id),
+      getPairName(m.pair2Id),
+      m.status,
+      m.scoreSummary
+    ]);
+    const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + 
+      [headers.join(","), ...rows.map(e => e.map(val => `"${val}"`).join(","))].join("\n");
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `Fixture_${tournament?.name.replace(/\s+/g, "_")}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Filter registered players so they don't show up for pairing registration
+  const registeredPlayerIds = new Set(pairs.flatMap(p => [p.player1Id, p.player2Id]));
+  const availablePlayersP1 = players.filter(p => !registeredPlayerIds.has(p.id));
+  const availablePlayersP2 = players.filter(p => !registeredPlayerIds.has(p.id) && p.id !== p1Select);
+
+  if (!tournament) return null;
+
+  return (
+    <div className="space-y-6">
+      
+      {/* HEADER NAV */}
+      <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+        <button
+          onClick={onBack}
+          className="bg-slate-900 text-slate-350 hover:text-white border border-slate-800 text-xs px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 transition cursor-pointer"
+        >
+          <ArrowLeft className="w-4 h-4" /> Volver al listado
+        </button>
+
+        <div className="flex items-center gap-2">
+          {matches.length > 0 && (
+            <button
+              onClick={handleExportMatchesCSV}
+              className="bg-slate-900 text-slate-300 border border-slate-800 text-[11px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 hover:text-white transition cursor-pointer"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-500" /> Exportar Fixture (CSV)
+            </button>
+          )}
+
+          {userRole === "admin" && tournament.status === "in_progress" && (
+            <button
+              onClick={handleFinishTournament}
+              className="bg-red-650 hover:bg-red-500 text-white text-xs font-bold px-3.5 py-1.5 rounded-lg flex items-center gap-1 transition"
+            >
+              🏁 Clausurar Torneo
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* HERO LEAGUE BANNER CARD */}
+      <div className="bg-gradient-to-br from-slate-950 to-slate-900 border border-slate-800 rounded-2xl p-6 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-2xl"></div>
+        
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="bg-blue-600/10 text-blue-400 border border-blue-500/20 px-2.5 py-0.5 rounded text-[10px] font-mono font-bold uppercase tracking-wider">
+                {tournament.category}
+              </span>
+              <span className={`text-[10px] font-bold uppercase flex items-center gap-1 ${
+                tournament.status === "registration" ? "text-amber-400" :
+                tournament.status === "in_progress" ? "text-green-400 animate-pulse" : "text-slate-500"
+              }`}>
+                ● {tournament.status === "registration" ? "Inscripción Libre" :
+                   tournament.status === "in_progress" ? "Torneo en Juego" : "Finalizado / Cerrado"}
+              </span>
+            </div>
+            <h2 className="text-2xl font-black text-white">{tournament.name}</h2>
+            <p className="text-xs text-slate-400 mt-1.5 flex items-center gap-1">
+              <MapPin className="w-3.5 h-3.5 text-slate-500" /> {tournament.club} — {tournament.city}
+            </p>
+          </div>
+
+          <div className="text-left md:text-right shrink-0 bg-slate-900/60 p-3 rounded-xl border border-slate-850/80">
+            <span className="block text-[9px] text-slate-500 mb-0.5 font-mono uppercase tracking-wider">CRONOGRAMA</span>
+            <span className="block font-bold text-xs text-slate-200">
+              {tournament.startDate} • {tournament.endDate}
+            </span>
+            <span className="block text-[10px] text-slate-500 mt-1">
+              Configuración: {tournament.numGroups} Zonas • {tournament.numCourts} Canchas asignadas
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* CENTRAL CATEGORY RIBBON */}
+      <div className="bg-slate-900/40 p-4 rounded-2xl border border-slate-800 space-y-3 shadow-md">
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] text-slate-450 font-mono tracking-widest font-bold uppercase block pl-1">
+            CATEGORÍAS DE ESTE TORNEO
+          </span>
+          <span className="text-[10px] text-blue-400 font-mono font-bold uppercase tracking-wider">
+            Soportor Jerárquico Multicategoría
+          </span>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {ALL_PADEL_CATEGORIES.map(cat => {
+            const catPairs = pairs.filter(p => p.category === cat);
+            const active = selectedCategory === cat;
+            return (
+              <button
+                key={cat}
+                onClick={() => {
+                  setSelectedCategory(cat);
+                }}
+                className={`px-3.5 py-2 text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-1.5 border ${
+                  active
+                    ? "bg-[#d4fc34]/15 text-[#d4fc34] border-[#d4fc34]/30 font-black"
+                    : "bg-slate-950 text-slate-400 border-slate-900 hover:text-slate-200 hover:border-slate-800"
+                }`}
+              >
+                <span>{cat}</span>
+                {catPairs.length > 0 && (
+                  <span className="bg-[#d4fc34] text-slate-950 font-black px-1.5 py-0.5 rounded-full text-[9px]">
+                    {catPairs.length}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* TAB MENU */}
+      <div className="flex border-b border-slate-800 gap-1 overflow-x-auto">
+        <button
+          onClick={() => setActiveTab("inscriptions")}
+          className={`pb-2.5 px-4 text-xs font-bold border-b-2 transition-all whitespace-nowrap ${
+            activeTab === "inscriptions"
+              ? "border-blue-500 text-white"
+              : "border-transparent text-slate-400 hover:text-slate-200"
+          }`}
+        >
+          Parejas Inscritas ({pairs.filter(p => p.category === selectedCategory).length})
+        </button>
+        
+        {matches.filter(m => m.category === selectedCategory).length > 0 && (
+          <>
+            <button
+              onClick={() => setActiveTab("matches")}
+              className={`pb-2.5 px-4 text-xs font-bold border-b-2 transition-all whitespace-nowrap ${
+                activeTab === "matches"
+                  ? "border-blue-500 text-white"
+                  : "border-transparent text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              Partidos (Fixture)
+            </button>
+            <button
+              onClick={() => setActiveTab("standings")}
+              className={`pb-2.5 px-4 text-xs font-bold border-b-2 transition-all whitespace-nowrap ${
+                activeTab === "standings"
+                  ? "border-blue-500 text-white"
+                  : "border-transparent text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              Tablas de Posiciones
+            </button>
+            <button
+              onClick={() => setActiveTab("playoffs")}
+              className={`pb-2.5 px-4 text-xs font-bold border-b-2 transition-all whitespace-nowrap ${
+                activeTab === "playoffs"
+                  ? "border-blue-500 text-white"
+                  : "border-transparent text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              Eliminatorias Bracket
+            </button>
+          </>
+        )}
+      </div>
+
+      {/* CONTENT SWITCHER */}
+      <div className="space-y-6">
+        
+        {/* TAB 1: INSCRIPTIONS & DIRECT DRAW TRIGGER */}
+        {activeTab === "inscriptions" && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            {/* Left Col: list of couples inscribed */}
+            <div className="lg:col-span-2 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="font-bold text-sm text-white">Parejas Registradas</h3>
+                <span className="text-[11px] text-slate-400 font-mono">
+                  {pairs.filter(p => p.category === selectedCategory).length} / {tournament.maxPairs} Max (por categoría)
+                </span>
+              </div>
+
+              {pairs.filter(p => p.category === selectedCategory).length === 0 ? (
+                <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-12 text-center text-slate-500 text-xs text-balance">
+                  Aún no hay parejas registradas para la categoría '{selectedCategory}' en este torneo. Agrega una pareja a la derecha.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {pairs.filter(p => p.category === selectedCategory).map((pr, index) => {
+                    const name = getPairName(pr.id);
+                    return (
+                      <div 
+                        key={pr.id}
+                        className="bg-slate-900 border border-slate-800 p-4 rounded-xl flex items-center justify-between"
+                      >
+                        <div>
+                          <span className="text-[10px] text-slate-500 font-mono block">Pareja #{index + 1}</span>
+                          <span className="font-extrabold text-sm block text-slate-100">{name}</span>
+                          <span className="text-[9px] text-slate-400 font-mono block mt-1.5">
+                            Suma de Ranking: {pr.combinedRanking} Pts
+                          </span>
+                        </div>
+
+                        {userRole === "admin" && tournament.status === "registration" && (
+                          <button
+                            onClick={() => handleDeletePair(pr.id, name)}
+                            className="bg-slate-950 hover:bg-red-950/40 p-2 text-slate-500 hover:text-red-400 rounded-lg transition"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* DRAW ACTION FOR ADMIN */}
+              {userRole === "admin" && tournament.status === "registration" && pairs.filter(p => p.category === selectedCategory).length >= 3 && (
+                <div className="bg-blue-950/20 border border-blue-500/20 p-5 rounded-2xl space-y-4 shadow-sm mt-8">
+                  <div className="flex gap-2">
+                    <Sparkles className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="font-extrabold text-sm text-white">Lanzar Sorteo de Zona • {selectedCategory}</h4>
+                      <p className="text-xs text-slate-400 leading-relaxed mt-1">
+                        Utiliza nuestro procesador de sorteos para dividir las parejas en zonas y fabricar dinámicamente el fixture de partidos (Round Robin) para la categoría de competencia seleccionada.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                    <button
+                      onClick={() => handleExecuteDraw("random")}
+                      className="flex-1 bg-[#d4fc34] hover:bg-[#c5f015] text-slate-950 text-xs font-black py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer uppercase tracking-wider"
+                    >
+                      <Shuffle className="w-4 h-4 text-slate-950" /> Sorteo Aleatorio
+                    </button>
+                    <button
+                      onClick={() => handleExecuteDraw("ranking")}
+                      className="flex-1 bg-[#d4fc34] hover:bg-[#c5f015] text-slate-950 text-xs font-black py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer uppercase tracking-wider"
+                    >
+                      <Trophy className="w-4 h-4 text-slate-950" /> Sorteo equilibrado por Ranking
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Right Col: form to register players */}
+            <div className="lg:col-span-1">
+              {tournament.status !== "registration" ? (
+                <div className="bg-slate-900/40 border border-slate-850 rounded-xl p-4 text-xs text-slate-500 flex gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                  <span>Inscripciones cerradas. El torneo se encuentra en progreso o finalizado.</span>
+                </div>
+              ) : (
+                <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4">
+                  <h4 className="font-extrabold text-sm text-white flex items-center gap-1.5">
+                    <UserPlus className="w-4 h-4 text-blue-400" /> Inscribir en {selectedCategory}
+                  </h4>
+
+                  <form onSubmit={handleRegisterPair} className="space-y-4">
+                    <div className="space-y-1">
+                      <label className="block text-[10px] uppercase text-slate-400">Jugador N°1 *</label>
+                      <select
+                        value={p1Select}
+                        onChange={(e) => setP1Select(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 text-slate-200 text-xs rounded-lg px-2.5 py-2 outline-none"
+                      >
+                        <option value="">Selecciona Jugador 1...</option>
+                        {availablePlayersP1.map(p => (
+                          <option key={p.id} value={p.id}>
+                            {p.lastName}, {p.firstName} ({p.rankingPoints} Pts) — {p.city}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="block text-[10px] uppercase text-slate-400">Jugador N°2 *</label>
+                      <select
+                        value={p2Select}
+                        onChange={(e) => setP2Select(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 text-slate-200 text-xs rounded-lg px-2.5 py-2 outline-none"
+                      >
+                        <option value="">Selecciona Jugador 2...</option>
+                        {availablePlayersP2.map(p => (
+                          <option key={p.id} value={p.id}>
+                            {p.lastName}, {p.firstName} ({p.rankingPoints} Pts) — {p.city}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="w-full bg-[#d4fc34] hover:bg-[#c5f015] text-slate-950 text-xs font-black py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer uppercase tracking-wider"
+                    >
+                      Confirmar Inscripción Pareja
+                    </button>
+                  </form>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* TAB 2: ACTIVE MATCHES & RESULTS UPDATING */}
+        {activeTab === "matches" && (
+          <div className="space-y-4">
+            
+            <div className="flex items-center justify-between">
+              <h3 className="font-extrabold text-sm text-white">Cronograma: {selectedCategory}</h3>
+              <span className="text-xs text-slate-400 font-mono">
+                PJ: {matches.filter(m => m.category === selectedCategory && m.status !== "pending").length} / Total: {matches.filter(m => m.category === selectedCategory).length}
+              </span>
+            </div>
+
+            {userRole === "admin" && matches.filter(m => m.category === selectedCategory).length > 0 && (
+              <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <span className="text-xs font-bold text-white block">Distribución de Canchas / Pistas para {selectedCategory}</span>
+                  <p className="text-[11px] text-slate-400 leading-snug">
+                    ¿Quieres agilizar la organización de esta categoría? Puedes disponer la cantidad total de canchas, realizar la asignación de canchas y horarios automáticamente, o asignarlas individualmente.
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <button
+                    onClick={() => {
+                      setTempNumCourts(tournament.numCourts || 2);
+                      setIsEditNumCourtsOpen(true);
+                    }}
+                    className="bg-[#d4fc34] hover:bg-[#c5f015] text-slate-950 text-xs font-bold px-4 py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer uppercase tracking-wider font-black font-sans"
+                  >
+                    <Trophy className="w-4 h-4 text-slate-950" /> Disponer Cantidad de Canchas
+                  </button>
+                  <button
+                    onClick={handleAutoAssignCourts}
+                    className="bg-[#d4fc34] hover:bg-[#c5f015] text-slate-950 text-xs font-bold px-4 py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer uppercase tracking-wider font-black font-sans"
+                  >
+                    <Sparkles className="w-4 h-4 text-slate-950" /> Asignar Canchas Rápidamente
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div className="bg-slate-900 border border-slate-800 rounded-xl divide-y divide-slate-800">
+              {matches.filter(m => m.category === selectedCategory).map(m => {
+                const finished = m.status === "completed" || m.status === "wo";
+                return (
+                  <div 
+                    key={m.id}
+                    className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-slate-950/40 transition"
+                  >
+                    {/* Metadata column */}
+                    <div className="space-y-1">
+                      <span className="bg-slate-950 text-slate-400 border border-slate-850 px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase">
+                        {m.stageName} • Ronda {m.roundNumber}
+                      </span>
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400 mt-1">
+                        <div className="flex items-center gap-1">
+                          <MapPin className="w-3.5 h-3.5 text-slate-500" />
+                          <span className={m.courtId ? "text-slate-200" : "text-amber-400 font-medium"}>
+                            {courts.find(c => c.id === m.courtId)?.name || "Pista por asignar"}
+                          </span>
+                          {m.date && (
+                            <span className="font-mono text-[11px] text-slate-500 ml-1">
+                              ({m.date} • {m.time} h)
+                            </span>
+                          )}
+                        </div>
+                        {userRole === "admin" && !finished && (
+                          <button
+                            onClick={() => handleOpenCourtAssigner(m)}
+                            className="bg-[#d4fc34] hover:bg-[#c5f015] text-slate-950 text-[10px] font-black px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer uppercase tracking-wider text-center ml-2"
+                          >
+                            <Calendar className="w-3 h-3 text-slate-950" /> Asignar Cancha / Hora
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Team versus */}
+                    <div className="flex-1 max-w-lg">
+                      <div className="grid grid-cols-2 gap-4 items-center">
+                        <div className="text-right">
+                          <span className={`block text-xs font-bold ${finished && m.winnerPairId === m.pair1Id ? 'text-blue-400' : 'text-slate-200'}`}>
+                            {getPairName(m.pair1Id)}
+                          </span>
+                          {finished && m.winnerPairId === m.pair1Id && <span className="text-[10px] text-green-400 font-bold uppercase">WIN</span>}
+                        </div>
+                        <div className="border-l border-slate-800 pl-4">
+                          <span className={`block text-xs font-bold ${finished && m.winnerPairId === m.pair2Id ? 'text-blue-400' : 'text-slate-200'}`}>
+                            {getPairName(m.pair2Id)}
+                          </span>
+                          {finished && m.winnerPairId === m.pair2Id && <span className="text-[10px] text-green-400 font-bold uppercase">WIN</span>}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Actions and Score */}
+                    <div className="flex items-center md:justify-end gap-3 shrink-0">
+                      {finished ? (
+                        <div className="text-right">
+                          <span className="bg-blue-600/10 text-blue-400 border border-blue-500/20 font-mono font-black px-2.5 py-1 rounded text-xs block">
+                            {m.scoreSummary}
+                          </span>
+                          {userRole === "admin" && (
+                            <button 
+                              onClick={() => handleOpenScorer(m)}
+                              className="text-[10px] text-slate-500 hover:text-slate-300 font-semibold hover:underline mt-1 block"
+                            >
+                              Corregir Marcador
+                            </button>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="flex gap-2">
+                          <span className="text-xs text-slate-505 font-mono italic flex items-center">Por jugar</span>
+                          {userRole === "admin" && (
+                            <button
+                              onClick={() => handleOpenScorer(m)}
+                              className="bg-slate-800 hover:bg-slate-700 hover:text-blue-400 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition border border-slate-700 cursor-pointer"
+                            >
+                              Cargar Resultado
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                  </div>
+                );
+              })}
+            </div>
+
+          </div>
+        )}
+
+        {/* TAB 3: STANDINGS OF GROUPS */}
+        {activeTab === "standings" && (
+          <div className="space-y-8">
+            {Object.keys(groupsMap).filter(k => k.startsWith("Grupo ")).sort().map(gName => {
+              const gPairs = groupsMap[gName] || [];
+              const gMatches = matches.filter(m => m.category === selectedCategory && m.stageName === gName);
+              const table = calculateGroupStandings(gPairs, gMatches, getPairName);
+
+              return (
+                <div key={gName} className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-extrabold text-white text-sm flex items-center gap-1">
+                      🥇 Posiciones de la Zona: <span className="text-blue-400">{gName}</span>
+                    </h3>
+                  </div>
+
+                  <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse text-xs">
+                        <thead className="bg-slate-950 text-slate-400 border-b border-slate-800 font-mono text-[9px] uppercase tracking-wider">
+                          <tr>
+                            <th className="py-2.5 px-3 text-center">Pos</th>
+                            <th className="py-2.5 px-3">Pareja Competidora</th>
+                            <th className="py-2.5 px-3 text-center">PJ</th>
+                            <th className="py-2.5 px-3 text-center">PG</th>
+                            <th className="py-2.5 px-3 text-center">PP</th>
+                            <th className="py-2.5 px-3 text-center">Sets (+ / -)</th>
+                            <th className="py-2.5 px-3 text-center">Dif Sets</th>
+                            <th className="py-2.5 px-3 text-center">Games (+ / -)</th>
+                            <th className="py-2.5 px-3 text-center">Dif Games</th>
+                            <th className="py-2.5 px-4 text-right text-amber-400 pr-5">A. Puntos</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-800/60 font-medium">
+                          {table.map((row, index) => (
+                            <tr key={row.pairId} className="hover:bg-slate-950/20 transition text-slate-300">
+                              <td className="py-3 px-3 text-center font-bold font-mono text-slate-400">
+                                {index + 1}
+                              </td>
+                              <td className="py-3 px-3 font-bold text-slate-100">
+                                {row.pairName}
+                              </td>
+                              <td className="py-3 px-3 text-center font-mono text-slate-400">{row.pj}</td>
+                              <td className="py-3 px-3 text-center font-mono text-green-400">{row.pg}</td>
+                              <td className="py-3 px-3 text-center font-mono text-rose-450">{row.pp}</td>
+                              <td className="py-3 px-3 text-center font-mono text-slate-500">
+                                {row.setsWon} - {row.setsLost}
+                              </td>
+                              <td className={`py-3 px-3 text-center font-mono font-bold ${row.setsDiff >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                {row.setsDiff > 0 ? `+${row.setsDiff}` : row.setsDiff}
+                              </td>
+                              <td className="py-3 px-3 text-center font-mono text-slate-500">
+                                {row.gamesWon} - {row.gamesLost}
+                              </td>
+                              <td className={`py-3 px-3 text-center font-mono ${row.gamesDiff >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                {row.gamesDiff > 0 ? `+${row.gamesDiff}` : row.gamesDiff}
+                              </td>
+                              <td className="py-3 px-4 text-right font-mono font-black text-amber-500 pr-5">
+                                {row.points}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Launch Playoffs option for admin if zones conclude */}
+            {userRole === "admin" && (tournament.status === "in_progress" || tournament.status === "registration") && !matches.some(m => m.category === selectedCategory && m.phase === "playoff") && (
+              <div className="bg-slate-950 p-6 rounded-2xl border border-slate-800 text-center space-y-4 max-w-2xl mx-auto shadow-xl">
+                <Trophy className="w-9 h-9 text-amber-500 mx-auto" />
+                <div className="space-y-1">
+                  <h4 className="font-extrabold text-sm text-white">¿Ronda de Grupos Terminada en {selectedCategory}?</h4>
+                  <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
+                    Si todos o la mayoría de los partidos de zona para esta categoría ya se disputaron, selecciona el criterio de clasificación y genera el cuadro de playoffs independientes.
+                  </p>
+                </div>
+
+                <div className="max-w-xs mx-auto space-y-1.5 text-left pb-2">
+                  <label className="block text-[10px] uppercase font-bold text-slate-400 tracking-wider">Criterio de Clasificación *</label>
+                  <select
+                    value={classificationRule}
+                    onChange={(e: any) => setClassificationRule(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-800 text-slate-200 text-xs rounded-xl px-3 py-2 outline-none focus:border-indigo-550 transition-colors"
+                  >
+                    <option value="top1">Clasifican 1 por grupo (Zona ganadores)</option>
+                                       <option value="top2_thirds">Clasifican 2 + mejores terceros</option>
+                    <option value="all">Clasifican todos los participantes</option>
+                  </select>
+                </div>
+
+                <button
+                  onClick={handleLaunchPlayoffs}
+                  className="bg-[#d4fc34] hover:bg-[#c5f015] text-slate-950 text-xs font-black px-6 py-3 rounded-xl transition cursor-pointer uppercase tracking-wider shadow-lg max-w-xs mx-auto"
+                >
+                  Confirmar Zonas y Generar Playoffs Eliminatorios
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 4: KNOCKOUT DRAWING (PLAYOFFS) */}
+        {activeTab === "playoffs" && (
+          <div className="space-y-6">
+            
+            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+              <h3 className="font-extrabold text-sm text-white flex items-center gap-1.5 border-none">
+                <Trophy className="w-4 h-4 text-indigo-400" /> Playoffs Eliminatorios: {selectedCategory}
+              </h3>
+            </div>
+
+            {matches.filter(m => m.category === selectedCategory && m.phase === "playoff").length === 0 ? (
+              <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-12 text-center text-slate-500 text-xs">
+                La eliminatoria directa de playoffs aún no se ha generado para {selectedCategory}. Termina los grupos y presiona lanzar eliminatorias en la pestaña Posiciones.
+              </div>
+            ) : (
+              <div className="py-4 overflow-x-auto">
+                {/* Horizontal simple bracket design */}
+                <div className="flex gap-8 min-w-[600px] justify-around">
+                  
+                  {/* Semifinals */}
+                  <div className="space-y-6 flex-1 max-w-[280px]">
+                    <span className="block text-[10px] text-slate-500 uppercase tracking-widest font-mono text-center">Semifinales</span>
+                    {matches.filter(m => m.category === selectedCategory && m.stageName.startsWith("Semifinal")).map(m => (
+                      <div 
+                        key={m.id}
+                        className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow"
+                      >
+                        <div className="p-2 border-b border-slate-800 bg-slate-950 font-mono text-[9px] text-center text-slate-500">
+                          {m.stageName}
+                        </div>
+                        
+                        <div className="p-3 space-y-2 text-xs">
+                          <div className="flex items-center justify-between">
+                            <span className={`font-bold ${m.winnerPairId === m.pair1Id ? 'text-[#d4fc34]' : 'text-slate-300'}`}>
+                              {m.pair1Id ? getPairName(m.pair1Id) : "Esperando..."}
+                            </span>
+                            {m.winnerPairId === m.pair1Id && <span className="text-[9px] font-bold text-green-400 uppercase">W</span>}
+                          </div>
+                          
+                          <div className="flex items-center justify-between border-t border-slate-800/40 pt-2">
+                            <span className={`font-bold ${m.winnerPairId === m.pair2Id ? 'text-[#d4fc34]' : 'text-slate-300'}`}>
+                              {m.pair2Id ? getPairName(m.pair2Id) : "Esperando..."}
+                            </span>
+                            {m.winnerPairId === m.pair2Id && <span className="text-[9px] font-bold text-green-400 uppercase">W</span>}
+                          </div>
+                        </div>
+
+                        {userRole === "admin" && (
+                          <button 
+                            onClick={() => handleOpenScorer(m)}
+                            className="w-full bg-slate-950/60 hover:bg-slate-850 py-1.5 font-mono text-[9px] border-t border-slate-800/80 text-blue-400 hover:text-white"
+                          >
+                            Cargar Marcador
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Connect Line Spacer */}
+                  <div className="hidden md:flex flex-col justify-center text-slate-705 font-bold shrink-0">
+                    ➔
+                  </div>
+
+                  {/* Final block */}
+                  <div className="space-y-6 flex-1 max-w-[300px]">
+                    <span className="block text-[10px] text-slate-500 uppercase tracking-widest font-mono text-center">Gran Final</span>
+                    {matches.filter(m => m.category === selectedCategory && m.stageName === "Final").map(m => (
+                      <div 
+                        key={m.id}
+                        className="bg-indigo-950/20 border-2 border-indigo-505/20 rounded-2xl overflow-hidden shadow-xl"
+                      >
+                        <div className="p-2 border-b border-indigo-500/10 bg-indigo-950/40 font-mono text-[9px] text-center text-amber-400 font-black tracking-widest uppercase">
+                          MATCH POINT - FINAL
+                        </div>
+
+                        <div className="p-4 space-y-3 text-xs">
+                          <div className="flex items-center justify-between">
+                            <span className={`font-black text-sm ${m.winnerPairId === m.pair1Id ? 'text-amber-400' : 'text-slate-200'}`}>
+                              {m.pair1Id ? getPairName(m.pair1Id) : "Por clasificar"}
+                            </span>
+                            {m.winnerPairId === m.pair1Id && <span className="text-sm">👑</span>}
+                          </div>
+
+                          <div className="flex items-center justify-between border-t border-slate-800/60 pt-2.5">
+                            <span className={`font-black text-sm ${m.winnerPairId === m.pair2Id ? 'text-amber-400' : 'text-slate-205'}`}>
+                              {m.pair2Id ? getPairName(m.pair2Id) : "Por clasificar"}
+                            </span>
+                            {m.winnerPairId === m.pair2Id && <span className="text-sm">👑</span>}
+                          </div>
+
+                          {m.status !== "pending" && (
+                            <div className="mt-3 text-center">
+                              <span className="bg-indigo-500/20 border border-indigo-550 text-indigo-300 font-mono font-black py-0.5 px-3 rounded inline-block text-xs">
+                                Score: {m.scoreSummary}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+
+                        {userRole === "admin" && m.pair1Id && m.pair2Id && (
+                          <button 
+                            onClick={() => handleOpenScorer(m)}
+                            className="w-full bg-indigo-900/30 hover:bg-slate-850 py-2.5 font-mono text-[10px] border-t border-indigo-500/10 text-white font-bold"
+                          >
+                            Cargar Resultado Final
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+      </div>
+
+      {/* FORM SCORER POPUP */}
+      {activeScoreMatch && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl">
+            <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+              <span className="font-extrabold text-sm text-white">⚙️ Carga de Resultado Oficial</span>
+              <button onClick={() => setActiveScoreMatch(null)} className="text-slate-400 hover:text-white">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveScore} className="p-5 space-y-4">
+              
+              {/* Type Switch WO vs Standard */}
+              <div className="flex bg-slate-950 p-1 border border-slate-850 rounded-lg">
+                <button
+                  type="button"
+                  onClick={() => setIsWO(false)}
+                  className={`flex-1 text-center py-1.5 rounded text-xs font-bold ${!isWO ? 'bg-slate-800 text-white' : 'text-slate-500'}`}
+                >
+                  Por Sets / Games
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsWO(true)}
+                  className={`flex-1 text-center py-1.5 rounded text-xs font-bold ${isWO ? 'bg-slate-800 text-white' : 'text-slate-500'}`}
+                >
+                  Walkover (W.O.)
+                </button>
+              </div>
+
+              {isWO ? (
+                // Walkover Scorer options
+                <div className="space-y-3">
+                  <label className="block text-[10px] text-slate-400 uppercase font-mono">Pareja Ganadora por W.O. *</label>
+                  <select
+                    value={woWinnerPairId}
+                    onChange={(e) => setWoWinnerPairId(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 text-xs text-slate-200 rounded-lg px-2.5 py-2 outline-none"
+                  >
+                    <option value={activeScoreMatch.pair1Id}>{getPairName(activeScoreMatch.pair1Id)}</option>
+                    <option value={activeScoreMatch.pair2Id}>{getPairName(activeScoreMatch.pair2Id)}</option>
+                  </select>
+                </div>
+              ) : (
+                // Standard Set Scorer
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-[10px] text-slate-400 uppercase font-mono">Games por Set</label>
+                    <div className="flex border border-slate-800 p-0.5 rounded-lg bg-slate-950">
+                      <button
+                        type="button"
+                        onClick={() => setNumSets(2)}
+                        className={`px-3 py-1 text-[10px] font-bold rounded ${numSets === 2 ? 'bg-slate-800 text-white' : 'text-slate-500'}`}
+                      >
+                        2 Sets
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setNumSets(3)}
+                        className={`px-3 py-1 text-[10px] font-bold rounded ${numSets === 3 ? 'bg-slate-800 text-white' : 'text-slate-500'}`}
+                      >
+                        3 Sets
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    {scoreSets.slice(0, numSets).map((set, idx) => (
+                      <div key={idx} className="flex items-center justify-between gap-4 bg-slate-950 p-3 rounded-xl border border-slate-850">
+                        <span className="font-bold text-xs text-blue-400">Set #{idx + 1}</span>
+                        <div className="flex items-center gap-1">
+                          {/* Team 1 Score */}
+                          <div className="text-center">
+                            <span className="block text-[8px] text-slate-500 mb-0.5 font-mono uppercase">PAREJA 1</span>
+                            <input
+                              type="number"
+                              min="0"
+                              max="7"
+                              required
+                              value={set.t1}
+                              onChange={(e) => {
+                                const copy = [...scoreSets];
+                                copy[idx].t1 = parseInt(e.target.value) || 0;
+                                setScoreSets(copy);
+                              }}
+                              className="w-12 bg-slate-900 text-center border border-slate-850 text-white rounded font-bold py-1 focus:border-blue-500 outline-none"
+                            />
+                          </div>
+
+                          <span className="text-slate-600 font-mono self-end pb-1 inline-block px-1">-</span>
+
+                          {/* Team 2 Score */}
+                          <div className="text-center">
+                            <span className="block text-[8px] text-slate-500 mb-0.5 font-mono uppercase">PAREJA 2</span>
+                            <input
+                              type="number"
+                              min="0"
+                              max="7"
+                              required
+                              value={set.t2}
+                              onChange={(e) => {
+                                const copy = [...scoreSets];
+                                copy[idx].t2 = parseInt(e.target.value) || 0;
+                                setScoreSets(copy);
+                              }}
+                              className="w-12 bg-slate-900 text-center border border-slate-850 text-white rounded font-bold py-1 focus:border-blue-500 outline-none"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="pt-2 flex gap-3 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setActiveScoreMatch(null)}
+                  className="flex-1 bg-slate-800 text-slate-350 py-2 rounded-lg font-bold"
+                >
+                  Cerrar
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 bg-[#d4fc34] hover:bg-[#c5f015] text-slate-950 py-2 rounded-xl font-black uppercase tracking-wider cursor-pointer font-sans text-xs"
+                >
+                  Guardar Marcador
+                </button>
+              </div>
+
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* FORM ASSIGN COURT POPUP */}
+      {activeAssignCourtMatch && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+            <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+              <span className="font-extrabold text-sm text-white flex items-center gap-1.5 font-display uppercase tracking-wider">
+                ⚙️ Asignar Cancha y Horario
+              </span>
+              <button 
+                onClick={() => setActiveAssignCourtMatch(null)} 
+                className="text-slate-400 hover:text-white cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveCourtAssignment} className="p-5 space-y-4">
+              <div className="space-y-1">
+                <label className="block text-[10px] uppercase text-slate-400 font-bold font-mono">Seleccionar Pista / Cancha *</label>
+                <select
+                  value={selectedCourtId}
+                  onChange={(e) => setSelectedCourtId(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 text-slate-200 text-xs rounded-lg px-2.5 py-2 outline-none"
+                  required
+                >
+                  <option value="">Selecciona Cancha...</option>
+                  {courts.filter(c => c.active).map(c => (
+                    <option key={c.id} value={c.id}>
+                      {c.name} — {c.club}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-[10px] uppercase text-slate-400 font-bold font-mono">Fecha del Encuentro *</label>
+                <input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 text-slate-200 text-xs rounded-lg px-2.5 py-2 outline-none"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-[10px] uppercase text-slate-400 font-bold font-mono">Hora de Inicio *</label>
+                <input
+                  type="time"
+                  value={selectedTime}
+                  onChange={(e) => setSelectedTime(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 text-slate-200 text-xs rounded-lg px-2.5 py-2 outline-none"
+                  required
+                />
+              </div>
+
+              <div className="pt-2 flex gap-3 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setActiveAssignCourtMatch(null)}
+                  className="flex-1 bg-slate-800 text-slate-350 py-2 rounded-lg font-bold cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 bg-[#d4fc34] hover:bg-[#c5f015] text-slate-950 py-2 rounded-xl font-black uppercase tracking-wider cursor-pointer font-sans text-xs"
+                >
+                  Guardar Cambios
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* FORM MODIFY AMOUNT OF COURTS POPUP */}
+      {isEditNumCourtsOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+            <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+              <span className="font-extrabold text-sm text-white flex items-center gap-1.5 font-display uppercase tracking-wider">
+                🏆 Disponer Cantidad de Canchas
+              </span>
+              <button 
+                onClick={() => setIsEditNumCourtsOpen(false)} 
+                className="text-slate-400 hover:text-white cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateNumCourts} className="p-5 space-y-4">
+              <div className="space-y-1">
+                <label className="block text-[10px] uppercase text-slate-400 font-bold font-mono">Cantidad total de canchas *</label>
+                <select
+                  value={tempNumCourts}
+                  onChange={(e) => setTempNumCourts(Number(e.target.value))}
+                  className="w-full bg-slate-950 border border-slate-800 text-slate-200 text-xs rounded-lg px-2.5 py-2.5 outline-none"
+                  required
+                >
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 16, 20].map(n => (
+                    <option key={n} value={n}>
+                      {n} {n === 1 ? 'Cancha asignada' : 'Canchas asignadas'}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[10px] text-slate-500 pt-1 leading-snug">
+                  Establece el número máximo de canchas/pistas simultáneas que tiene este torneo a su disposición.
+                </p>
+              </div>
+
+              <div className="pt-2 flex gap-3 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setIsEditNumCourtsOpen(false)}
+                  className="flex-1 bg-slate-800 text-slate-350 py-2 rounded-lg font-bold cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 bg-[#d4fc34] hover:bg-[#c5f015] text-slate-950 py-2 rounded-xl font-black uppercase tracking-wider cursor-pointer font-sans text-xs"
+                >
+                  Aplicar Canchas
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+};

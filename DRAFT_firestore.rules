@@ -1,0 +1,170 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 1. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- REUSABLE SECURITY PRIMITIVES ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isEmailVerified() {
+      return isSignedIn() && (request.auth.token.email_verified == true);
+    }
+
+    function isAdmin() {
+      return isEmailVerified() && (
+        request.auth.token.email == 'fornettiricardo@gmail.com'
+      );
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 64 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // --- SCHEMA VALIDATION BLUEPRINTS ---
+    function isValidTournament(t) {
+      return t.keys().hasAll(['id', 'name', 'startDate', 'endDate', 'club', 'city', 'category', 'tournamentType', 'maxPairs', 'numGroups', 'numCourts', 'status'])
+        && t.keys().size() == 12
+        && t.id is string && t.id.size() <= 64
+        && t.name is string && t.name.size() > 0 && t.name.size() <= 100
+        && t.startDate is string && t.startDate.size() == 10
+        && t.endDate is string && t.endDate.size() == 10
+        && t.club is string && t.club.size() <= 100
+        && t.city is string && t.city.size() <= 100
+        && t.category is string && t.category.size() <= 50
+        && t.tournamentType is string && t.tournamentType.size() <= 50
+        && t.maxPairs is number && t.maxPairs > 0 && t.maxPairs <= 128
+        && t.numGroups is number && t.numGroups >= 1 && t.numGroups <= 32
+        && t.numCourts is number && t.numCourts >= 1 && t.numCourts <= 100
+        && t.status is string && (t.status == 'registration' || t.status == 'in_progress' || t.status == 'completed');
+    }
+
+    function isValidPlayer(p) {
+      return p.keys().hasAll(['id', 'firstName', 'lastName', 'dni', 'phone', 'email', 'city', 'birthDate', 'category', 'rankingPoints', 'photoUrl', 'matchesPlayed', 'matchesWon', 'matchesLost', 'setsWon', 'setsLost', 'gamesWon', 'gamesLost'])
+        && p.keys().size() == 17
+        && p.id is string && p.id.size() <= 64
+        && p.firstName is string && p.firstName.size() <= 50
+        && p.lastName is string && p.lastName.size() <= 50
+        && p.dni is string && p.dni.size() <= 20
+        && p.phone is string && p.phone.size() <= 30
+        && p.email is string && p.email.size() <= 100
+        && p.city is string && p.city.size() <= 50
+        && p.birthDate is string && p.birthDate.size() <= 10
+        && p.category is string && p.category.size() <= 50
+        && p.rankingPoints is number
+        && p.photoUrl is string && p.photoUrl.size() <= 256
+        && p.matchesPlayed is number
+        && p.matchesWon is number
+        && p.matchesLost is number
+        && p.setsWon is number
+        && p.setsLost is number
+        && p.gamesWon is number
+        && p.gamesLost is number;
+    }
+
+    function isValidPair(pr) {
+      return pr.keys().hasAll(['id', 'tournamentId', 'player1Id', 'player2Id', 'category', 'combinedRanking', 'status'])
+        && pr.keys().size() == 7
+        && pr.id is string && pr.id.size() <= 64
+        && pr.tournamentId is string && pr.tournamentId.size() <= 64
+        && pr.player1Id is string && pr.player1Id.size() <= 64
+        && pr.player2Id is string && pr.player2Id.size() <= 64
+        && pr.category is string && pr.category.size() <= 50
+        && pr.combinedRanking is number
+        && pr.status is string && (pr.status == 'registered' || pr.status == 'waitlist' || pr.status == 'confirmed');
+    }
+
+    function isValidMatch(m) {
+      return m.keys().hasAll(['id', 'tournamentId', 'phase', 'roundNumber', 'stageName', 'pair1Id', 'pair2Id', 'courtId', 'date', 'time', 'status', 'scoreSummary', 'winnerPairId'])
+        && m.keys().size() == 13
+        && m.id is string && m.id.size() <= 64
+        && m.tournamentId is string && m.tournamentId.size() <= 64
+        && m.phase is string && (m.phase == 'group' || m.phase == 'playoff')
+        && m.roundNumber is number
+        && m.stageName is string && m.stageName.size() <= 50
+        && m.pair1Id is string && m.pair1Id.size() <= 64
+        && m.pair2Id is string && m.pair2Id.size() <= 64
+        && m.courtId is string && m.courtId.size() <= 64
+        && m.date is string && m.date.size() <= 10
+        && m.time is string && m.time.size() <= 5
+        && m.status is string && (m.status == 'pending' || m.status == 'completed' || m.status == 'wo' || m.status == 'abandoned')
+        && m.scoreSummary is string && m.scoreSummary.size() <= 100
+        && m.winnerPairId is string && m.winnerPairId.size() <= 64;
+    }
+
+    function isValidCourt(c) {
+      return c.keys().hasAll(['id', 'name', 'club', 'active'])
+        && c.keys().size() == 4
+        && c.id is string && c.id.size() <= 64
+        && c.name is string && c.name.size() > 0 && c.name.size() <= 100
+        && c.club is string && c.club.size() <= 100
+        && c.active is boolean;
+    }
+
+    // --- COLLECTION MATCH BLOCKS ---
+
+    // Tournaments
+    match /tournaments/{tournamentId} {
+      allow read: if true; // Public listings
+      allow inspect, get: if true;
+      allow create: if isAdmin() && isValidId(tournamentId) && isValidTournament(incoming());
+      allow update: if isAdmin() && isValidTournament(incoming()) && (
+        incoming().id == existing().id &&
+        (incoming().status != 'completed' || existing().status == 'completed' || isAdmin())
+      );
+      allow delete: if isAdmin();
+    }
+
+    // Players
+    match /players/{playerId} {
+      allow read: if true; // General profiles and tournament registration requires public viewing of names/rankings/categories
+      allow create: if isValidId(playerId) && (isOwner(playerId) || isAdmin()) && isValidPlayer(incoming());
+      allow update: if (isOwner(playerId) || isAdmin()) && isValidPlayer(incoming()) && (
+        incoming().id == existing().id &&
+        incoming().email == existing().email  // Email is immutable once authenticated
+      );
+      allow delete: if isAdmin();
+    }
+
+    // Pairs
+    match /pairs/{pairId} {
+      allow read: if true;
+      allow create: if isSignedIn() && isValidId(pairId) && isValidPair(incoming());
+      allow update: if (isAdmin() || isOwner(incoming().player1Id) || isOwner(incoming().player2Id)) && isValidPair(incoming());
+      allow delete: if isAdmin() || isOwner(existing().player1Id) || isOwner(existing().player2Id);
+    }
+
+    // Matches
+    match /matches/{matchId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidId(matchId) && isValidMatch(incoming());
+      allow update: if isAdmin() && isValidMatch(incoming()) && incoming().id == existing().id;
+      allow delete: if isAdmin();
+    }
+
+    // Courts
+    match /courts/{courtId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidId(courtId) && isValidCourt(incoming());
+      allow update: if isAdmin() && isValidCourt(incoming()) && incoming().id == existing().id;
+      allow delete: if isAdmin();
+    }
+  }
+}

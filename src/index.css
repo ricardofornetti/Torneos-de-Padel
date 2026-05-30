@@ -1,0 +1,88 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@450;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+/* Unified Padel Primary Button matching the 'Crear Nuevo Torneo' design */
+.btn-padel-primary, 
+button[type="submit"]:not(.bg-slate-800):not(.bg-slate-900),
+.btn-primary-action {
+  background-color: #d4fc34 !important;
+  color: #020617 !important;
+  font-size: 0.75rem !important; /* text-xs */
+  font-weight: 905 !important; /* font-black */
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important; /* tracking-wider */
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+  padding-top: 0.625rem !important;
+  padding-bottom: 0.625rem !important;
+  border-radius: 0.75rem !important; /* rounded-xl */
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.375rem !important; /* gap-1.5 */
+  transition: all 0.2s ease-in-out !important;
+  cursor: pointer !important;
+  border: none !important;
+}
+
+.btn-padel-primary:hover,
+button[type="submit"]:not(.bg-slate-800):not(.bg-slate-900):hover,
+.btn-primary-action:hover {
+  background-color: #c5f015 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(212, 252, 52, 0.2) !important;
+}
+
+.btn-padel-primary:active,
+button[type="submit"]:not(.bg-slate-800):not(.bg-slate-900):active,
+.btn-primary-action:active {
+  transform: translateY(0) !important;
+}
+
+body {
+  background-color: #020617; /* Slate-950 original deep dark background */
+  color: #f8fafc; /* Original slate-50 light text */
+  font-family: var(--font-sans);
+  overflow-y: scroll;
+}
+
+/* Custom Scrollbar for modern sports style (Original Dark match) */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #020617;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 9999px;
+  border: 2px solid #020617;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}

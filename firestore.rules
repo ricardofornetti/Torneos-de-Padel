@@ -1,0 +1,61 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 1. Global Safety Net - deny all by default
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- REUSABLE HELPER FUNCTIONS ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isEmailVerified() {
+      return isSignedIn() && (request.auth.token.email_verified == true);
+    }
+
+    function isAdmin() {
+      return isEmailVerified() && (
+        request.auth.token.email == 'fornettiricardo@gmail.com'
+      );
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // --- COLLECTION MATCH BLOCKS ---
+
+    // Tournaments
+    match /tournaments/{tournamentId} {
+      allow read, write: if true; 
+    }
+
+    // Players
+    match /players/{playerId} {
+      allow read, write: if true; 
+    }
+
+    // Pairs
+    match /pairs/{pairId} {
+      allow read, write: if true;
+    }
+
+    // Matches
+    match /matches/{matchId} {
+      allow read, write: if true; 
+    }
+
+    // Courts
+    match /courts/{courtId} {
+      allow read, write: if true; 
+    }
+
+    // Notifications
+    match /notifications/{notifId} {
+      allow read, write: if true; 
+    }
+  }
+}

@@ -1,0 +1,616 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  Users, 
+  Plus, 
+  Trash2, 
+  Edit3, 
+  Filter, 
+  Mail, 
+  Phone, 
+  MapPin, 
+  Award, 
+  CreditCard, 
+  Calendar,
+  X,
+  Save,
+  TrendingUp,
+  Image
+} from 'lucide-react';
+import { repository } from '../lib/repository';
+import { Player } from '../types';
+
+interface PlayerManagerProps {
+  userRole: "admin" | "player";
+}
+
+const PADEL_CATEGORIES = [
+  "4ta Masculina",
+  "5ta Masculina",
+  "6ta Masculina",
+  "7ma Masculina",
+  "8va Masculina",
+  "5ta Femenina",
+  "6ta Femenina",
+  "7ma Femenina",
+  "Mixto A",
+  "Mixto B",
+  "Mixto C"
+];
+
+const AVATARS = [
+  "https://images.unsplash.com/photo-1594381898411-846e7d193883?auto=format&fit=crop&q=80&w=200",
+  "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200",
+  "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200",
+  "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200",
+  "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200",
+  "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=200",
+  "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&q=80&w=200",
+  "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=200"
+];
+
+export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole }) => {
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [divisionFilter, setDivisionFilter] = useState("all");
+  
+  // Form State
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
+  
+  const [newPlayer, setNewPlayer] = useState({
+    firstName: "",
+    lastName: "",
+    dni: "",
+    phone: "",
+    email: "",
+    city: "",
+    birthDate: "",
+    category: "6ta Masculina",
+    rankingPoints: 100,
+    photoUrl: ""
+  });
+
+  const loadPlayers = async () => {
+    setLoading(true);
+    const list = await repository.getPlayers();
+    setPlayers(list);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    loadPlayers();
+  }, []);
+
+  const handleOpenCreateForm = () => {
+    setEditingPlayer(null);
+    setNewPlayer({
+      firstName: "",
+      lastName: "",
+      dni: "",
+      phone: "",
+      email: "",
+      city: "",
+      birthDate: "1995-01-01",
+      category: "6ta Masculina",
+      rankingPoints: 100,
+      photoUrl: AVATARS[Math.floor(Math.random() * AVATARS.length)]
+    });
+    setIsFormOpen(true);
+  };
+
+  const handleOpenEditForm = (player: Player) => {
+    setEditingPlayer(player);
+    let cat = player.category;
+    if (!PADEL_CATEGORIES.includes(cat)) {
+      if (cat.includes("Primera") || cat.includes("Segunda") || cat.includes("Tercera") || cat.includes("Cuarta")) {
+        cat = "4ta Masculina";
+      } else if (cat.includes("Quinta")) {
+        cat = "5ta Masculina";
+      } else if (cat.includes("Sexta")) {
+        cat = "6ta Masculina";
+      } else if (cat.includes("Séptima") || cat.includes("Octava")) {
+        cat = "7ma Masculina";
+      } else if (cat.includes("A")) {
+        cat = "Mixto A";
+      } else if (cat.includes("B")) {
+        cat = "Mixto B";
+      } else if (cat.includes("C") || cat.includes("D")) {
+        cat = "Mixto C";
+      } else {
+        cat = "6ta Masculina";
+      }
+    }
+
+    setNewPlayer({
+      firstName: player.firstName,
+      lastName: player.lastName,
+      dni: player.dni,
+      phone: player.phone,
+      email: player.email,
+      city: player.city,
+      birthDate: player.birthDate,
+      category: cat,
+      rankingPoints: player.rankingPoints,
+      photoUrl: player.photoUrl
+    });
+    setIsFormOpen(true);
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPlayer.firstName || !newPlayer.lastName || !newPlayer.email || !newPlayer.dni) {
+      alert("Por favor completa los campos requeridos (Nombre, Apellido, Email y DNI).");
+      return;
+    }
+
+    const categoryString = newPlayer.category;
+    const id = editingPlayer ? editingPlayer.id : `p_${Date.now()}`;
+
+    const playerToSave: Player = {
+      id,
+      firstName: newPlayer.firstName,
+      lastName: newPlayer.lastName,
+      dni: newPlayer.dni,
+      phone: newPlayer.phone,
+      email: newPlayer.email,
+      city: newPlayer.city,
+      birthDate: newPlayer.birthDate,
+      category: categoryString,
+      rankingPoints: Number(newPlayer.rankingPoints) || 0,
+      photoUrl: newPlayer.photoUrl || AVATARS[0],
+      // Carry forward stats
+      matchesPlayed: editingPlayer?.matchesPlayed || 0,
+      matchesWon: editingPlayer?.matchesWon || 0,
+      matchesLost: editingPlayer?.matchesLost || 0,
+      setsWon: editingPlayer?.setsWon || 0,
+      setsLost: editingPlayer?.setsLost || 0,
+      gamesWon: editingPlayer?.gamesWon || 0,
+      gamesLost: editingPlayer?.gamesLost || 0
+    };
+
+    await repository.savePlayer(playerToSave);
+    await repository.addNotification(
+      editingPlayer ? "Jugador Modificado" : "Nuevo Jugador Registrado",
+      `Se ha cargado con éxito a ${playerToSave.firstName} ${playerToSave.lastName} en la categoría ${playerToSave.category}.`,
+      "success"
+    );
+
+    setIsFormOpen(false);
+    loadPlayers();
+  };
+
+  // Delete confirmation state
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string } | null>(null);
+
+  const handleDelete = async (id: string, name: string) => {
+    setDeleteConfirm({ id, name });
+  };
+
+  const executeDelete = async () => {
+    if (!deleteConfirm) return;
+    const { id, name } = deleteConfirm;
+    setDeleteConfirm(null);
+    try {
+      await repository.deletePlayer(id);
+      await repository.addNotification(
+        "Jugador Eliminado",
+        `Se eliminó a ${name} del sistema.`,
+        "warning"
+      );
+      loadPlayers();
+    } catch (err) {
+      console.error("Error deleting player:", err);
+    }
+  };
+
+  // Filter players based on search & filters
+  const filteredPlayers = players.filter(p => {
+    const pFullName = `${p.firstName} ${p.lastName}`.toLowerCase();
+    const matchesSearch = pFullName.includes(search.toLowerCase()) || p.city.toLowerCase().includes(search.toLowerCase());
+    
+    if (divisionFilter === "all") return matchesSearch;
+    return matchesSearch && p.category.startsWith(divisionFilter);
+  });
+
+  return (
+    <div className="space-y-6">
+      
+      {/* Title block */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-5">
+        <div>
+          <h1 className="text-2xl font-black text-white flex items-center gap-2">
+            <Users className="w-6 h-6 text-blue-500" /> Registro de Jugadores
+          </h1>
+          <p className="text-xs text-slate-400 mt-1">
+            Ficha unificada de competidores registrados, acumuladores de ranking anual y estadísticas avanzadas globales de rendimiento.
+          </p>
+        </div>
+        
+        {userRole === "admin" && (
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={async () => {
+                await repository.addDemoPlayersBatch();
+                await repository.addNotification(
+                  "Demo Creado",
+                  "Se han agregado 8 jugadores profesionales de prueba a las estadísticas anuales.",
+                  "success"
+                );
+                loadPlayers();
+              }}
+              className="bg-[#d4fc34] hover:bg-[#c5f015] text-slate-950 text-xs font-black px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition cursor-pointer uppercase tracking-wider"
+            >
+              <Users className="w-4 h-4 text-slate-950" /> Cargar 8 Jugadores de Prueba
+            </button>
+            <button
+              onClick={handleOpenCreateForm}
+              className="bg-[#d4fc34] hover:bg-[#c5f015] text-slate-950 text-xs font-black px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition cursor-pointer uppercase tracking-wider"
+            >
+              <Plus className="w-4 h-4 text-slate-950" /> Registrar Jugador
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* SEARCH AND FILTERS */}
+      <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl flex flex-col md:flex-row gap-4 items-center">
+        <div className="w-full md:flex-1 relative">
+          <input
+            type="text"
+            placeholder="Buscar por nombre, apellido o ciudad..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-lg px-3 py-2 text-xs text-slate-100 placeholder-slate-500 outline-none"
+          />
+        </div>
+
+        <div className="flex items-center gap-2 w-full md:w-auto">
+          <Filter className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+          <select
+            value={divisionFilter}
+            onChange={(e) => setDivisionFilter(e.target.value)}
+            className="bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-lg px-2.5 py-2 text-xs text-slate-300 outline-none w-full md:w-auto"
+          >
+            <option value="all">Todas las Categorías</option>
+            {PADEL_CATEGORIES.map(cat => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* PLAYERS Bento LISTING */}
+      {loading ? (
+        <div className="text-center py-10 font-mono text-xs text-slate-500 animate-pulse">
+          Sincronizando jugadores...
+        </div>
+      ) : filteredPlayers.length === 0 ? (
+        <div className="text-center py-12 bg-slate-900/50 border border-slate-800 rounded-xl text-slate-500 text-xs font-medium">
+          Ningún jugador coincide con los filtros especificados.
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {filteredPlayers.map(p => {
+            const winRate = p.matchesPlayed > 0 ? (p.matchesWon / p.matchesPlayed) * 100 : 0;
+            return (
+              <div 
+                key={p.id}
+                className="bg-slate-900 border border-slate-800 hover:border-slate-700 transition rounded-xl overflow-hidden flex flex-col justify-between"
+                id={`player-card-${p.id}`}
+              >
+                {/* Header card info */}
+                <div className="p-4 relative">
+                  
+                  {/* Edit/Delete overlays for Admin */}
+                  {userRole === "admin" && (
+                    <div className="absolute top-3 right-3 flex gap-1">
+                      <button
+                        onClick={() => handleOpenEditForm(p)}
+                        className="p-1.5 bg-slate-950/80 hover:bg-slate-800 text-slate-400 hover:text-white rounded-md transition"
+                        title="Editar Jugador"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(p.id, `${p.firstName} ${p.lastName}`)}
+                        className="p-1.5 bg-slate-950/80 hover:bg-red-900/40 text-slate-400 hover:text-red-400 rounded-md transition"
+                        title="Eliminar Jugador"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Player Image and Badge Category */}
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={p.photoUrl}
+                      alt={`${p.firstName} ${p.lastName}`}
+                      className="w-12 h-12 rounded-full object-cover border border-slate-700 shadow-md"
+                    />
+                    <div>
+                      <span className="bg-slate-950 text-blue-400 border border-slate-800 px-2 py-0.5 rounded text-[9px] font-mono font-bold block w-fit mb-1">
+                        {p.category}
+                      </span>
+                      <h4 className="font-extrabold text-sm text-white">
+                        {p.lastName}, {p.firstName}
+                      </h4>
+                    </div>
+                  </div>
+
+                  {/* Body particulars email / phone / DNI */}
+                  <div className="mt-4 pt-3 border-t border-slate-800/60 space-y-2 text-xs text-slate-400">
+                    <div className="flex items-center gap-2">
+                      <CreditCard className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+                      <span className="font-mono text-[11px] text-slate-300">DNI: {p.dni}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Mail className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+                      <span className="truncate">{p.email}</span>
+                    </div>
+                    {p.phone && (
+                      <div className="flex items-center gap-2">
+                        <Phone className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+                        <span>{p.phone}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+                      <span>{p.city}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Lifetime Advanced Stats footer panel */}
+                <div className="bg-slate-950 p-3 border-t border-slate-800">
+                  <div className="grid grid-cols-3 text-center gap-1">
+                    
+                    <div>
+                      <span className="block text-[10px] text-slate-500 uppercase font-mono tracking-wider">PUNTOS</span>
+                      <span className="font-black text-white text-xs">{p.rankingPoints}</span>
+                    </div>
+
+                    <div>
+                      <span className="block text-[10px] text-slate-500 uppercase font-mono tracking-wider">COMPETIDOS</span>
+                      <span className="font-bold text-slate-300 text-xs font-mono">{p.matchesPlayed} PJ</span>
+                    </div>
+
+                    <div>
+                      <span className="block text-[10px] text-slate-500 uppercase font-mono tracking-wider">V / D</span>
+                      <span className="font-mono text-green-400 text-xs font-semibold">
+                        {p.matchesWon} - {p.matchesLost}
+                      </span>
+                    </div>
+
+                  </div>
+
+                  {/* Progress winrate bar */}
+                  <div className="mt-2 text-[10px] flex items-center justify-between text-slate-400 font-mono">
+                    <span>Efectividad:</span>
+                    <span className="font-bold text-blue-400">{winRate.toFixed(0)}%</span>
+                  </div>
+                  <div className="w-full bg-slate-900 h-1.5 rounded-full mt-1 overflow-hidden">
+                    <div className="bg-blue-500 h-full rounded-full" style={{ width: `${winRate}%` }}></div>
+                  </div>
+                </div>
+
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* DELETE CONFIRMATION MODAL */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+          <div className="bg-[#0f172a] border border-slate-900 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl p-6 space-y-6">
+            <div className="text-center space-y-2">
+              <div className="mx-auto w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center text-red-500">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <h3 className="font-extrabold text-white text-base">
+                ¿Eliminar Jugador?
+              </h3>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                ¿Estás seguro de que deseas eliminar al jugador <span className="text-white font-semibold">{deleteConfirm.name}</span> del sistema? Esta acción no se puede deshacer.
+              </p>
+            </div>
+            
+            <div className="flex gap-3 justify-center">
+              <button
+                type="button"
+                onClick={() => setDeleteConfirm(null)}
+                className="flex-1 bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-bold px-4 py-2.5 rounded-lg border border-slate-800 transition cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={executeDelete}
+                className="flex-1 bg-red-600 hover:bg-red-500 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition cursor-pointer"
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* FORM MODAL POPUP FOR CREATE / UPDATE */}
+      {isFormOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+            
+            {/* Header */}
+            <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+              <span className="font-extrabold text-sm text-white">
+                {editingPlayer ? "✏️ Editar Ficha Jugador" : "➕ Registrar Nuevo Jugador"}
+              </span>
+              <button
+                onClick={() => setIsFormOpen(false)}
+                className="p-1 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-lg"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleSave} className="overflow-y-auto p-5 space-y-4">
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="block text-[10px] uppercase tracking-wider text-slate-400">Nombre *</label>
+                  <input
+                    type="text"
+                    required
+                    value={newPlayer.firstName}
+                    onChange={(e) => setNewPlayer({...newPlayer, firstName: e.target.value})}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 outline-none focus:border-blue-500"
+                    placeholder="Arturo"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-[10px] uppercase tracking-wider text-slate-400">Apellido *</label>
+                  <input
+                    type="text"
+                    required
+                    value={newPlayer.lastName}
+                    onChange={(e) => setNewPlayer({...newPlayer, lastName: e.target.value})}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 outline-none focus:border-blue-500"
+                    placeholder="Coello"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="block text-[10px] uppercase tracking-wider text-slate-400">DNI / ID *</label>
+                  <input
+                    type="text"
+                    required
+                    value={newPlayer.dni}
+                    onChange={(e) => setNewPlayer({...newPlayer, dni: e.target.value})}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 outline-none focus:border-blue-500"
+                    placeholder="38927452A"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-[10px] uppercase tracking-wider text-slate-400">Procedencia / Ciudad</label>
+                  <input
+                    type="text"
+                    value={newPlayer.city}
+                    onChange={(e) => setNewPlayer({...newPlayer, city: e.target.value})}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 outline-none focus:border-blue-500"
+                    placeholder="Valladolid"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="block text-[10px] uppercase tracking-wider text-slate-400">Email *</label>
+                  <input
+                    type="email"
+                    required
+                    value={newPlayer.email}
+                    onChange={(e) => setNewPlayer({...newPlayer, email: e.target.value})}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 outline-none focus:border-blue-500"
+                    placeholder="arturo.coello@gmail.com"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-[10px] uppercase tracking-wider text-slate-400">Teléfono</label>
+                  <input
+                    type="text"
+                    value={newPlayer.phone}
+                    onChange={(e) => setNewPlayer({...newPlayer, phone: e.target.value})}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 outline-none focus:border-blue-500"
+                    placeholder="+34 654 321 001"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="block text-[10px] uppercase tracking-wider text-slate-400">Fecha de Nacimiento</label>
+                  <input
+                    type="date"
+                    value={newPlayer.birthDate}
+                    onChange={(e) => setNewPlayer({...newPlayer, birthDate: e.target.value})}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-blue-500"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-[10px] uppercase tracking-wider text-slate-400">Puntaje Ranking Inicial</label>
+                  <input
+                    type="number"
+                    value={newPlayer.rankingPoints}
+                    onChange={(e) => setNewPlayer({...newPlayer, rankingPoints: Number(e.target.value)})}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 outline-none focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              {/* Category selector */}
+              <div className="space-y-1 bg-slate-950 p-3 rounded-xl border border-slate-805">
+                <label className="block text-[9px] uppercase tracking-widest text-[#6c7d93] font-bold">Categoría de Competencia *</label>
+                <select
+                  value={newPlayer.category}
+                  onChange={(e) => setNewPlayer({...newPlayer, category: e.target.value})}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 outline-none focus:border-blue-500"
+                >
+                  {PADEL_CATEGORIES.map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+                <p className="text-[10px] text-slate-500 leading-snug mt-1">
+                  Adjudica al jugador de forma exclusiva a una de las categorías federativas oficiales del circuito.
+                </p>
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-[10px] uppercase tracking-wider text-slate-400">Avatar URL Foto</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newPlayer.photoUrl}
+                    onChange={(e) => setNewPlayer({...newPlayer, photoUrl: e.target.value})}
+                    className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 outline-none focus:border-blue-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setNewPlayer({...newPlayer, photoUrl: AVATARS[Math.floor(Math.random() * AVATARS.length)]})}
+                    className="bg-slate-800 hover:bg-slate-705 p-2 rounded-lg text-slate-300 hover:text-white"
+                    title="Aleatorio"
+                  >
+                    <Image className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="pt-4 border-t border-slate-800 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsFormOpen(false)}
+                  className="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold px-4 py-2 rounded-lg transition"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="bg-[#d4fc34] hover:bg-[#c5f015] text-slate-950 text-xs font-black px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition cursor-pointer uppercase tracking-wider"
+                >
+                  <Save className="w-3.5 h-3.5 text-slate-950" /> Guardar Cambios
+                </button>
+              </div>
+
+            </form>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+};

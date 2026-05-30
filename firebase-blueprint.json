@@ -1,0 +1,121 @@
+{
+  "entities": {
+    "Tournament": {
+      "title": "Tournament",
+      "description": "Represents a padel tournament with registration lists, groups, and status.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique tournament ID" },
+        "name": { "type": "string", "description": "Tournament name" },
+        "startDate": { "type": "string", "description": "Format YYYY-MM-DD" },
+        "endDate": { "type": "string", "description": "Format YYYY-MM-DD" },
+        "club": { "type": "string", "description": "Host club name" },
+        "city": { "type": "string", "description": "City where the tournament takes place" },
+        "category": { "type": "string", "description": "Padel category, e.g., 'Masculino - Tercera', 'Mixto - B'" },
+        "tournamentType": { "type": "string", "description": "Type of tournament, e.g., 'Grupos + Eliminatorias'" },
+        "maxPairs": { "type": "number", "description": "Maximum number of registered pairs" },
+        "numGroups": { "type": "number", "description": "Number of groups for the first stage" },
+        "numCourts": { "type": "number", "description": "Number of courts assigned to this tournament" },
+        "status": { "type": "string", "enum": ["registration", "in_progress", "completed"], "description": "Current status" }
+      },
+      "required": ["id", "name", "startDate", "endDate", "club", "city", "category", "maxPairs"]
+    },
+    "Player": {
+      "title": "Player",
+      "description": "Represents a padel player and their permanent ranking / lifetime statistics.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique player ID" },
+        "firstName": { "type": "string", "description": "First name" },
+        "lastName": { "type": "string", "description": "Last name" },
+        "dni": { "type": "string", "description": "Documento Nacional de Identidad/National ID" },
+        "phone": { "type": "string", "description": "Phone number" },
+        "email": { "type": "string", "description": "E-mail address" },
+        "city": { "type": "string", "description": "Current residency city" },
+        "birthDate": { "type": "string", "description": "Format YYYY-MM-DD" },
+        "category": { "type": "string", "description": "Current player category level" },
+        "rankingPoints": { "type": "number", "description": "Accumulated ranking points for the year" },
+        "photoUrl": { "type": "string", "description": "URL to player image" },
+        "matchesPlayed": { "type": "number" },
+        "matchesWon": { "type": "number" },
+        "matchesLost": { "type": "number" },
+        "setsWon": { "type": "number" },
+        "setsLost": { "type": "number" },
+        "gamesWon": { "type": "number" },
+        "gamesLost": { "type": "number" }
+      },
+      "required": ["id", "firstName", "lastName", "dni", "email", "category"]
+    },
+    "Pair": {
+      "title": "Pair",
+      "description": "Represents a registered pair of players inside a tournament.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique pair ID" },
+        "tournamentId": { "type": "string", "description": "Tournament reference ID" },
+        "player1Id": { "type": "string", "description": "First player reference ID" },
+        "player2Id": { "type": "string", "description": "Second player reference ID" },
+        "category": { "type": "string", "description": "Category for tournament" },
+        "combinedRanking": { "type": "number", "description": "Sum of the two players' ranking points" },
+        "status": { "type": "string", "enum": ["registered", "waitlist", "confirmed"], "description": "Inscription status" }
+      },
+      "required": ["id", "tournamentId", "player1Id", "player2Id", "category", "combinedRanking"]
+    },
+    "Match": {
+      "title": "Match",
+      "description": "Represents a match in the tournament with court, score, and timing detailed info.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique Match ID" },
+        "tournamentId": { "type": "string", "description": "Tournament ID reference" },
+        "phase": { "type": "string", "enum": ["group", "playoff"], "description": "Tournament phase" },
+        "roundNumber": { "type": "number", "description": "Tournament round number" },
+        "stageName": { "type": "string", "description": "E.g., 'Grupo A', 'Cuartos - Partido 1'" },
+        "pair1Id": { "type": "string", "description": "Pair 1 reference ID" },
+        "pair2Id": { "type": "string", "description": "Pair 2 reference ID" },
+        "courtId": { "type": "string", "description": "Court ID reference" },
+        "date": { "type": "string", "description": "Match date YYYY-MM-DD" },
+        "time": { "type": "string", "description": "Match time HH:MM" },
+        "status": { "type": "string", "enum": ["pending", "completed", "wo", "abandoned"] },
+        "settledAt": { "type": "string", "description": "Timestamp when result was updated" },
+        "scoreSummary": { "type": "string", "description": "Quick text score, e.g., '6-4 6-3'" },
+        "winnerPairId": { "type": "string", "description": "Winner pair ID reference" }
+      },
+      "required": ["id", "tournamentId", "phase", "stageName", "pair1Id", "pair2Id"]
+    },
+    "Court": {
+      "title": "Court",
+      "description": "Represents a court within a club or facility.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique court ID" },
+        "name": { "type": "string", "description": "Court name, e.g., 'Cancha 1 - Cristal'" },
+        "club": { "type": "string", "description": "Club name location" },
+        "active": { "type": "boolean", "description": "Availability status" }
+      },
+      "required": ["id", "name", "club"]
+    }
+  },
+  "firestore": {
+    "/tournaments/{tournamentId}": {
+      "schema": "Tournament",
+      "description": "Global collection containing all managed padel tournaments."
+    },
+    "/players/{playerId}": {
+      "schema": "Player",
+      "description": "Global user-level player cards and ranking profiles."
+    },
+    "/pairs/{pairId}": {
+      "schema": "Pair",
+      "description": "A collection linking players to tournaments."
+    },
+    "/matches/{matchId}": {
+      "schema": "Match",
+      "description": "A collection storing matches schedules, assignments, and scores."
+    },
+    "/courts/{courtId}": {
+      "schema": "Court",
+      "description": "Global collection of active courts available to assign matches."
+    }
+  }
+}
