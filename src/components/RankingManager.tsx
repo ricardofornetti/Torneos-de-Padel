@@ -151,17 +151,13 @@ export const RankingManager: React.FC = () => {
             className="bg-slate-950 border border-slate-800 text-xs text-slate-200 rounded-lg px-2.5 py-2 outline-none"
           >
             <option value="all">Todas las Categorías</option>
+            <option value="Libre Masculina">Libre Masculina</option>
             <option value="4ta Masculina">4ta Masculina</option>
             <option value="5ta Masculina">5ta Masculina</option>
             <option value="6ta Masculina">6ta Masculina</option>
             <option value="7ma Masculina">7ma Masculina</option>
-            <option value="8va Masculina">8va Masculina</option>
-            <option value="5ta Femenina">5ta Femenina</option>
             <option value="6ta Femenina">6ta Femenina</option>
             <option value="7ma Femenina">7ma Femenina</option>
-            <option value="Mixto A">Mixto A</option>
-            <option value="Mixto B">Mixto B</option>
-            <option value="Mixto C">Mixto C</option>
           </select>
         </div>
 

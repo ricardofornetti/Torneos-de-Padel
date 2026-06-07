@@ -238,9 +238,9 @@ export const CourtManager: React.FC<{ userRole: "admin" | "player" }> = ({ userR
                 }
                 setIsManageModalOpen(true);
               }}
-              className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition cursor-pointer uppercase tracking-wider shadow"
+              className="bg-[#d4fc34] hover:bg-[#c5f015] text-slate-950 text-xs font-black px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition cursor-pointer uppercase tracking-wider shadow-lg"
             >
-              <Edit className="w-4 h-4 text-white" /> Modificar y Eliminar
+              <Edit className="w-4 h-4 text-slate-950" /> {courts.length > 0 ? "Guardar" : "Modificar y Eliminar"}
             </button>
           </div>
         )}
@@ -465,9 +465,32 @@ export const CourtManager: React.FC<{ userRole: "admin" | "player" }> = ({ userR
                   onChange={(e) => setScheduleCourtId(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none"
                 >
-                  {courts.map(c => (
-                    <option key={c.id} value={c.id}>{c.name} ({c.club.split(" ")[0]})</option>
-                  ))}
+                  {courts.map(c => {
+                    let isOccupied = false;
+                    let occupyingDetails = "";
+                    if (scheduleDate && scheduleTime && selectedMatchId) {
+                      const checkStart = timeToMinutes(scheduleTime);
+                      const checkEnd = checkStart + 90;
+                      const courtMatches = matches.filter(
+                        m => m.courtId === c.id && m.date === scheduleDate && m.id !== selectedMatchId && m.status === "pending"
+                      );
+                      const matchConflict = courtMatches.find(m => {
+                        if (!m.time) return false;
+                        const mStart = timeToMinutes(m.time);
+                        const mEnd = mStart + 90;
+                        return checkStart < mEnd && checkEnd > mStart;
+                      });
+                      if (matchConflict) {
+                        isOccupied = true;
+                        occupyingDetails = ` (Ocupada @ ${matchConflict.time})`;
+                      }
+                    }
+                    return (
+                      <option key={c.id} value={c.id} disabled={isOccupied}>
+                        {c.name} ({c.club.split(" ")[0]}){occupyingDetails}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
 

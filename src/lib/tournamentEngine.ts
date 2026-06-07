@@ -350,38 +350,83 @@ export function generatePlayoffSchedules(
     );
   }
   else if (numTeams <= 8) {
-    // Quarter-finals (4 groups: A, B, C, D)
-    const findQ = (g: string, r: 1 | 2, fallbackIdx: number): string => {
-      return qualified.find(q => q.sourceGroup === g && q.rank === r)?.pairId || qualified[fallbackIdx]?.pairId;
-    };
+    // Quarter-finals (Cuartos de final)
+    const hasGroupCD = qualified.some(q => q.sourceGroup === "Grupo C" || q.sourceGroup === "Grupo D");
+    if (hasGroupCD) {
+      const findQ = (g: string, r: number, fallbackIdx: number): string => {
+        return qualified.find(q => q.sourceGroup === g && q.rank === r)?.pairId || qualified[fallbackIdx]?.pairId || "";
+      };
 
-    const pairs = [
-      { p1: findQ("Grupo A", 1, 0), p2: findQ("Grupo B", 2, 7), name: "Cuartos 1" },
-      { p1: findQ("Grupo C", 1, 2), p2: findQ("Grupo D", 2, 5), name: "Cuartos 2" },
-      { p1: findQ("Grupo B", 1, 4), p2: findQ("Grupo A", 2, 3), name: "Cuartos 3" },
-      { p1: findQ("Grupo D", 1, 6), p2: findQ("Grupo C", 2, 1), name: "Cuartos 4" }
-    ];
+      const pairs = [
+        { p1: findQ("Grupo A", 1, 0), p2: findQ("Grupo B", 2, 7), name: "Cuartos 1" },
+        { p1: findQ("Grupo C", 1, 2), p2: findQ("Grupo D", 2, 5), name: "Cuartos 2" },
+        { p1: findQ("Grupo B", 1, 4), p2: findQ("Grupo A", 2, 3), name: "Cuartos 3" },
+        { p1: findQ("Grupo D", 1, 6), p2: findQ("Grupo C", 2, 1), name: "Cuartos 4" }
+      ];
 
-    pairs.forEach((p, idx) => {
-      matches.push({
-        id: `match_${tournamentId}_playoff_q${idx+1}`,
-        tournamentId,
-        phase: "playoff",
-        roundNumber: 1,
-        stageName: p.name,
-        pair1Id: p.p1 || "",
-        pair2Id: p.p2 || "",
-        courtId: "",
-        date: "",
-        time: "",
-        status: "pending",
-        scoreSummary: "Por jugar",
-        winnerPairId: ""
+      pairs.forEach((p, idx) => {
+        matches.push({
+          id: `match_${tournamentId}_playoff_q${idx+1}`,
+          tournamentId,
+          phase: "playoff",
+          roundNumber: 1,
+          stageName: p.name,
+          pair1Id: p.p1 || "",
+          pair2Id: p.p2 || "",
+          courtId: "",
+          date: "",
+          time: "",
+          status: "pending",
+          scoreSummary: "Por jugar",
+          winnerPairId: ""
+        });
       });
-    });
+    } else {
+      // Simple crossover for A and B
+      const findQB = (g: string, r: number): string => {
+        return qualified.find(q => q.sourceGroup === g && q.rank === r)?.pairId || "";
+      };
+      
+      const p1 = findQB("Grupo A", 1) || qualified[0]?.pairId || "";
+      const p2 = findQB("Grupo B", 4) || qualified[7]?.pairId || "";
+      
+      const p3 = findQB("Grupo B", 1) || qualified[1]?.pairId || "";
+      const p4 = findQB("Grupo A", 4) || qualified[6]?.pairId || "";
+
+      const p5 = findQB("Grupo A", 2) || qualified[2]?.pairId || "";
+      const p6 = findQB("Grupo B", 3) || qualified[5]?.pairId || "";
+
+      const p7 = findQB("Grupo B", 2) || qualified[3]?.pairId || "";
+      const p8 = findQB("Grupo A", 3) || qualified[4]?.pairId || "";
+
+      const pairsB = [
+        { p1, p2, name: "Cuartos 1" },
+        { p1: p3, p2: p4, name: "Cuartos 2" },
+        { p1: p5, p2: p6, name: "Cuartos 3" },
+        { p1: p7, p2: p8, name: "Cuartos 4" }
+      ];
+
+      pairsB.forEach((p, idx) => {
+        matches.push({
+          id: `match_${tournamentId}_playoff_q${idx+1}`,
+          tournamentId,
+          phase: "playoff",
+          roundNumber: 1,
+          stageName: p.name,
+          pair1Id: p.p1 || "",
+          pair2Id: p.p2 || "",
+          courtId: "",
+          date: "",
+          time: "",
+          status: "pending",
+          scoreSummary: "Por jugar",
+          winnerPairId: ""
+        });
+      });
+    }
   }
-  else {
-    // Octavos (8 groups, scale up similarly or simple bracket based on sorted order)
+  else if (numTeams <= 16) {
+    // Octavos de Final (8avos - 8 matches)
     for (let i = 0; i < 8; i++) {
       matches.push({
         id: `match_${tournamentId}_playoff_oct_${i+1}`,
@@ -389,6 +434,26 @@ export function generatePlayoffSchedules(
         phase: "playoff",
         roundNumber: 1,
         stageName: `Octavos de Final ${i+1}`,
+        pair1Id: qualified[i]?.pairId || "",
+        pair2Id: qualified[numTeams - 1 - i]?.pairId || "",
+        courtId: "",
+        date: "",
+        time: "",
+        status: "pending",
+        scoreSummary: "Por jugar",
+        winnerPairId: ""
+      });
+    }
+  }
+  else {
+    // 16avos de Final (Round of 32 - 16 matches)
+    for (let i = 0; i < 16; i++) {
+      matches.push({
+        id: `match_${tournamentId}_playoff_16avos_${i+1}`,
+        tournamentId,
+        phase: "playoff",
+        roundNumber: 1,
+        stageName: `16avos de Final ${i+1}`,
         pair1Id: qualified[i]?.pairId || "",
         pair2Id: qualified[numTeams - 1 - i]?.pairId || "",
         courtId: "",
@@ -424,3 +489,454 @@ export function calculateRankingPointsGained(stageReached: string, isWinner: boo
   }
   return 10; // Default group stage points
 }
+
+/**
+ * 5. SISTEMA DOS VIDAS SRTC ENGINE
+ */
+
+export interface PairDosVidasStats {
+  pairId: string;
+  pairName: string;
+  pj: number; // Partidos Jugados
+  pg: number; // Victorias (incluye BYEs ganados)
+  pp: number; // Derrotas
+  setsWon: number;
+  setsLost: number;
+  gamesWon: number;
+  gamesLost: number;
+  setsDiff: number;
+  gamesDiff: number;
+  lives: number; // 2 - pp (mínimo 0)
+  eliminated: boolean; // pp >= 2
+  opponentsPlayed: string[]; // Historial de rivales para evitar repeticiones
+  byesCount: number; // Cantidad de BYEs recibidos
+}
+
+/**
+ * Computa la tabla unificada del Sistema Dos Vidas SRTC para una categoría.
+ */
+export function calculateDosVidasStandings(
+  pairs: Pair[],
+  matches: Match[],
+  getPairName: (id: string) => string
+): PairDosVidasStats[] {
+  const statsMap: { [pairId: string]: PairDosVidasStats } = {};
+
+  // Inicializar estadísticas para cada pareja inscrita en la categoría
+  pairs.forEach(p => {
+    statsMap[p.id] = {
+      pairId: p.id,
+      pairName: getPairName(p.id),
+      pj: 0,
+      pg: 0,
+      pp: 0,
+      setsWon: 0,
+      setsLost: 0,
+      gamesWon: 0,
+      gamesLost: 0,
+      setsDiff: 0,
+      gamesDiff: 0,
+      lives: 2,
+      eliminated: false,
+      opponentsPlayed: [],
+      byesCount: 0
+    };
+  });
+
+  // Filtrar partidos de fase preliminaria o fase Dos Vidas (phase === "group")
+  const dvMatches = matches.filter(m => m.phase === "group" && m.status !== "pending");
+
+  dvMatches.forEach(m => {
+    const p1 = statsMap[m.pair1Id];
+    const p2 = statsMap[m.pair2Id];
+
+    // Caso de partido BYE (la pareja 2 es "BYE")
+    if (m.pair2Id === "BYE" || m.scoreSummary === "BYE") {
+      const activePair = p1 || p2;
+      if (activePair) {
+        activePair.pg += 1;
+        activePair.byesCount += 1;
+        // Los BYE no se computan como PJ de cancha ni suman sets/games
+      }
+      return;
+    }
+
+    if (!p1 || !p2) return;
+
+    p1.pj += 1;
+    p2.pj += 1;
+    p1.opponentsPlayed.push(m.pair2Id);
+    p2.opponentsPlayed.push(m.pair1Id);
+
+    if (m.status === "wo") {
+      if (m.winnerPairId === m.pair1Id) {
+        p1.pg += 1;
+        p1.setsWon += 2;
+        p1.gamesWon += 12;
+
+        p2.pp += 1;
+        p2.setsLost += 2;
+        p2.gamesLost += 12;
+      } else {
+        p2.pg += 1;
+        p2.setsWon += 2;
+        p2.gamesWon += 12;
+
+        p1.pp += 1;
+        p1.setsLost += 2;
+        p1.gamesLost += 12;
+      }
+    } else {
+      const score = parseScoreSummary(m.scoreSummary, m.pair1Id, m.pair2Id);
+
+      p1.setsWon += score.sets1;
+      p1.setsLost += score.sets2;
+      p1.gamesWon += score.games1;
+      p1.gamesLost += score.games2;
+
+      p2.setsWon += score.sets2;
+      p2.setsLost += score.sets1;
+      p2.gamesWon += score.games2;
+      p2.gamesLost += score.games1;
+
+      if (m.winnerPairId === m.pair1Id) {
+        p1.pg += 1;
+        p2.pp += 1;
+      } else if (m.winnerPairId === m.pair2Id) {
+        p2.pg += 1;
+        p1.pp += 1;
+      }
+    }
+  });
+
+  const statsList = Object.values(statsMap);
+  statsList.forEach(s => {
+    s.lives = Math.max(0, 2 - s.pp);
+    s.eliminated = s.pp >= 2;
+    s.setsDiff = s.setsWon - s.setsLost;
+    s.gamesDiff = s.gamesWon - s.gamesLost;
+  });
+
+  // Criterios de ordenación:
+  // 1. No eliminados primero (más vidas primero)
+  // 2. Más victorias (PG desc)
+  // 3. Diferencia de sets (desc)
+  // 4. Diferencia de games (desc)
+  // 5. Alfabético o ID determinista
+  statsList.sort((a, b) => {
+    if (a.eliminated !== b.eliminated) {
+      return a.eliminated ? 1 : -1;
+    }
+    if (b.lives !== a.lives) {
+      return b.lives - a.lives;
+    }
+    if (b.pg !== a.pg) {
+      return b.pg - a.pg;
+    }
+    if (b.setsDiff !== a.setsDiff) {
+      return b.setsDiff - a.setsDiff;
+    }
+    if (b.gamesDiff !== a.gamesDiff) {
+      return b.gamesDiff - a.gamesDiff;
+    }
+    return a.pairId.localeCompare(b.pairId);
+  });
+
+  return statsList;
+}
+
+/**
+ * Genera de forma automática los emparejamientos para la siguiente ronda del Sistema Dos Vidas SRTC.
+ * Soporta de manera nativa BYEs automáticos si hay número impar, cruce alternado en Ronda 2 y prevención de repeticiones.
+ */
+export function generateNextDosVidasRound(
+  pairs: Pair[],
+  matches: Match[],
+  tournamentId: string,
+  category: string,
+  baseDate: string = "2026-06-01"
+): Match[] {
+  // 1. Obtener la ronda máxima actual para esta categoría
+  const categoryGroupMatches = matches.filter(m => m.category === category && m.phase === "group");
+  const maxRound = categoryGroupMatches.reduce((max, m) => Math.max(max, m.roundNumber), 0);
+  const nextRoundNumber = maxRound + 1;
+
+  // Si hay partidos de la ronda anterior sin jugar, no se puede avanzar (esto se valida en el componente)
+  const statsList = calculateDosVidasStandings(pairs, matches, () => "");
+  
+  // Parejas activas (menos de 2 derrotas)
+  const activeStats = statsList.filter(s => !s.eliminated);
+  if (activeStats.length < 2) return []; // El torneo concluyó o debe pasar a playoffs
+
+  const newMatches: Match[] = [];
+  const dateObj = new Date(baseDate);
+  dateObj.setDate(dateObj.getDate() + (nextRoundNumber - 1) * 2); // 2 días de separación de ronda
+  const dateString = dateObj.toISOString().split("T")[0];
+
+  // --- CASO 1: RONDA 1 ---
+  if (nextRoundNumber === 1) {
+    // Ordenar parejas por ranking combinado descendente para emparejamientos nivelados
+    const sortedPairs = [...pairs].filter(p => p.category === category)
+      .sort((a, b) => b.combinedRanking - a.combinedRanking);
+
+    const pairList = [...sortedPairs];
+    let matchCounter = 1;
+
+    // Si es impar, dar BYE automático a la pareja con mayor ranking (primer preclasificado)
+    if (pairList.length % 2 !== 0) {
+      // El de mayor ranking obtiene el BYE y avanza con un triunfo automático
+      const byePair = pairList.shift()!; // Saca el primero
+      newMatches.push({
+        id: `match_${tournamentId}_dv_r${nextRoundNumber}_bye`,
+        tournamentId,
+        phase: "group",
+        roundNumber: nextRoundNumber,
+        stageName: `Ronda 1 - BYE`,
+        pair1Id: byePair.id,
+        pair2Id: "BYE",
+        courtId: "BYE",
+        date: dateString,
+        time: "00:00",
+        status: "completed",
+        scoreSummary: "BYE",
+        winnerPairId: byePair.id,
+        category
+      });
+    }
+
+    // Emparejar los restantes consecutivamente para tener partidos equiparados (ej. 1vs2, 3vs4...)
+    for (let i = 0; i < pairList.length; i += 2) {
+      const p1 = pairList[i];
+      const p2 = pairList[i + 1];
+      newMatches.push({
+        id: `match_${tournamentId}_dv_r${nextRoundNumber}_m${matchCounter}`,
+        tournamentId,
+        phase: "group",
+        roundNumber: nextRoundNumber,
+        stageName: `Ronda 1 - Grupo ${String.fromCharCode(65 + matchCounter - 1)}`,
+        pair1Id: p1.id,
+        pair2Id: p2.id,
+        courtId: "",
+        date: dateString,
+        time: `${17 + (matchCounter % 3)}:00`,
+        status: "pending",
+        scoreSummary: "Por jugar",
+        winnerPairId: "",
+        category
+      });
+      matchCounter++;
+    }
+
+    return newMatches;
+  }
+
+  // --- CASO 2: RONDA 2 (Cruce ganador vs perdedor alternado) ---
+  if (nextRoundNumber === 2) {
+    // Buscamos los partidos de la Ronda 1 disputados
+    const r1Matches = categoryGroupMatches.filter(m => m.roundNumber === 1 && m.pair2Id !== "BYE");
+    // También buscamos si hubo un BYE en Ronda 1
+    const r1ByeMatch = categoryGroupMatches.find(m => m.roundNumber === 1 && m.pair2Id === "BYE");
+
+    const r1Winners = r1Matches.map(m => m.winnerPairId);
+    const r1Losers = r1Matches.map(m => m.pair1Id === m.winnerPairId ? m.pair2Id : m.pair1Id);
+
+    // Si hubo una pareja con BYE, es considerada "ganadora" (0 derrotas) en Ronda 2
+    if (r1ByeMatch) {
+      r1Winners.unshift(r1ByeMatch.pair1Id);
+    }
+
+    // La regla de Ronda 2 dice: Ganador A vs Perdedor B, Ganador B vs Perdedor A...
+    // Vamos a cruzarlos.
+    const pairedIds = new Set<string>();
+    let matchCounter = 1;
+
+    // Aseguramos una copia de los ganadores y perdedores para emparejar
+    const winList = [...r1Winners];
+    const losList = [...r1Losers];
+
+    // Si son impares o asimétricos por el BYE, corremos el algoritmo general para resolverlo
+    if (winList.length !== losList.length) {
+      return runSwissMatchmaking(activeStats, tournamentId, nextRoundNumber, dateString, category);
+    }
+
+    // Hacemos el cruce Ganador[i] vs Perdedor[i + 1] y Ganador[i + 1] vs Perdedor[i]
+    for (let i = 0; i < winList.length; i += 2) {
+      // Si queda un único elemento al final por ser impar la cantidad de partidos
+      if (i === winList.length - 1) {
+        newMatches.push({
+          id: `match_${tournamentId}_dv_r${nextRoundNumber}_m${matchCounter}`,
+          tournamentId,
+          phase: "group",
+          roundNumber: nextRoundNumber,
+          stageName: `Ronda 2 - Grupo ${String.fromCharCode(65 + matchCounter - 1)}`,
+          pair1Id: winList[i],
+          pair2Id: losList[i],
+          courtId: "",
+          date: dateString,
+          time: `${17 + (matchCounter % 3)}:00`,
+          status: "pending",
+          scoreSummary: "Por jugar",
+          winnerPairId: "",
+          category
+        });
+        break;
+      }
+
+      const w1 = winList[i];
+      const w2 = winList[i + 1];
+      const l1 = losList[i];
+      const l2 = losList[i + 1];
+
+      // G1 vs L2
+      newMatches.push({
+        id: `match_${tournamentId}_dv_r${nextRoundNumber}_m${matchCounter}`,
+        tournamentId,
+        phase: "group",
+        roundNumber: nextRoundNumber,
+        stageName: `Ronda 2 - Grupo ${String.fromCharCode(65 + matchCounter - 1)}`,
+        pair1Id: w1,
+        pair2Id: l2,
+        courtId: "",
+        date: dateString,
+        time: `${17 + (matchCounter % 3)}:00`,
+        status: "pending",
+        scoreSummary: "Por jugar",
+        winnerPairId: "",
+        category
+      });
+      matchCounter++;
+
+      // G2 vs L1
+      newMatches.push({
+        id: `match_${tournamentId}_dv_r${nextRoundNumber}_m${matchCounter + 1}`,
+        tournamentId,
+        phase: "group",
+        roundNumber: nextRoundNumber,
+        stageName: `Ronda 2 - Grupo ${String.fromCharCode(65 + matchCounter)}`,
+        pair1Id: w2,
+        pair2Id: l1,
+        courtId: "",
+        date: dateString,
+        time: `${17 + ((matchCounter + 1) % 3)}:00`,
+        status: "pending",
+        scoreSummary: "Por jugar",
+        winnerPairId: "",
+        category
+      });
+      matchCounter += 2;
+    }
+
+    return newMatches;
+  }
+
+  // --- CASO 3: RONDA 3 EN ADELANTE (Matchmaking Suizo con Filtro de Repeticiones) ---
+  return runSwissMatchmaking(activeStats, tournamentId, nextRoundNumber, dateString, category);
+}
+
+/**
+ * Algoritmo suizo inteligente que empareja parejas activas con similar puntaje y récord,
+ * evitando estrictamente cruces repetidos y manejando BYEs.
+ */
+function runSwissMatchmaking(
+  activeStats: PairDosVidasStats[],
+  tournamentId: string,
+  round: number,
+  dateString: string,
+  category: string
+): Match[] {
+  const newMatches: Match[] = [];
+  const list = [...activeStats];
+
+  // 1. Manejo de BYE si el total de parejas activas es impar
+  if (list.length % 2 !== 0) {
+    // El BYE se le otorga a la pareja peor clasificada que NO haya recibido BYE anteriormente
+    const candidateIdx = list.slice().reverse().findIndex(s => s.byesCount === 0);
+    const byeIdx = candidateIdx !== -1 ? (list.length - 1 - candidateIdx) : (list.length - 1);
+    const [byePair] = list.splice(byeIdx, 1);
+
+    newMatches.push({
+      id: `match_${tournamentId}_dv_r${round}_bye`,
+      tournamentId,
+      phase: "group",
+      roundNumber: round,
+      stageName: `Ronda ${round} - BYE`,
+      pair1Id: byePair.pairId,
+      pair2Id: "BYE",
+      courtId: "BYE",
+      date: dateString,
+      time: "00:00",
+      status: "completed",
+      scoreSummary: "BYE",
+      winnerPairId: byePair.pairId,
+      category
+    });
+  }
+
+  // 2. Emparejar utilizando backtracking de emparejamientos
+  const matchesPaired: [string, string][] = [];
+  const pairedIds = new Set<string>();
+
+  // Dividir en grupos según vidas restantes:
+  // pool0: 2 vidas (0 derrotas)
+  // pool1: 1 vida (1 derrota)
+  const pool0 = list.filter(s => s.lives === 2);
+  const pool1 = list.filter(s => s.lives === 1);
+
+  const finalOrder = [...pool0, ...pool1];
+
+  for (let i = 0; i < finalOrder.length; i++) {
+    const p1 = finalOrder[i];
+    if (pairedIds.has(p1.pairId)) continue;
+
+    // Buscar un rival apto p2
+    let p2Idx = -1;
+    for (let j = i + 1; j < finalOrder.length; j++) {
+      const candidate = finalOrder[j];
+      if (pairedIds.has(candidate.pairId)) continue;
+
+      // Verificar que no hayan jugado ya entre sí en este torneo
+      const alreadyPlayed = p1.opponentsPlayed.includes(candidate.pairId);
+      if (!alreadyPlayed) {
+        p2Idx = j;
+        break; // Candidato óptimo encontrado
+      }
+    }
+
+    // Si todos los rivales disponibles ya jugaron contra p1, forzamos el emparejamiento con el primero libre
+    if (p2Idx === -1) {
+      p2Idx = finalOrder.findIndex((s, idx) => idx > i && !pairedIds.has(s.pairId));
+    }
+
+    if (p2Idx !== -1) {
+      const p2 = finalOrder[p2Idx];
+      matchesPaired.push([p1.pairId, p2.pairId]);
+      pairedIds.add(p1.pairId);
+      pairedIds.add(p2.pairId);
+    }
+  }
+
+  // Escribir los partidos a retornar
+  let matchCounter = 1;
+  matchesPaired.forEach(([id1, id2]) => {
+    newMatches.push({
+      id: `match_${tournamentId}_dv_r${round}_m${matchCounter}`,
+      tournamentId,
+      phase: "group",
+      roundNumber: round,
+      stageName: `Ronda ${round} - Grupo ${String.fromCharCode(65 + matchCounter - 1)}`,
+      pair1Id: id1,
+      pair2Id: id2,
+      courtId: "",
+      date: dateString,
+      time: `${17 + (matchCounter % 3)}:00`,
+      status: "pending",
+      scoreSummary: "Por jugar",
+      winnerPairId: "",
+      category
+    });
+    matchCounter++;
+  });
+
+  return newMatches;
+}
+

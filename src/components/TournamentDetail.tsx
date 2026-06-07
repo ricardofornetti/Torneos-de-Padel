@@ -32,7 +32,10 @@ import {
   generateRoundRobinMatches, 
   calculateGroupStandings, 
   generatePlayoffSchedules,
-  calculateRankingPointsGained
+  calculateRankingPointsGained,
+  calculateDosVidasStandings,
+  generateNextDosVidasRound,
+  PairDosVidasStats
 } from '../lib/tournamentEngine';
 
 interface TournamentDetailProps {
@@ -41,18 +44,15 @@ interface TournamentDetailProps {
   onBack: () => void;
 }
 
+// Exact active categories for SRTC Padel Tournament Manager
 export const ALL_PADEL_CATEGORIES = [
+  "Libre Masculina",
   "4ta Masculina",
   "5ta Masculina",
   "6ta Masculina",
   "7ma Masculina",
-  "8va Masculina",
-  "5ta Femenina",
   "6ta Femenina",
-  "7ma Femenina",
-  "Mixto A",
-  "Mixto B",
-  "Mixto C"
+  "7ma Femenina"
 ];
 
 function getCalculatedNumGroups(pairCount: number): number {
@@ -78,7 +78,7 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
   const [activeTab, setActiveTab] = useState<"inscriptions" | "groups" | "matches" | "standings" | "playoffs">("inscriptions");
 
   // Selected Category
-  const [selectedCategory, setSelectedCategory] = useState<string>("4ta Masculina");
+  const [selectedCategory, setSelectedCategory] = useState<string>("Libre Masculina");
   const [classificationRule, setClassificationRule] = useState<"top1" | "top2" | "top2_thirds" | "all">("top2");
 
   // Loaders
@@ -142,6 +142,27 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
   useEffect(() => {
     reconstructGroups(pairs, matches, selectedCategory);
   }, [selectedCategory, pairs, matches]);
+
+  // Automatically adjust numSets between 2 and 3 if sets are tied (1-1)
+  useEffect(() => {
+    if (!activeScoreMatch) return;
+    if (isWO) return;
+
+    const s1 = scoreSets[0];
+    const s2 = scoreSets[1];
+    if (s1 && s2) {
+      const set1WonBy = s1.t1 > s1.t2 ? 1 : (s1.t2 > s1.t1 ? 2 : 0);
+      const set2WonBy = s2.t1 > s2.t2 ? 1 : (s2.t2 > s2.t1 ? 2 : 0);
+
+      if (set1WonBy > 0 && set2WonBy > 0) {
+        if (set1WonBy !== set2WonBy) {
+          setNumSets(3);
+        } else {
+          setNumSets(2);
+        }
+      }
+    }
+  }, [scoreSets, activeScoreMatch, isWO]);
 
   const reconstructGroups = (currentPairs: Pair[], currentMatches: Match[], activeCat: string = selectedCategory) => {
     const map: { [gName: string]: Pair[] } = {};
@@ -257,67 +278,32 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
     const categoryPairs = pairs.filter(p => p.category === selectedCategory);
 
     // Support custom notifications for errors
-    if (categoryPairs.length < 3) {
+    if (categoryPairs.length < 2) {
       await repository.addNotification(
         "Parejas Insuficientes",
-        `Necesitas al menos 3 parejas registradas en la categoría '${selectedCategory}' para poder celebrar el sorteo.`,
+        `Necesitas al menos 2 parejas registradas en la categoría '${selectedCategory}' para poder iniciar el torneo.`,
         "warning"
       );
       return;
     }
 
-    const numGroups = getCalculatedNumGroups(categoryPairs.length);
-
     try {
-      // Step 1: Divide couples into group pools
-      const groups: Pair[][] = Array.from({ length: numGroups }, () => []);
-
-      let sortedPairs = [...categoryPairs];
-      if (method === "random") {
-        // Shuffle pairs
-        sortedPairs.sort(() => Math.random() - 0.5);
-        // Round robin assign
-        sortedPairs.forEach((pr, idx) => {
-          const gIdx = idx % numGroups;
-          groups[gIdx].push(pr);
-        });
-      } else {
-        // Seed Drawing (SNAKE SEEDING)
-        // Sort in order of combined ranking descending
-        sortedPairs.sort((a, b) => b.combinedRanking - a.combinedRanking);
-        
-        sortedPairs.forEach((pr, idx) => {
-          const round = Math.floor(idx / numGroups);
-          let gIdx = idx % numGroups;
-          
-          // Snake pattern: flip direction on alternate round layers
-          if (round % 2 !== 0) {
-            gIdx = numGroups - 1 - gIdx;
-          }
-
-          groups[gIdx].push(pr);
-        });
-      }
-
       // Step 2: Delete prior matches (if restarting / redrawing) only for THIS category
       const priorMatches = matches.filter(m => m.tournamentId === tournamentId && m.category === selectedCategory);
       for (const oldMatch of priorMatches) {
         await repository.deleteMatch(oldMatch.id);
       }
 
-      // Step 3: Generate Round Robin Matches for each group dynamically
-      const allGeneratedMatches: Match[] = [];
-      
-      groups.forEach((groupPairs, groupIdx) => {
-        const groupName = `Grupo ${String.fromCharCode(65 + groupIdx)}`; // Grupo A, B, C...
-        const pairIds = groupPairs.map(p => p.id);
-        const groupMatches = generateRoundRobinMatches(pairIds, tournamentId, groupName, tournament.startDate);
-        // Assign category to individual match
-        groupMatches.forEach(m => {
-          m.category = selectedCategory;
-        });
-        allGeneratedMatches.push(...groupMatches);
-      });
+      // Step 3: Run the initial round draw
+      const sortedPairs = [...categoryPairs];
+      if (method === "random") {
+        sortedPairs.sort(() => Math.random() - 0.5);
+      } else {
+        // Seeding / ranking based
+        sortedPairs.sort((a, b) => b.combinedRanking - a.combinedRanking);
+      }
+
+      const allGeneratedMatches = generateNextDosVidasRound(sortedPairs, [], tournamentId, selectedCategory, tournament.startDate);
 
       // Force save all matches to repository
       for (const m of allGeneratedMatches) {
@@ -334,8 +320,8 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
       }
 
       await repository.addNotification(
-        "Sorteo Completado", 
-        `Sorteo para la categoría '${selectedCategory}' completada con éxito. Se generaron las zonas y ${allGeneratedMatches.length} partidos.`,
+        "Torneo Iniciado - Dos Vidas", 
+        `La Ronda 1 de Dos Vidas para la categoría '${selectedCategory}' se ha sorteado con éxito. Se generaron los partidos y BYEs automáticos.`,
         "success"
       );
 
@@ -371,6 +357,34 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
     setIsEditNumCourtsOpen(false);
   };
 
+  // Convert time "HH:MM" to minutes for overlap checking
+  const timeToMinutes = (timeStr: string): number => {
+    if (!timeStr) return 0;
+    const [h, m] = timeStr.split(":").map(Number);
+    return (h || 0) * 60 + (m || 0);
+  };
+
+  // Check if a court is occupied at a given date/time by any pending match
+  const getOccupyingMatch = (courtId: string, date: string, timeStr: string, excludeMatchId?: string): Match | undefined => {
+    if (!courtId || !date || !timeStr) return undefined;
+    const checkStart = timeToMinutes(timeStr);
+    const checkEnd = checkStart + 90; // Standard 95/90 min duration for court bookings
+
+    return matches.find(m => {
+      if (m.id === excludeMatchId) return false;
+      if (m.status !== "pending") return false;
+      if (m.courtId !== courtId) return false;
+      if (m.date !== date) return false;
+      if (!m.time) return false;
+
+      const mStart = timeToMinutes(m.time);
+      const mEnd = mStart + 90;
+
+      // Overlap check
+      return checkStart < mEnd && checkEnd > mStart;
+    });
+  };
+
   const handleAutoAssignCourts = async () => {
     const activeCourts = courts.filter(c => c.active);
     if (activeCourts.length === 0) {
@@ -392,10 +406,6 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
 
     let count = 0;
     for (const m of matchesToAssign) {
-      // Pick random court
-      const rndCourt = activeCourts[Math.floor(Math.random() * activeCourts.length)];
-      m.courtId = rndCourt.id;
-
       // Ensure some default date/time if not present
       if (!m.date) {
         m.date = tournament?.startDate || new Date().toISOString().split("T")[0];
@@ -404,6 +414,16 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
         const slots = ["17:00", "18:30", "20:00", "21:30"];
         m.time = slots[Math.floor(Math.random() * slots.length)];
       }
+
+      // Find a court that is not occupied at this date and time
+      let assignedCourt = activeCourts.find(c => !getOccupyingMatch(c.id, m.date!, m.time!, m.id));
+      
+      // Fallback: if all are occupied, just select a random one
+      if (!assignedCourt) {
+        assignedCourt = activeCourts[Math.floor(Math.random() * activeCourts.length)];
+      }
+
+      m.courtId = assignedCourt.id;
 
       await repository.saveMatch(m);
       count++;
@@ -456,115 +476,65 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
   // ---------------------------------------------------------------------------
   const handleLaunchPlayoffs = async () => {
     if (!tournament) return;
-    
-    // Check if there are unplayed matches in Group stage for THIS category
-    const unplayedGroupMatches = matches.filter(m => m.category === selectedCategory && m.phase === "group" && m.status === "pending");
-    if (unplayedGroupMatches.length > 0) {
-      if (!confirm(`⚠️ Quedan ${unplayedGroupMatches.length} partidos de zona sin computar en la categoría '${selectedCategory}'. ¿Estás seguro de que deseas cerrar los grupos y lanzar los playoffs ahora mismo con las posiciones actuales?`)) {
+
+    const categoryGroupMatches = matches.filter(m => m.category === selectedCategory && m.phase === "group");
+    const pendingMatches = categoryGroupMatches.filter(m => m.status === "pending");
+
+    if (pendingMatches.length > 0) {
+      if (!confirm(`⚠️ Quedan ${pendingMatches.length} partidos de la fase Dos Vidas pendientes. ¿Estás seguro de que deseas forzar el cierre de la fase y generar el cuadro final de Playoffs con las posiciones actuales?`)) {
         return;
       }
     }
 
-    const groupNames = Object.keys(groupsMap).filter(k => k.startsWith("Grupo "));
-    if (groupNames.length === 0) {
-      alert("No hay zonas generadas para esta categoría. No se pueden lanzar playoffs.");
-      return;
-    }
-
-    const allStandingsByGroup: { [gName: string]: StandingsRow[] } = {};
-    groupNames.forEach(gName => {
-      const gPairs = groupsMap[gName] || [];
-      const gMatches = matches.filter(m => m.category === selectedCategory && m.stageName === gName);
-      const standings = calculateGroupStandings(gPairs, gMatches, getPairName);
-      allStandingsByGroup[gName] = standings;
-    });
-
-    const firsts: any[] = [];
-    const seconds: any[] = [];
-    const thirds: any[] = [];
-    const others: any[] = [];
-
-    groupNames.forEach(gName => {
-      const standings = allStandingsByGroup[gName] || [];
-      if (standings[0]) firsts.push({ pairId: standings[0].pairId, sourceGroup: gName, row: standings[0] });
-      if (standings[1]) seconds.push({ pairId: standings[1].pairId, sourceGroup: gName, row: standings[1] });
-      if (standings[2]) thirds.push({ pairId: standings[2].pairId, sourceGroup: gName, row: standings[2] });
-      for (let i = 3; i < standings.length; i++) {
-        others.push({ pairId: standings[i].pairId, sourceGroup: gName, row: standings[i] });
-      }
-    });
-
-    let selectedPairs: { pairId: string; sourceGroup: string; rank: number }[] = [];
-
-    if (classificationRule === "top1") {
-      firsts.forEach(f => selectedPairs.push({ pairId: f.pairId, sourceGroup: f.sourceGroup, rank: 1 }));
-    } else if (classificationRule === "top2") {
-      firsts.forEach(f => selectedPairs.push({ pairId: f.pairId, sourceGroup: f.sourceGroup, rank: 1 }));
-      seconds.forEach(s => selectedPairs.push({ pairId: s.pairId, sourceGroup: s.sourceGroup, rank: 2 }));
-    } else if (classificationRule === "top2_thirds") {
-      firsts.forEach(f => selectedPairs.push({ pairId: f.pairId, sourceGroup: f.sourceGroup, rank: 1 }));
-      seconds.forEach(s => selectedPairs.push({ pairId: s.pairId, sourceGroup: s.sourceGroup, rank: 2 }));
-      thirds.forEach(t => selectedPairs.push({ pairId: t.pairId, sourceGroup: t.sourceGroup, rank: 3 }));
+    const stands = calculateDosVidasStandings(pairs.filter(p => p.category === selectedCategory), matches, getPairName);
+    
+    // Determine bracket size of playoffs based on initial pairs registered
+    const totalPairsCount = pairs.filter(p => p.category === selectedCategory).length;
+    let bracketSize = 8;
+    let stageLabel = "Cuartos de Final";
+    
+    if (totalPairsCount <= 4) {
+      bracketSize = 2;
+      stageLabel = "Final";
+    } else if (totalPairsCount <= 9) {
+      bracketSize = 4;
+      stageLabel = "Semifinales";
     } else {
-      firsts.forEach(f => selectedPairs.push({ pairId: f.pairId, sourceGroup: f.sourceGroup, rank: 1 }));
-      seconds.forEach(s => selectedPairs.push({ pairId: s.pairId, sourceGroup: s.sourceGroup, rank: 2 }));
-      thirds.forEach(t => selectedPairs.push({ pairId: t.pairId, sourceGroup: t.sourceGroup, rank: 3 }));
-      others.forEach(o => selectedPairs.push({ pairId: o.pairId, sourceGroup: o.sourceGroup, rank: 3 }));
+      bracketSize = 8;
+      stageLabel = "Cuartos de Final";
     }
 
-    if (selectedPairs.length < 2) {
-      alert("No hay suficientes parejas clasificadas para conformar una eliminatoria (se necesitan al menos 2 parejas).");
+    // Qualify the top N pairs from our unified standings table
+    const qualifiedPairs = stands.slice(0, bracketSize).map((s, index) => ({
+      pairId: s.pairId,
+      sourceGroup: `Clasificado ${index + 1}`,
+      rank: (index < bracketSize / 2 ? 1 : 2) as 1 | 2
+    }));
+
+    if (qualifiedPairs.length < 2) {
+      alert("No hay suficientes parejas para generar los playoffs. Se necesitan al menos 2.");
       return;
     }
 
-    let bracketSize = 2;
-    if (selectedPairs.length > 16) bracketSize = 32;
-    else if (selectedPairs.length > 8) bracketSize = 16;
-    else if (selectedPairs.length > 4) bracketSize = 8;
-    else if (selectedPairs.length > 2) bracketSize = 4;
+    // Generate schedules using the playoff engine
+    const playoffMatches = generatePlayoffSchedules(qualifiedPairs, tournamentId);
 
-    if (selectedPairs.length < bracketSize) {
-      const allCandidates = [
-        ...firsts.map(f => ({ ...f, defaultRank: 1 })),
-        ...seconds.map(s => ({ ...s, defaultRank: 2 })),
-        ...thirds.map(t => ({ ...t, defaultRank: 3 })),
-        ...others.map(o => ({ ...o, defaultRank: 3 }))
-      ];
-      const alreadySelectedIds = new Set(selectedPairs.map(p => p.pairId));
-      const remainingCandidates = allCandidates
-        .filter(c => !alreadySelectedIds.has(c.pairId))
-        .sort((a, b) => {
-          if (b.row.points !== a.row.points) return b.row.points - a.row.points;
-          if (b.row.setsDiff !== a.row.setsDiff) return b.row.setsDiff - a.row.setsDiff;
-          return b.row.gamesDiff - a.row.gamesDiff;
-        });
-
-      while (selectedPairs.length < bracketSize && remainingCandidates.length > 0) {
-        const nextBest = remainingCandidates.shift()!;
-        selectedPairs.push({ pairId: nextBest.pairId, sourceGroup: nextBest.sourceGroup, rank: nextBest.defaultRank });
-      }
-    } else if (selectedPairs.length > bracketSize) {
-      selectedPairs = selectedPairs.slice(0, bracketSize);
+    // Delete prior playoffs for this category
+    const oldPlayoffs = matches.filter(m => m.tournamentId === tournamentId && m.category === selectedCategory && m.phase === "playoff");
+    for (const o of oldPlayoffs) {
+      await repository.deleteMatch(o.id);
     }
 
-    // Generate Playoff Matches safely
-    const playoffMatches = generatePlayoffSchedules(selectedPairs as any, tournamentId);
-
-    // Delete existing playoff matches for THIS category if any
-    const priorPlayoffs = matches.filter(m => m.tournamentId === tournamentId && m.category === selectedCategory && m.phase === "playoff");
-    for (const oldPlayoff of priorPlayoffs) {
-      await repository.deleteMatch(oldPlayoff.id);
-    }
-
-    // Persist playoff matches
+    // Save all new playoff matches
     for (const pm of playoffMatches) {
       pm.category = selectedCategory;
+      pm.status = "pending";
       await repository.saveMatch(pm);
     }
 
     await repository.addNotification(
-      "Playoffs Generados", 
-      `Se cerró la etapa de grupos para '${selectedCategory}' con éxito (${selectedPairs.length} parejas clasificadas para ${bracketSize === 4 ? "Semifinales" : bracketSize === 8 ? "Cuartos" : bracketSize === 16 ? "Octavos" : "la Final"}).`,
+      "Playoffs Generados",
+      `Cuadro final de playoffs (${stageLabel}) para la categoría '${selectedCategory}' generado correctamente con las mejores ${qualifiedPairs.length} parejas.`,
       "success"
     );
 
@@ -599,6 +569,60 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
     }
   };
 
+  const isGroupOrEarlyPlayoff = (m: Match): boolean => {
+    if (m.phase === "group") return true;
+    const stage = m.stageName.toLowerCase();
+    if (stage.includes("16avos") || stage.includes("octavos") || stage.includes("8avos")) {
+      return true;
+    }
+    return false;
+  };
+
+  const handleGenerateNextRound = async () => {
+    if (!tournament) return;
+
+    const categoryPairs = pairs.filter(p => p.category === selectedCategory);
+    const categoryGroupMatches = matches.filter(m => m.category === selectedCategory && m.phase === "group");
+    
+    if (categoryGroupMatches.length === 0) {
+      alert("Aún no has iniciado el torneo. Realiza el sorteo inicial de la Ronda 1 en la pestaña de inscripciones.");
+      return;
+    }
+
+    const pendingMatches = categoryGroupMatches.filter(m => m.status === "pending");
+    if (pendingMatches.length > 0) {
+      alert(`⚠️ No puedes generar la siguiente ronda. Quedan de momento ${pendingMatches.length} partidos de la ronda actual sin registrar o cargar resultados.`);
+      return;
+    }
+
+    try {
+      const nextRoundMatches = generateNextDosVidasRound(categoryPairs, matches, tournamentId, selectedCategory, tournament.startDate);
+
+      if (nextRoundMatches.length === 0) {
+        alert("¡No quedan suficientes parejas activas con vidas para disputar una nueva ronda! Procede a lanzar el Cuadro Final de Playoffs.");
+        return;
+      }
+
+      for (const m of nextRoundMatches) {
+        await repository.saveMatch(m);
+      }
+
+      const nextRoundNum = nextRoundMatches[0].roundNumber;
+
+      await repository.addNotification(
+        "Nueva Ronda Generada",
+        `Se ha creado automáticamente la Ronda ${nextRoundNum} para la categoría '${selectedCategory}' con ${nextRoundMatches.filter(m => m.pair2Id !== "BYE").length} nuevos partidos.`,
+        "success"
+      );
+
+      loadAllData();
+      setActiveTab("matches");
+    } catch (err: any) {
+      console.error("Error generating next round:", err);
+      alert("Ocurrió un error al generar la siguiente ronda. Revisa los datos y vuelve a intentarlo.");
+    }
+  };
+
   const handleSaveScore = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeScoreMatch || !tournament) return;
@@ -614,21 +638,88 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
     } else {
       // Build score string & compute winner
       const sliced = scoreSets.slice(0, numSets);
-      scoreSummary = sliced.map(s => `${s.t1}-${s.t2}`).join(" ");
 
-      let setsT1 = 0;
-      let setsT2 = 0;
-      sliced.forEach(s => {
-        if (s.t1 > s.t2) setsT1++;
-        else if (s.t2 > s.t1) setsT2++;
-      });
+      // Validate sets format & requirements based on stage rules
+      if (isGroupOrEarlyPlayoff(activeScoreMatch)) {
+        // Groups/16avos/8avos: Best of 2 sets. Empate -> Super Tiebreak to 11.
+        if (sliced.length < 2) {
+          alert("Se deben registrar al menos 2 sets para esta etapa del torneo.");
+          return;
+        }
 
-      if (setsT1 === setsT2) {
-        alert("El resultado de sets es un empate. Un partido no puede quedar empatado en sets.");
-        return;
+        const s1 = sliced[0];
+        const s2 = sliced[1];
+
+        const set1WonBy = s1.t1 > s1.t2 ? 1 : (s1.t2 > s1.t1 ? 2 : 0);
+        const set2WonBy = s2.t1 > s2.t2 ? 1 : (s2.t2 > s2.t1 ? 2 : 0);
+
+        if (set1WonBy === 0 || set2WonBy === 0) {
+          alert("Los sets 1 y 2 deben tener un ganador válido (no pueden empatar).");
+          return;
+        }
+
+        if (set1WonBy !== set2WonBy) {
+          // Double verify that they filled the 3rd set
+          if (sliced.length < 3) {
+            alert("Empate en sets (1-1). Se ha habilitado automáticamente el tercer set para el Super Tiebreak a 11 puntos. Por favor, carga el marcador del Super Tiebreak abajo.");
+            return;
+          }
+          const s3 = sliced[2];
+          const maxPoints = Math.max(s3.t1, s3.t2);
+          const diff = Math.abs(s3.t1 - s3.t2);
+
+          if (maxPoints < 11 || diff < 2) {
+            alert("El Super Tiebreak (Tercer Set) en esta fase se define a un mínimo de 11 puntos y con diferencia de 2 (ej. 11-9 o 12-10).");
+            return;
+          }
+          winnerId = s3.t1 > s3.t2 ? activeScoreMatch.pair1Id : activeScoreMatch.pair2Id;
+        } else {
+          // Won 2-0
+          if (sliced.length === 3 && (sliced[2].t1 > 0 || sliced[2].t2 > 0)) {
+            alert("El partido se definió en 2 sets. El tercer set debe quedar en 0-0.");
+            return;
+          }
+          winnerId = set1WonBy === 1 ? activeScoreMatch.pair1Id : activeScoreMatch.pair2Id;
+        }
+      } else {
+        // Cuartos to Final: Best of 3 traditional sets.
+        if (sliced.length < 2) {
+          alert("Se deben registrar al menos 2 sets.");
+          return;
+        }
+
+        const s1 = sliced[0];
+        const s2 = sliced[1];
+
+        const set1WonBy = s1.t1 > s1.t2 ? 1 : (s1.t2 > s1.t1 ? 2 : 0);
+        const set2WonBy = s2.t1 > s2.t2 ? 1 : (s2.t2 > s2.t1 ? 2 : 0);
+
+        if (set1WonBy === 0 || set2WonBy === 0) {
+          alert("Los sets 1 y 2 deben tener un ganador válido.");
+          return;
+        }
+
+        if (set1WonBy !== set2WonBy) {
+          if (sliced.length < 3) {
+            alert("Empate en sets (1-1). Se requiere un tercer set tradicional completo para desempatar. Selecciona '3 Sets' y carga la puntuación del tercer set.");
+            return;
+          }
+          const s3 = sliced[2];
+          if (s3.t1 === s3.t2) {
+            alert("El tercer set debe tener un ganador definido.");
+            return;
+          }
+          winnerId = s3.t1 > s3.t2 ? activeScoreMatch.pair1Id : activeScoreMatch.pair2Id;
+        } else {
+          if (sliced.length === 3 && (sliced[2].t1 > 0 || sliced[2].t2 > 0)) {
+            alert("El partido se definió en 2 sets (2-0). El tercer set debe quedar en 0-0.");
+            return;
+          }
+          winnerId = set1WonBy === 1 ? activeScoreMatch.pair1Id : activeScoreMatch.pair2Id;
+        }
       }
 
-      winnerId = setsT1 > setsT2 ? activeScoreMatch.pair1Id : activeScoreMatch.pair2Id;
+      scoreSummary = sliced.map(s => `${s.t1}-${s.t2}`).join(" ");
     }
 
     const updatedMatch: Match = {
@@ -736,16 +827,67 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
 
   // Knockout Bracket Progression triggers
   const handlePlayoffProgression = async (m: Match, winnerId: string) => {
-    // E.g., if Semifinal 1 concludes, winner advances to Final as Pair 1. If Semifinal 2 concludes, winner advances as Pair 2.
-    if (m.stageName === "Semifinal 1") {
-      const finalMatch = matches.find(x => x.stageName === "Final");
+    const nextMatches = matches.filter(x => x.tournamentId === m.tournamentId && x.category === m.category && x.phase === "playoff");
+
+    // 1. From Semifinal to Final
+    if (m.stageName === "Semifinal 1" || m.stageName === "Semifinals 1") {
+      const finalMatch = nextMatches.find(x => x.stageName === "Final");
       if (finalMatch) {
-        await repository.saveMatch({ ...finalMatch, pair1Id: winnerId });
+         await repository.saveMatch({ ...finalMatch, pair1Id: winnerId });
       }
-    } else if (m.stageName === "Semifinal 2") {
-      const finalMatch = matches.find(x => x.stageName === "Final");
+    } else if (m.stageName === "Semifinal 2" || m.stageName === "Semifinals 2") {
+      const finalMatch = nextMatches.find(x => x.stageName === "Final");
       if (finalMatch) {
-        await repository.saveMatch({ ...finalMatch, pair2Id: winnerId });
+         await repository.saveMatch({ ...finalMatch, pair2Id: winnerId });
+      }
+    }
+    
+    // 2. From Cuartos to Semifinal
+    // Cuartos 1 -> Semifinal 1 (pair1)
+    // Cuartos 2 -> Semifinal 1 (pair2)
+    // Cuartos 3 -> Semifinal 2 (pair1)
+    // Cuartos 4 -> Semifinal 2 (pair2)
+    else if (m.stageName === "Cuartos 1" || m.stageName === "Cuartos de Final 1") {
+      const sf1 = nextMatches.find(x => x.stageName === "Semifinal 1");
+      if (sf1) await repository.saveMatch({ ...sf1, pair1Id: winnerId });
+    } else if (m.stageName === "Cuartos 2" || m.stageName === "Cuartos de Final 2") {
+      const sf1 = nextMatches.find(x => x.stageName === "Semifinal 1");
+      if (sf1) await repository.saveMatch({ ...sf1, pair2Id: winnerId });
+    } else if (m.stageName === "Cuartos 3" || m.stageName === "Cuartos de Final 3") {
+      const sf2 = nextMatches.find(x => x.stageName === "Semifinal 2");
+      if (sf2) await repository.saveMatch({ ...sf2, pair1Id: winnerId });
+    } else if (m.stageName === "Cuartos 4" || m.stageName === "Cuartos de Final 4") {
+      const sf2 = nextMatches.find(x => x.stageName === "Semifinal 2");
+      if (sf2) await repository.saveMatch({ ...sf2, pair2Id: winnerId });
+    }
+
+    // 3. From Octavos (8avos) to Cuartos
+    else if (m.stageName.startsWith("Octavos de Final") || m.stageName.startsWith("8avos de Final")) {
+      const matchNum = parseInt(m.stageName.replace("Octavos de Final ", "").replace("8avos de Final ", "")) || 1;
+      const targetCuartosNum = Math.floor((matchNum - 1) / 2) + 1; // 1 to 4
+      const slotNum = (matchNum - 1) % 2 === 0 ? 1 : 2; // 1 or 2
+      const targetCuartos = nextMatches.find(x => x.stageName === `Cuartos ${targetCuartosNum}` || x.stageName === `Cuartos de Final ${targetCuartosNum}`);
+      if (targetCuartos) {
+        if (slotNum === 1) {
+          await repository.saveMatch({ ...targetCuartos, pair1Id: winnerId });
+        } else {
+          await repository.saveMatch({ ...targetCuartos, pair2Id: winnerId });
+        }
+      }
+    }
+
+    // 4. From 16avos to Octavos (8avos)
+    else if (m.stageName.startsWith("16avos de Final") || m.stageName.startsWith("Dieciseisavos")) {
+      const matchNum = parseInt(m.stageName.replace("16avos de Final ", "").replace("Dieciseisavos ", "")) || 1;
+      const targetOctNum = Math.floor((matchNum - 1) / 2) + 1; // 1 to 8
+      const slotNum = (matchNum - 1) % 2 === 0 ? 1 : 2; // 1 or 2
+      const targetOct = nextMatches.find(x => x.stageName === `Octavos de Final ${targetOctNum}`);
+      if (targetOct) {
+        if (slotNum === 1) {
+          await repository.saveMatch({ ...targetOct, pair1Id: winnerId });
+        } else {
+          await repository.saveMatch({ ...targetOct, pair2Id: winnerId });
+        }
       }
     }
   };
@@ -1274,106 +1416,169 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
 
         {/* TAB 3: STANDINGS OF GROUPS */}
         {activeTab === "standings" && (
-          <div className="space-y-8">
-            {Object.keys(groupsMap).filter(k => k.startsWith("Grupo ")).sort().map(gName => {
-              const gPairs = groupsMap[gName] || [];
-              const gMatches = matches.filter(m => m.category === selectedCategory && m.stageName === gName);
-              const table = calculateGroupStandings(gPairs, gMatches, getPairName);
+          <div className="space-y-8 animate-fade-in">
+            {(() => {
+              const categoryPairs = pairs.filter(p => p.category === selectedCategory);
+              const categoryGroupMatches = matches.filter(m => m.category === selectedCategory && m.phase === "group");
+              
+              if (categoryGroupMatches.length === 0) {
+                return (
+                  <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-12 text-center max-w-xl mx-auto space-y-4">
+                    <Trophy className="w-12 h-12 text-amber-500/40 mx-auto" />
+                    <h3 className="font-bold text-slate-200">Torneo no Iniciado</h3>
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                      La fase Dos Vidas para la categoría <strong className="text-[#d4fc34]">{selectedCategory}</strong> aún no cuenta con partidos generados. Ve a la pestaña <span className="underline">Inscritos</span> para realizar el Sorteo de la Ronda 1.
+                    </p>
+                  </div>
+                );
+              }
+
+              const table = calculateDosVidasStandings(categoryPairs, matches, getPairName);
 
               return (
-                <div key={gName} className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-extrabold text-white text-sm flex items-center gap-1">
-                      🥇 Posiciones de la Zona: <span className="text-blue-400">{gName}</span>
-                    </h3>
+                <div className="space-y-6">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+                    <div>
+                      <h3 className="font-extrabold text-white text-md flex items-center gap-2">
+                        🥇 Tabla Unificada: <span className="text-[#d4fc34]">Sistema Dos Vidas SRTC</span>
+                      </h3>
+                      <p className="text-xs text-slate-400 mt-1">
+                        Cada pareja cuenta con 2 vidas. Perder 2 veces significa quedar eliminada de la competencia.
+                      </p>
+                    </div>
+                    <div className="flex gap-3 text-xs bg-slate-950 px-3.5 py-2 rounded-xl border border-slate-850 font-mono text-slate-400">
+                      <span>Parejas Inscritas: <strong className="text-white">{categoryPairs.length}</strong></span>
+                      <span className="text-slate-700">|</span>
+                      <span>Parejas Activas: <strong className="text-[#d4fc34]">{table.filter(t => !t.eliminated).length}</strong></span>
+                    </div>
                   </div>
 
-                  <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+                  <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
                     <div className="overflow-x-auto">
                       <table className="w-full text-left border-collapse text-xs">
                         <thead className="bg-slate-950 text-slate-400 border-b border-slate-800 font-mono text-[9px] uppercase tracking-wider">
                           <tr>
-                            <th className="py-2.5 px-3 text-center">Pos</th>
-                            <th className="py-2.5 px-3">Pareja Competidora</th>
-                            <th className="py-2.5 px-3 text-center">PJ</th>
-                            <th className="py-2.5 px-3 text-center">PG</th>
-                            <th className="py-2.5 px-3 text-center">PP</th>
-                            <th className="py-2.5 px-3 text-center">Sets (+ / -)</th>
-                            <th className="py-2.5 px-3 text-center">Dif Sets</th>
-                            <th className="py-2.5 px-3 text-center">Games (+ / -)</th>
-                            <th className="py-2.5 px-3 text-center">Dif Games</th>
-                            <th className="py-2.5 px-4 text-right text-amber-400 pr-5">A. Puntos</th>
+                            <th className="py-3 px-4 text-center w-12">Pos</th>
+                            <th className="py-3 px-4">Pareja Competidora</th>
+                            <th className="py-3 px-4 text-center">Vidas Restantes</th>
+                            <th className="py-3 px-4 text-center">PJ</th>
+                            <th className="py-3 px-4 text-center">PG</th>
+                            <th className="py-3 px-4 text-center">PP</th>
+                            <th className="py-3 px-4 text-center">Sets (W/L)</th>
+                            <th className="py-3 px-4 text-center">Dif Sets</th>
+                            <th className="py-3 px-4 text-center">Games (W/L)</th>
+                            <th className="py-3 px-4 text-center">Dif Games</th>
+                            <th className="py-3 px-4 text-right pr-6">Estado</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-800/60 font-medium">
-                          {table.map((row, index) => (
-                            <tr key={row.pairId} className="hover:bg-slate-950/20 transition text-slate-300">
-                              <td className="py-3 px-3 text-center font-bold font-mono text-slate-400">
-                                {index + 1}
-                              </td>
-                              <td className="py-3 px-3 font-bold text-slate-100">
-                                {row.pairName}
-                              </td>
-                              <td className="py-3 px-3 text-center font-mono text-slate-400">{row.pj}</td>
-                              <td className="py-3 px-3 text-center font-mono text-green-400">{row.pg}</td>
-                              <td className="py-3 px-3 text-center font-mono text-rose-450">{row.pp}</td>
-                              <td className="py-3 px-3 text-center font-mono text-slate-500">
-                                {row.setsWon} - {row.setsLost}
-                              </td>
-                              <td className={`py-3 px-3 text-center font-mono font-bold ${row.setsDiff >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                {row.setsDiff > 0 ? `+${row.setsDiff}` : row.setsDiff}
-                              </td>
-                              <td className="py-3 px-3 text-center font-mono text-slate-500">
-                                {row.gamesWon} - {row.gamesLost}
-                              </td>
-                              <td className={`py-3 px-3 text-center font-mono ${row.gamesDiff >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                                {row.gamesDiff > 0 ? `+${row.gamesDiff}` : row.gamesDiff}
-                              </td>
-                              <td className="py-3 px-4 text-right font-mono font-black text-amber-500 pr-5">
-                                {row.points}
-                              </td>
-                            </tr>
-                          ))}
+                        <tbody className="divide-y divide-slate-800/50 font-medium">
+                          {table.map((row, index) => {
+                            // Render heart representating the lives remaining
+                            let livesLabel = "🖤🖤";
+                            if (row.lives === 2) livesLabel = "❤️❤️";
+                            else if (row.lives === 1) livesLabel = "❤️🖤";
+
+                            return (
+                              <tr key={row.pairId} className={`hover:bg-slate-950/20 transition ${row.eliminated ? 'opacity-50 line-through text-slate-500' : 'text-slate-300'}`}>
+                                <td className="py-3.5 px-4 text-center font-bold font-mono text-slate-400">
+                                  {index + 1}
+                                </td>
+                                <td className="py-3.5 px-4 font-bold text-slate-100 text-sm">
+                                  {row.pairName}
+                                </td>
+                                <td className="py-3.5 px-4 text-center font-bold text-md tracking-widest text-red-500 font-mono">
+                                  {livesLabel}
+                                </td>
+                                <td className="py-3.5 px-4 text-center font-mono">{row.pj}</td>
+                                <td className="py-3.5 px-4 text-center font-mono text-green-400">{row.pg}</td>
+                                <td className="py-3.5 px-4 text-center font-mono text-rose-500">{row.pp}</td>
+                                <td className="py-3.5 px-4 text-center font-mono text-slate-500">
+                                  {row.setsWon} - {row.setsLost}
+                                </td>
+                                <td className={`py-3.5 px-4 text-center font-mono font-bold ${row.setsDiff >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                  {row.setsDiff > 0 ? `+${row.setsDiff}` : row.setsDiff}
+                                </td>
+                                <td className="py-3.5 px-4 text-center font-mono text-slate-500">
+                                  {row.gamesWon} - {row.gamesLost}
+                                </td>
+                                <td className={`py-3.5 px-4 text-center font-mono ${row.gamesDiff >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                  {row.gamesDiff > 0 ? `+${row.gamesDiff}` : row.gamesDiff}
+                                </td>
+                                <td className="py-3.5 px-4 text-right pr-6">
+                                  {row.eliminated ? (
+                                    <span className="text-[9px] font-bold bg-slate-950 text-slate-500 px-2 py-1 rounded-full uppercase border border-slate-900">
+                                      Eliminado
+                                    </span>
+                                  ) : (
+                                    <span className="text-[9px] font-bold bg-emerald-500/10 text-emerald-450 px-2 py-1 rounded-full uppercase border border-emerald-500/10">
+                                      Activa ({row.lives} V)
+                                    </span>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>
                   </div>
+
+                  {/* ADMIN CONTROL TERMINAL FOR PROGRESSION */}
+                  {userRole === "admin" && (
+                    <div className="bg-slate-950 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
+                      <div className="border-b border-slate-850 pb-3">
+                        <h4 className="font-extrabold text-sm text-white flex items-center gap-1.5 uppercase tracking-wider text-[#d4fc34]">
+                          ⚙️ Panel de Gestión de Rondas y Playoffs
+                        </h4>
+                        <p className="text-[11px] text-slate-400 mt-1">
+                          Como organizador oficial de SRTC, tienes el control de las transiciones de rondas del torneo.
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Box 1: Generate next round */}
+                        <div className="bg-slate-900 border border-slate-800 p-5 rounded-xl flex flex-col justify-between space-y-4">
+                          <div className="space-y-1.5">
+                            <h5 className="font-extrabold text-xs text-white uppercase tracking-wider">Avanzar Siguiente Ronda</h5>
+                            <p className="text-[11px] text-slate-400 leading-relaxed">
+                              Crea automáticamente los nuevos emparejamientos utilizando el algoritmo suizo de Dos Vidas. Cruzará parejas con similar historial de triunfos que no hayan jugado previamente en el torneo para mayor equidad.
+                            </p>
+                          </div>
+                          <button
+                            onClick={handleGenerateNextRound}
+                            className="bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white transition-colors py-2.5 px-4 rounded-xl font-bold text-xs uppercase tracking-wider cursor-pointer border border-slate-700"
+                          >
+                            Generar Siguiente Ronda Dos Vidas
+                          </button>
+                        </div>
+
+                        {/* Box 2: Close and start Playoffs */}
+                        <div className="bg-slate-900/40 border border-dashed border-slate-800 p-5 rounded-xl flex flex-col justify-between space-y-4">
+                          <div className="space-y-1.5">
+                            <h5 className="font-extrabold text-xs text-amber-400 uppercase tracking-wider">Lanzar Playoffs (Cuadro Final)</h5>
+                            <p className="text-[11px] text-slate-400 leading-relaxed">
+                              Cierra definitivamente la etapa preliminaria. Avanza a las mejores parejas ordenadas por victorias y sets al cuadro final de eliminación directa (Octavos, Cuartos o Semifinal según el volumen de inscriptos).
+                            </p>
+                          </div>
+                          {!matches.some(m => m.category === selectedCategory && m.phase === "playoff") ? (
+                            <button
+                              onClick={handleLaunchPlayoffs}
+                              className="bg-[#d4fc34] hover:bg-[#c5f015] text-slate-950 transition-colors py-2.5 px-4 rounded-xl font-black text-xs uppercase tracking-wider cursor-pointer shadow-md"
+                            >
+                              Finalizar y Generar Cuadro de Eliminatorias
+                            </button>
+                          ) : (
+                            <div className="text-center py-2 px-3 bg-indigo-500/10 border border-indigo-500/15 rounded-xl text-indigo-400 font-bold text-[10px] uppercase">
+                              Playoffs Activos
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
-            })}
-
-            {/* Launch Playoffs option for admin if zones conclude */}
-            {userRole === "admin" && (tournament.status === "in_progress" || tournament.status === "registration") && !matches.some(m => m.category === selectedCategory && m.phase === "playoff") && (
-              <div className="bg-slate-950 p-6 rounded-2xl border border-slate-800 text-center space-y-4 max-w-2xl mx-auto shadow-xl">
-                <Trophy className="w-9 h-9 text-amber-500 mx-auto" />
-                <div className="space-y-1">
-                  <h4 className="font-extrabold text-sm text-white">¿Ronda de Grupos Terminada en {selectedCategory}?</h4>
-                  <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
-                    Si todos o la mayoría de los partidos de zona para esta categoría ya se disputaron, selecciona el criterio de clasificación y genera el cuadro de playoffs independientes.
-                  </p>
-                </div>
-
-                <div className="max-w-xs mx-auto space-y-1.5 text-left pb-2">
-                  <label className="block text-[10px] uppercase font-bold text-slate-400 tracking-wider">Criterio de Clasificación *</label>
-                  <select
-                    value={classificationRule}
-                    onChange={(e: any) => setClassificationRule(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-800 text-slate-200 text-xs rounded-xl px-3 py-2 outline-none focus:border-indigo-550 transition-colors"
-                  >
-                    <option value="top1">Clasifican 1 por grupo (Zona ganadores)</option>
-                                       <option value="top2_thirds">Clasifican 2 + mejores terceros</option>
-                    <option value="all">Clasifican todos los participantes</option>
-                  </select>
-                </div>
-
-                <button
-                  onClick={handleLaunchPlayoffs}
-                  className="bg-[#d4fc34] hover:bg-[#c5f015] text-slate-950 text-xs font-black px-6 py-3 rounded-xl transition cursor-pointer uppercase tracking-wider shadow-lg max-w-xs mx-auto"
-                >
-                  Confirmar Zonas y Generar Playoffs Eliminatorios
-                </button>
-              </div>
-            )}
+            })()}
           </div>
         )}
 
@@ -1391,106 +1596,194 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
               <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-12 text-center text-slate-500 text-xs">
                 La eliminatoria directa de playoffs aún no se ha generado para {selectedCategory}. Termina los grupos y presiona lanzar eliminatorias en la pestaña Posiciones.
               </div>
-            ) : (
-              <div className="py-4 overflow-x-auto">
-                {/* Horizontal simple bracket design */}
-                <div className="flex gap-8 min-w-[600px] justify-around">
-                  
-                  {/* Semifinals */}
-                  <div className="space-y-6 flex-1 max-w-[280px]">
-                    <span className="block text-[10px] text-slate-500 uppercase tracking-widest font-mono text-center">Semifinales</span>
-                    {matches.filter(m => m.category === selectedCategory && m.stageName.startsWith("Semifinal")).map(m => (
-                      <div 
-                        key={m.id}
-                        className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow"
-                      >
-                        <div className="p-2 border-b border-slate-800 bg-slate-950 font-mono text-[9px] text-center text-slate-500">
-                          {m.stageName}
-                        </div>
-                        
-                        <div className="p-3 space-y-2 text-xs">
-                          <div className="flex items-center justify-between">
-                            <span className={`font-bold ${m.winnerPairId === m.pair1Id ? 'text-[#d4fc34]' : 'text-slate-300'}`}>
-                              {m.pair1Id ? getPairName(m.pair1Id) : "Esperando..."}
-                            </span>
-                            {m.winnerPairId === m.pair1Id && <span className="text-[9px] font-bold text-green-400 uppercase">W</span>}
-                          </div>
-                          
-                          <div className="flex items-center justify-between border-t border-slate-800/40 pt-2">
-                            <span className={`font-bold ${m.winnerPairId === m.pair2Id ? 'text-[#d4fc34]' : 'text-slate-300'}`}>
-                              {m.pair2Id ? getPairName(m.pair2Id) : "Esperando..."}
-                            </span>
-                            {m.winnerPairId === m.pair2Id && <span className="text-[9px] font-bold text-green-400 uppercase">W</span>}
-                          </div>
-                        </div>
+            ) : (() => {
+              const playoffMatches = matches.filter(m => m.category === selectedCategory && m.phase === "playoff");
+              const matches_16avos = playoffMatches.filter(m => m.stageName.startsWith("16avos de Final") || m.stageName.startsWith("Dieciseisavos"));
+              const matches_8avos = playoffMatches.filter(m => m.stageName.startsWith("Octavos de Final") || m.stageName.startsWith("8avos de Final"));
+              const matches_4tos = playoffMatches.filter(m => m.stageName.startsWith("Cuartos") || m.stageName.startsWith("Cuartos de Final") || m.stageName.startsWith("4tos"));
+              const matches_sf = playoffMatches.filter(m => m.stageName.startsWith("Semifinal"));
+              const matches_final = playoffMatches.filter(m => m.stageName === "Final");
 
-                        {userRole === "admin" && (
-                          <button 
-                            onClick={() => handleOpenScorer(m)}
-                            className="w-full bg-slate-950/60 hover:bg-slate-850 py-1.5 font-mono text-[9px] border-t border-slate-800/80 text-blue-400 hover:text-white"
-                          >
-                            Cargar Marcador
-                          </button>
-                        )}
+              const renderPlayoffMatchCard = (m: Match) => {
+                return (
+                  <div 
+                    key={m.id}
+                    className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow transition-all hover:border-slate-700"
+                  >
+                    <div className="p-2 border-b border-slate-850 bg-slate-950 font-mono text-[9px] text-center text-slate-400 font-bold flex items-center justify-between px-3">
+                      <span>{m.stageName}</span>
+                      {m.status !== "pending" && (
+                        <span className="text-[8px] bg-indigo-500/10 text-indigo-400 border border-indigo-500/10 px-1 rounded uppercase">OK</span>
+                      )}
+                    </div>
+                    
+                    <div className="p-3 space-y-2 text-xs">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className={`font-bold truncate max-w-[140px] ${
+                          m.winnerPairId === m.pair1Id ? 'text-[#d4fc34]' : m.winnerPairId ? 'text-slate-500' : 'text-slate-205'
+                        }`}>
+                          {m.pair1Id ? getPairName(m.pair1Id) : "Esperando..."}
+                        </span>
+                        {m.winnerPairId === m.pair1Id && <span className="text-[10px] text-[#d4fc34] font-black">W</span>}
                       </div>
-                    ))}
-                  </div>
+                      
+                      <div className="flex items-center justify-between gap-2 border-t border-slate-800/40 pt-2">
+                        <span className={`font-bold truncate max-w-[140px] ${
+                          m.winnerPairId === m.pair2Id ? 'text-[#d4fc34]' : m.winnerPairId ? 'text-slate-500' : 'text-slate-205'
+                        }`}>
+                          {m.pair2Id ? getPairName(m.pair2Id) : "Esperando..."}
+                        </span>
+                        {m.winnerPairId === m.pair2Id && <span className="text-[10px] text-[#d4fc34] font-black">W</span>}
+                      </div>
 
-                  {/* Connect Line Spacer */}
-                  <div className="hidden md:flex flex-col justify-center text-slate-705 font-bold shrink-0">
-                    ➔
-                  </div>
-
-                  {/* Final block */}
-                  <div className="space-y-6 flex-1 max-w-[300px]">
-                    <span className="block text-[10px] text-slate-500 uppercase tracking-widest font-mono text-center">Gran Final</span>
-                    {matches.filter(m => m.category === selectedCategory && m.stageName === "Final").map(m => (
-                      <div 
-                        key={m.id}
-                        className="bg-indigo-950/20 border-2 border-indigo-505/20 rounded-2xl overflow-hidden shadow-xl"
-                      >
-                        <div className="p-2 border-b border-indigo-500/10 bg-indigo-950/40 font-mono text-[9px] text-center text-amber-400 font-black tracking-widest uppercase">
-                          MATCH POINT - FINAL
+                      {m.status !== "pending" && m.scoreSummary && (
+                        <div className="mt-2 text-center pt-1.5 border-t border-slate-800/20">
+                          <span className="bg-indigo-500/15 border border-indigo-500/20 text-indigo-300 font-mono text-[9px] py-0.5 px-2 rounded inline-block font-bold">
+                            Score: {m.scoreSummary}
+                          </span>
                         </div>
+                      )}
+                    </div>
 
-                        <div className="p-4 space-y-3 text-xs">
-                          <div className="flex items-center justify-between">
-                            <span className={`font-black text-sm ${m.winnerPairId === m.pair1Id ? 'text-amber-400' : 'text-slate-200'}`}>
-                              {m.pair1Id ? getPairName(m.pair1Id) : "Por clasificar"}
-                            </span>
-                            {m.winnerPairId === m.pair1Id && <span className="text-sm">👑</span>}
-                          </div>
+                    {userRole === "admin" && (
+                      <button 
+                        onClick={() => handleOpenScorer(m)}
+                        className="w-full bg-slate-950/60 hover:bg-slate-850 py-1.5 font-mono text-[9px] border-t border-slate-800/80 text-blue-400 hover:text-white cursor-pointer transition-colors"
+                      >
+                        Cargar Marcador
+                      </button>
+                    )}
+                  </div>
+                );
+              };
 
-                          <div className="flex items-center justify-between border-t border-slate-800/60 pt-2.5">
-                            <span className={`font-black text-sm ${m.winnerPairId === m.pair2Id ? 'text-amber-400' : 'text-slate-205'}`}>
-                              {m.pair2Id ? getPairName(m.pair2Id) : "Por clasificar"}
-                            </span>
-                            {m.winnerPairId === m.pair2Id && <span className="text-sm">👑</span>}
-                          </div>
+              return (
+                <div className="py-4 overflow-x-auto">
+                  <div className="flex gap-8 min-w-[900px] justify-start items-start pb-4">
+                    
+                    {/* 16avos Column */}
+                    {matches_16avos.length > 0 && (
+                      <div className="space-y-6 w-[230px] shrink-0">
+                        <span className="block text-[10px] text-slate-500 uppercase tracking-widest font-mono text-center font-extrabold bg-slate-900/30 py-1 rounded">16avos de Final</span>
+                        <div className="space-y-4">
+                          {matches_16avos.map(m => renderPlayoffMatchCard(m))}
+                        </div>
+                      </div>
+                    )}
 
-                          {m.status !== "pending" && (
-                            <div className="mt-3 text-center">
-                              <span className="bg-indigo-500/20 border border-indigo-550 text-indigo-300 font-mono font-black py-0.5 px-3 rounded inline-block text-xs">
-                                Score: {m.scoreSummary}
-                              </span>
-                            </div>
+                    {/* Arrow Spacer */}
+                    {matches_16avos.length > 0 && (
+                      <div className="hidden md:flex self-center text-slate-700 font-extrabold shrink-0 text-sm">➔</div>
+                    )}
+
+                    {/* 8avos Column */}
+                    {(matches_8avos.length > 0 || matches_16avos.length > 0) && (
+                      <div className="space-y-6 w-[230px] shrink-0">
+                        <span className="block text-[10px] text-slate-500 uppercase tracking-widest font-mono text-center font-extrabold bg-slate-900/30 py-1 rounded">8avos de Final</span>
+                        <div className="space-y-4">
+                          {matches_8avos.length > 0 ? (
+                            matches_8avos.map(m => renderPlayoffMatchCard(m))
+                          ) : (
+                            <div className="text-center font-mono text-[10px] text-slate-600 italic py-8 border border-dashed border-slate-850 rounded-xl">Esperando resultados...</div>
                           )}
                         </div>
+                      </div>
+                    )}
 
-                        {userRole === "admin" && m.pair1Id && m.pair2Id && (
-                          <button 
-                            onClick={() => handleOpenScorer(m)}
-                            className="w-full bg-indigo-900/30 hover:bg-slate-850 py-2.5 font-mono text-[10px] border-t border-indigo-500/10 text-white font-bold"
-                          >
-                            Cargar Resultado Final
-                          </button>
+                    {/* Arrow Spacer */}
+                    {(matches_8avos.length > 0 || matches_16avos.length > 0) && (
+                      <div className="hidden md:flex self-center text-slate-700 font-extrabold shrink-0 text-sm">➔</div>
+                    )}
+
+                    {/* Cuartos Column */}
+                    {(matches_4tos.length > 0 || matches_8avos.length > 0 || matches_16avos.length > 0) && (
+                      <div className="space-y-6 w-[230px] shrink-0">
+                        <span className="block text-[10px] text-slate-500 uppercase tracking-widest font-mono text-center font-extrabold bg-slate-900/30 py-1 rounded">Cuartos de Final</span>
+                        <div className="space-y-4">
+                          {matches_4tos.length > 0 ? (
+                            matches_4tos.map(m => renderPlayoffMatchCard(m))
+                          ) : (
+                            <div className="text-center font-mono text-[10px] text-slate-600 italic py-8 border border-dashed border-slate-850 rounded-xl">Esperando cruces...</div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Arrow Spacer */}
+                    <div className="hidden md:flex self-center text-slate-700 font-extrabold shrink-0 text-sm">➔</div>
+
+                    {/* Semifinals Column */}
+                    <div className="space-y-6 w-[230px] shrink-0">
+                      <span className="block text-[10px] text-slate-500 uppercase tracking-widest font-mono text-center font-extrabold bg-slate-900/30 py-1 rounded">Semifinales</span>
+                      <div className="space-y-4">
+                        {matches_sf.length > 0 ? (
+                          matches_sf.map(m => renderPlayoffMatchCard(m))
+                        ) : (
+                          <div className="text-center font-mono text-[10px] text-slate-600 italic py-8 border border-dashed border-slate-850 rounded-xl">Esperando clasificados...</div>
                         )}
                       </div>
-                    ))}
+                    </div>
+
+                    {/* Arrow Spacer */}
+                    <div className="hidden md:flex self-center text-slate-700 font-extrabold shrink-0 text-sm">➔</div>
+
+                    {/* Final Column */}
+                    <div className="space-y-6 w-[250px] shrink-0">
+                      <span className="block text-[10px] text-slate-500 uppercase tracking-widest font-mono text-center font-extrabold bg-indigo-950/20 py-1 rounded">Gran Final</span>
+                      <div className="space-y-4">
+                        {matches_final.map(m => (
+                          <div 
+                            key={m.id}
+                            className="bg-indigo-950/20 border-2 border-indigo-500/20 rounded-2xl overflow-hidden shadow-xl"
+                          >
+                            <div className="p-2 border-b border-indigo-500/10 bg-indigo-950/40 font-mono text-[9px] text-center text-amber-400 font-black tracking-widest uppercase">
+                              MATCH POINT - FINAL
+                            </div>
+
+                            <div className="p-4 space-y-3 text-xs">
+                              <div className="flex items-center justify-between">
+                                <span className={`font-black text-xs ${m.winnerPairId === m.pair1Id ? 'text-amber-400' : 'text-slate-205'}`}>
+                                  {m.pair1Id ? getPairName(m.pair1Id) : "Por clasificar"}
+                                </span>
+                                {m.winnerPairId === m.pair1Id && <span className="text-xs">👑</span>}
+                              </div>
+
+                              <div className="flex items-center justify-between border-t border-slate-800/60 pt-2.5">
+                                <span className={`font-black text-xs ${m.winnerPairId === m.pair2Id ? 'text-amber-400' : 'text-slate-205'}`}>
+                                  {m.pair2Id ? getPairName(m.pair2Id) : "Por clasificar"}
+                                </span>
+                                {m.winnerPairId === m.pair2Id && <span className="text-xs">👑</span>}
+                              </div>
+
+                              {m.status !== "pending" && m.scoreSummary && (
+                                <div className="mt-3 text-center">
+                                  <span className="bg-indigo-500/20 border border-indigo-550 text-indigo-300 font-mono font-black py-0.5 px-3 rounded inline-block text-xs">
+                                    Score: {m.scoreSummary}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+
+                            {userRole === "admin" && m.pair1Id && m.pair2Id && (
+                              <button 
+                                onClick={() => handleOpenScorer(m)}
+                                className="w-full bg-indigo-900/30 hover:bg-slate-850 py-2.5 font-mono text-[10px] border-t border-indigo-500/10 text-white font-bold cursor-pointer transition-colors"
+                              >
+                                Cargar Resultado Final
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                        {matches_final.length === 0 && (
+                          <div className="text-center font-mono text-[10px] text-slate-600 italic py-8 border border-dashed border-slate-850 rounded-xl">Esperando finalistas...</div>
+                        )}
+                      </div>
+                    </div>
+
                   </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
           </div>
         )}
 
@@ -1543,8 +1836,18 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
               ) : (
                 // Standard Set Scorer
                 <div className="space-y-4">
+                  {isGroupOrEarlyPlayoff(activeScoreMatch) ? (
+                    <div className="p-2.5 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-[10px] text-indigo-300 leading-normal">
+                      💡 <strong>Fase de Grupos / Octavos:</strong> Al mejor de 2 sets con <strong>Super Tiebreak a 11 puntos</strong> si hay empate (1-1) en el 3º Set.
+                    </div>
+                  ) : (
+                    <div className="p-2.5 bg-amber-500/10 border border-amber-500/25 rounded-xl text-[10px] text-amber-300 leading-normal">
+                      🔥 <strong>Cuartos de final a Final:</strong> Se juega a <strong>3 sets completos</strong> tradicionales. No hay Super Tiebreak.
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-between">
-                    <label className="block text-[10px] text-slate-400 uppercase font-mono">Games por Set</label>
+                    <label className="block text-[10px] text-slate-400 uppercase font-mono">Sets Totales</label>
                     <div className="flex border border-slate-800 p-0.5 rounded-lg bg-slate-950">
                       <button
                         type="button"
@@ -1564,50 +1867,55 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
                   </div>
 
                   <div className="space-y-3">
-                    {scoreSets.slice(0, numSets).map((set, idx) => (
-                      <div key={idx} className="flex items-center justify-between gap-4 bg-slate-950 p-3 rounded-xl border border-slate-850">
-                        <span className="font-bold text-xs text-blue-400">Set #{idx + 1}</span>
-                        <div className="flex items-center gap-1">
-                          {/* Team 1 Score */}
-                          <div className="text-center">
-                            <span className="block text-[8px] text-slate-500 mb-0.5 font-mono uppercase">PAREJA 1</span>
-                            <input
-                              type="number"
-                              min="0"
-                              max="7"
-                              required
-                              value={set.t1}
-                              onChange={(e) => {
-                                const copy = [...scoreSets];
-                                copy[idx].t1 = parseInt(e.target.value) || 0;
-                                setScoreSets(copy);
-                              }}
-                              className="w-12 bg-slate-900 text-center border border-slate-850 text-white rounded font-bold py-1 focus:border-blue-500 outline-none"
-                            />
-                          </div>
+                    {scoreSets.slice(0, numSets).map((set, idx) => {
+                      const isSuperTiebreak = idx === 2 && isGroupOrEarlyPlayoff(activeScoreMatch);
+                      return (
+                        <div key={idx} className="flex items-center justify-between gap-4 bg-slate-950 p-3 rounded-xl border border-slate-850">
+                          <span className="font-bold text-xs text-blue-400">
+                            {isSuperTiebreak ? "Super Tiebreak (STB)" : `Set #${idx + 1}`}
+                          </span>
+                          <div className="flex items-center gap-1">
+                            {/* Team 1 Score */}
+                            <div className="text-center">
+                              <span className="block text-[8px] text-slate-500 mb-0.5 font-mono uppercase">PAREJA 1</span>
+                              <input
+                                type="number"
+                                min="0"
+                                max={isSuperTiebreak ? 99 : 7}
+                                required
+                                value={set.t1}
+                                onChange={(e) => {
+                                  const copy = [...scoreSets];
+                                  copy[idx].t1 = parseInt(e.target.value) || 0;
+                                  setScoreSets(copy);
+                                }}
+                                className="w-12 bg-slate-900 text-center border border-slate-850 text-white rounded font-bold py-1 focus:border-blue-500 outline-none"
+                              />
+                            </div>
 
-                          <span className="text-slate-600 font-mono self-end pb-1 inline-block px-1">-</span>
+                            <span className="text-slate-600 font-mono self-end pb-1 inline-block px-1">-</span>
 
-                          {/* Team 2 Score */}
-                          <div className="text-center">
-                            <span className="block text-[8px] text-slate-500 mb-0.5 font-mono uppercase">PAREJA 2</span>
-                            <input
-                              type="number"
-                              min="0"
-                              max="7"
-                              required
-                              value={set.t2}
-                              onChange={(e) => {
-                                const copy = [...scoreSets];
-                                copy[idx].t2 = parseInt(e.target.value) || 0;
-                                setScoreSets(copy);
-                              }}
-                              className="w-12 bg-slate-900 text-center border border-slate-850 text-white rounded font-bold py-1 focus:border-blue-500 outline-none"
-                            />
+                            {/* Team 2 Score */}
+                            <div className="text-center">
+                              <span className="block text-[8px] text-slate-500 mb-0.5 font-mono uppercase">PAREJA 2</span>
+                              <input
+                                type="number"
+                                min="0"
+                                max={isSuperTiebreak ? 99 : 7}
+                                required
+                                value={set.t2}
+                                onChange={(e) => {
+                                  const copy = [...scoreSets];
+                                  copy[idx].t2 = parseInt(e.target.value) || 0;
+                                  setScoreSets(copy);
+                                }}
+                                className="w-12 bg-slate-900 text-center border border-slate-850 text-white rounded font-bold py-1 focus:border-blue-500 outline-none"
+                              />
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -1659,11 +1967,14 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
                   required
                 >
                   <option value="">Selecciona Cancha...</option>
-                  {courts.filter(c => c.active).map(c => (
-                    <option key={c.id} value={c.id}>
-                      {c.name} — {c.club}
-                    </option>
-                  ))}
+                  {courts.filter(c => c.active).map(c => {
+                    const occupying = getOccupyingMatch(c.id, selectedDate, selectedTime, activeAssignCourtMatch.id);
+                    return (
+                      <option key={c.id} value={c.id} disabled={!!occupying}>
+                        {c.name} — {c.club} {occupying ? `(OCUPADA: ${getPairName(occupying.pair1Id)} vs ${getPairName(occupying.pair2Id)} @ ${occupying.time})` : ""}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
 

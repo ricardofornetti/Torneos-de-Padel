@@ -24,17 +24,13 @@ interface PlayerManagerProps {
 }
 
 const PADEL_CATEGORIES = [
+  "Libre Masculina",
   "4ta Masculina",
   "5ta Masculina",
   "6ta Masculina",
   "7ma Masculina",
-  "8va Masculina",
-  "5ta Femenina",
   "6ta Femenina",
-  "7ma Femenina",
-  "Mixto A",
-  "Mixto B",
-  "Mixto C"
+  "7ma Femenina"
 ];
 
 const AVATARS = [
@@ -103,20 +99,18 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole }) => {
     setEditingPlayer(player);
     let cat = player.category;
     if (!PADEL_CATEGORIES.includes(cat)) {
-      if (cat.includes("Primera") || cat.includes("Segunda") || cat.includes("Tercera") || cat.includes("Cuarta")) {
+      if (cat.includes("Primera") || cat.includes("Libre")) {
+        cat = "Libre Masculina";
+      } else if (cat.includes("Segunda") || cat.includes("4ta")) {
         cat = "4ta Masculina";
-      } else if (cat.includes("Quinta")) {
+      } else if (cat.includes("Tercera") || cat.includes("5ta")) {
         cat = "5ta Masculina";
-      } else if (cat.includes("Sexta")) {
-        cat = "6ta Masculina";
-      } else if (cat.includes("Séptima") || cat.includes("Octava")) {
-        cat = "7ma Masculina";
-      } else if (cat.includes("A")) {
-        cat = "Mixto A";
-      } else if (cat.includes("B")) {
-        cat = "Mixto B";
-      } else if (cat.includes("C") || cat.includes("D")) {
-        cat = "Mixto C";
+      } else if (cat.includes("Cuarta") || cat.includes("6ta")) {
+        if (cat.includes("Femenina")) cat = "6ta Femenina";
+        else cat = "6ta Masculina";
+      } else if (cat.includes("Séptima") || cat.includes("7ma") || cat.includes("Octava")) {
+        if (cat.includes("Femenina")) cat = "7ma Femenina";
+        else cat = "7ma Masculina";
       } else {
         cat = "6ta Masculina";
       }
