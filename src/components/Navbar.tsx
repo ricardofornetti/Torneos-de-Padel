@@ -161,7 +161,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 : "text-slate-400 hover:text-white hover:bg-slate-900/50"
             }`}
           >
-            Ranking Anual
+            Ranking
           </button>
           <button
             onClick={() => onNavigate("courts")}

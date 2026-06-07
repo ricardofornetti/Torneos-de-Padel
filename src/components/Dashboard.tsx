@@ -36,18 +36,25 @@ export const Dashboard: React.FC<DashboardProps> = ({
   useEffect(() => {
     const loadAll = async () => {
       setLoading(true);
-      const tList = await repository.getTournaments();
-      const pList = await repository.getPlayers();
-      const mList = await repository.getMatches();
-      const prList = await repository.getPairs();
-      const cList = await repository.getCourts();
-      
-      setTournaments(tList);
-      setPlayers(pList);
-      setMatches(mList);
-      setPairs(prList);
-      setCourts(cList);
-      setLoading(false);
+      try {
+        const [tList, pList, mList, prList, cList] = await Promise.all([
+          repository.getTournaments(),
+          repository.getPlayers(),
+          repository.getMatches(),
+          repository.getPairs(),
+          repository.getCourts()
+        ]);
+        
+        setTournaments(tList);
+        setPlayers(pList);
+        setMatches(mList);
+        setPairs(prList);
+        setCourts(cList);
+      } catch (err) {
+        console.error("Dashboard error loading data", err);
+      } finally {
+        setLoading(false);
+      }
     };
     loadAll();
   }, []);

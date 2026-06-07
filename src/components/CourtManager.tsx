@@ -42,16 +42,23 @@ export const CourtManager: React.FC<{ userRole: "admin" | "player" }> = ({ userR
 
   const loadData = async () => {
     setLoading(true);
-    const cList = await repository.getCourts();
-    const mList = await repository.getMatches();
-    const prList = await repository.getPairs();
-    const pList = await repository.getPlayers();
-    
-    setCourts(cList);
-    setMatches(mList);
-    setPairs(prList);
-    setPlayers(pList);
-    setLoading(false);
+    try {
+      const [cList, mList, prList, pList] = await Promise.all([
+        repository.getCourts(),
+        repository.getMatches(),
+        repository.getPairs(),
+        repository.getPlayers()
+      ]);
+      
+      setCourts(cList);
+      setMatches(mList);
+      setPairs(prList);
+      setPlayers(pList);
+    } catch (err) {
+      console.error("CourtManager error loading data", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {

@@ -49,11 +49,22 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
     numCourts: 3
   });
 
+  const [courts, setCourts] = useState<any[]>([]);
+
   const loadTournaments = async () => {
     setLoading(true);
-    const list = await repository.getTournaments();
-    setTournaments(list);
-    setLoading(false);
+    try {
+      const [list, crts] = await Promise.all([
+        repository.getTournaments(),
+        repository.getCourts()
+      ]);
+      setTournaments(list);
+      setCourts(crts);
+    } catch (err) {
+      console.error("Error loading tournaments in manager", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -66,6 +77,7 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
     nextWeek.setDate(today.getDate() + 7);
     
     setEditingId(null);
+    const activeCourtsCount = courts.filter(c => c.active).length;
     setNewT({
       name: "",
       club: "",
@@ -74,7 +86,7 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
       endDate: nextWeek.toISOString().split('T')[0],
       maxPairs: 8,
       numGroups: 2,
-      numCourts: 3
+      numCourts: activeCourtsCount > 0 ? Math.min(3, activeCourtsCount) : 3
     });
     setIsFormOpen(true);
   };
@@ -472,9 +484,16 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
                     onChange={(e) => setNewT({...newT, numCourts: Number(e.target.value)})}
                     className="w-full bg-slate-900 border border-slate-800 rounded p-1 text-slate-100 outline-none"
                   >
-                    {[1, 2, 3, 4, 5, 8].map(n => (
-                      <option key={n} value={n}>{n} Canchas</option>
-                    ))}
+                    {(() => {
+                      const activeCourtsList = courts.filter(c => c.active);
+                      const maxSelectableCourts = activeCourtsList.length > 0 ? activeCourtsList.length : 8;
+                      const courtNumbers = Array.from({ length: maxSelectableCourts }, (_, i) => i + 1);
+                      return courtNumbers.map(n => (
+                        <option key={n} value={n}>
+                          {n} {n === 1 ? 'Cancha' : 'Canchas'} (Habilitadas: {activeCourtsList.length || 0})
+                        </option>
+                      ));
+                    })()}
                   </select>
                 </div>
 

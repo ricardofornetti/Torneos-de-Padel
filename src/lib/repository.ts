@@ -39,8 +39,15 @@ export interface FirestoreErrorInfo {
 }
 
 export function handleFirestoreError(error: any, operationType: OperationType, path: string | null) {
+  const errMsg = error instanceof Error ? error.message : String(error);
+  const isPermissionError = 
+    errMsg.toLowerCase().includes("permission") || 
+    errMsg.toLowerCase().includes("unauthenticated") || 
+    errMsg.toLowerCase().includes("insufficient") ||
+    (error && error.code === "permission-denied");
+
   const errInfo: FirestoreErrorInfo = {
-    error: error instanceof Error ? error.message : String(error),
+    error: errMsg,
     authInfo: {
       userId: auth?.currentUser?.uid || null,
       email: auth?.currentUser?.email || null,
@@ -55,8 +62,30 @@ export function handleFirestoreError(error: any, operationType: OperationType, p
     operationType,
     path
   };
-  console.error('Firestore Error Captured: ', JSON.stringify(errInfo));
-  // We do not throw a fatal error here to enable the local storage sandbox fallback.
+
+  if (isPermissionError) {
+    console.error('Firestore Error Captured: ', JSON.stringify(errInfo));
+  } else {
+    console.warn(`Firestore non-fatal issue (${errMsg}) at path: ${path}. Operating in Sandbox fallback.`);
+  }
+}
+
+export function withTimeout<T>(promise: Promise<T>, ms: number = 5000): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error("Timeout"));
+    }, ms);
+    promise.then(
+      (res) => {
+        clearTimeout(timer);
+        resolve(res);
+      },
+      (err) => {
+        clearTimeout(timer);
+        reject(err);
+      }
+    );
+  });
 }
 
 // -----------------------------------------------------------------------------
@@ -578,28 +607,28 @@ class PadelRepository {
 
   async bootstrapFirebaseIfNeeded() {
     try {
-      const snap = await getDocs(collection(db, "tournaments"));
+      const snap = await withTimeout(getDocs(collection(db, "tournaments")), 5000);
       if (snap.empty) {
         console.log("Seeding Firestore with initial Padel Master data...");
         for (const t of INITIAL_TOURNAMENTS) {
-          await setDoc(doc(db, "tournaments", t.id), t);
+          setDoc(doc(db, "tournaments", t.id), t).catch(() => {});
         }
         for (const p of INITIAL_PLAYERS) {
-          await setDoc(doc(db, "players", p.id), p);
+          setDoc(doc(db, "players", p.id), p).catch(() => {});
         }
         for (const pr of INITIAL_PAIRS) {
-          await setDoc(doc(db, "pairs", pr.id), pr);
+          setDoc(doc(db, "pairs", pr.id), pr).catch(() => {});
         }
         for (const m of INITIAL_MATCHES) {
-          await setDoc(doc(db, "matches", m.id), m);
+          setDoc(doc(db, "matches", m.id), m).catch(() => {});
         }
         for (const c of INITIAL_COURTS) {
-          await setDoc(doc(db, "courts", c.id), c);
+          setDoc(doc(db, "courts", c.id), c).catch(() => {});
         }
         for (const n of INITIAL_NOTIFICATIONS) {
-          await setDoc(doc(db, "notifications", n.id), n);
+          setDoc(doc(db, "notifications", n.id), n).catch(() => {});
         }
-        console.log("Firestore successfully seeded!");
+        console.log("Firestore successfully seeded in background!");
       }
     } catch (err) {
       console.warn("Bootstrap Firestore was skipped or failed. This is expected if unauthenticated or offline:", err);
@@ -619,7 +648,7 @@ class PadelRepository {
   async getTournaments(): Promise<Tournament[]> {
     if (isRealFirebase) {
       try {
-        const snap = await getDocs(collection(db, "tournaments"));
+        const snap = await withTimeout(getDocs(collection(db, "tournaments")), 5000);
         const list: Tournament[] = [];
         snap.forEach(docSnap => {
           list.push(docSnap.data() as Tournament);
@@ -627,6 +656,7 @@ class PadelRepository {
         return list;
       } catch (err) {
         handleFirestoreError(err, OperationType.LIST, "tournaments");
+        return this.cache.tournaments;
       }
     }
     return this.cache.tournaments;
@@ -642,17 +672,15 @@ class PadelRepository {
     this.saveAllToStorage();
 
     if (isRealFirebase) {
-      try {
-        const docRef = doc(db, "tournaments", t.id);
-        await setDoc(docRef, t);
-      } catch (err) {
+      const docRef = doc(db, "tournaments", t.id);
+      setDoc(docRef, t).catch((err) => {
         handleFirestoreError(err, OperationType.WRITE, `tournaments/${t.id}`);
         this.addNotification(
           "Guardado en Sandbox Local",
           "El torneo '" + t.name + "' se guardó en el navegador. Vincula tu cuenta de Google organizador para sincronizar en la nube.",
           "warning"
         );
-      }
+      });
     }
   }
 
@@ -663,16 +691,14 @@ class PadelRepository {
     this.saveAllToStorage();
 
     if (isRealFirebase) {
-      try {
-        await deleteDoc(doc(db, "tournaments", id));
-      } catch (err) {
+      deleteDoc(doc(db, "tournaments", id)).catch((err) => {
         handleFirestoreError(err, OperationType.DELETE, `tournaments/${id}`);
         this.addNotification(
           "Eliminado en Sandbox Local",
           "Torneo removido localmente del navegador. Sincronización cloud limitada sin login.",
           "warning"
         );
-      }
+      });
     }
   }
 
@@ -680,7 +706,7 @@ class PadelRepository {
   async getPlayers(): Promise<Player[]> {
     if (isRealFirebase) {
       try {
-        const snap = await getDocs(collection(db, "players"));
+        const snap = await withTimeout(getDocs(collection(db, "players")), 5000);
         const list: Player[] = [];
         snap.forEach(docSnap => {
           list.push(docSnap.data() as Player);
@@ -688,6 +714,7 @@ class PadelRepository {
         return list;
       } catch (err) {
         handleFirestoreError(err, OperationType.LIST, "players");
+        return this.cache.players;
       }
     }
     return this.cache.players;
@@ -703,16 +730,14 @@ class PadelRepository {
     this.saveAllToStorage();
 
     if (isRealFirebase) {
-      try {
-        await setDoc(doc(db, "players", p.id), p);
-      } catch (err) {
+      setDoc(doc(db, "players", p.id), p).catch((err) => {
         handleFirestoreError(err, OperationType.WRITE, `players/${p.id}`);
         this.addNotification(
           "Guardado en Sandbox Local",
           "Jugador '" + p.firstName + " " + p.lastName + "' guardado en el navegador. Requiere permisos de administrador para sincronizar online.",
           "warning"
         );
-      }
+      });
     }
   }
 
@@ -721,16 +746,14 @@ class PadelRepository {
     this.saveAllToStorage();
 
     if (isRealFirebase) {
-      try {
-        await deleteDoc(doc(db, "players", id));
-      } catch (err) {
+      deleteDoc(doc(db, "players", id)).catch((err) => {
         handleFirestoreError(err, OperationType.DELETE, `players/${id}`);
         this.addNotification(
           "Eliminado en Sandbox Local",
           "Jugador removido del navegador en modo offline/sandbox.",
           "warning"
         );
-      }
+      });
     }
   }
 
@@ -765,9 +788,9 @@ class PadelRepository {
         let snap;
         if (tournamentId) {
           const q = query(collection(db, "pairs"), where("tournamentId", "==", tournamentId));
-          snap = await getDocs(q);
+          snap = await withTimeout(getDocs(q), 5000);
         } else {
-          snap = await getDocs(collection(db, "pairs"));
+          snap = await withTimeout(getDocs(collection(db, "pairs")), 5000);
         }
         const list: Pair[] = [];
         snap.forEach(docSnap => {
@@ -776,6 +799,9 @@ class PadelRepository {
         return list;
       } catch (err) {
         handleFirestoreError(err, OperationType.LIST, "pairs");
+        return tournamentId 
+          ? this.cache.pairs.filter(p => p.tournamentId === tournamentId)
+          : this.cache.pairs;
       }
     }
     return tournamentId 
@@ -793,16 +819,14 @@ class PadelRepository {
     this.saveAllToStorage();
 
     if (isRealFirebase) {
-      try {
-        await setDoc(doc(db, "pairs", pr.id), pr);
-      } catch (err) {
+      setDoc(doc(db, "pairs", pr.id), pr).catch((err) => {
         handleFirestoreError(err, OperationType.WRITE, `pairs/${pr.id}`);
         this.addNotification(
           "Inscripción guardada en Sandbox",
           "Pareja inscrita y guardada localmente en tu navegador. Conéctate con Google para sincronizar en tiempo real.",
           "warning"
         );
-      }
+      });
     }
   }
 
@@ -811,16 +835,14 @@ class PadelRepository {
     this.saveAllToStorage();
 
     if (isRealFirebase) {
-      try {
-        await deleteDoc(doc(db, "pairs", id));
-      } catch (err) {
+      deleteDoc(doc(db, "pairs", id)).catch((err) => {
         handleFirestoreError(err, OperationType.DELETE, `pairs/${id}`);
         this.addNotification(
           "Inscripción cancelada localmente",
           "Pareja removida localmente del navegador.",
           "warning"
         );
-      }
+      });
     }
   }
 
@@ -831,9 +853,9 @@ class PadelRepository {
         let snap;
         if (tournamentId) {
           const q = query(collection(db, "matches"), where("tournamentId", "==", tournamentId));
-          snap = await getDocs(q);
+          snap = await withTimeout(getDocs(q), 5000);
         } else {
-          snap = await getDocs(collection(db, "matches"));
+          snap = await withTimeout(getDocs(collection(db, "matches")), 5000);
         }
         const list: Match[] = [];
         snap.forEach(docSnap => {
@@ -842,6 +864,9 @@ class PadelRepository {
         return list;
       } catch (err) {
         handleFirestoreError(err, OperationType.LIST, "matches");
+        return tournamentId 
+          ? this.cache.matches.filter(m => m.tournamentId === tournamentId)
+          : this.cache.matches;
       }
     }
     return tournamentId 
@@ -859,16 +884,14 @@ class PadelRepository {
     this.saveAllToStorage();
 
     if (isRealFirebase) {
-      try {
-        await setDoc(doc(db, "matches", m.id), m);
-      } catch (err) {
+      setDoc(doc(db, "matches", m.id), m).catch((err) => {
         handleFirestoreError(err, OperationType.WRITE, `matches/${m.id}`);
         this.addNotification(
           "Resultado guardado en Sandbox",
           "Marcador registrado localmente en tu navegador. Inicia sesión con la cuenta de administrador para guardar cambios en tiempo real.",
           "warning"
         );
-      }
+      });
     }
   }
 
@@ -877,11 +900,9 @@ class PadelRepository {
     this.saveAllToStorage();
 
     if (isRealFirebase) {
-      try {
-        await deleteDoc(doc(db, "matches", id));
-      } catch (err) {
+      deleteDoc(doc(db, "matches", id)).catch((err) => {
         handleFirestoreError(err, OperationType.DELETE, `matches/${id}`);
-      }
+      });
     }
   }
 
@@ -889,7 +910,7 @@ class PadelRepository {
   async getCourts(): Promise<Court[]> {
     if (isRealFirebase) {
       try {
-        const snap = await getDocs(collection(db, "courts"));
+        const snap = await withTimeout(getDocs(collection(db, "courts")), 5000);
         const list: Court[] = [];
         snap.forEach(docSnap => {
           list.push(docSnap.data() as Court);
@@ -897,6 +918,7 @@ class PadelRepository {
         return list;
       } catch (err) {
         handleFirestoreError(err, OperationType.LIST, "courts");
+        return this.cache.courts;
       }
     }
     return this.cache.courts;
@@ -912,16 +934,14 @@ class PadelRepository {
     this.saveAllToStorage();
 
     if (isRealFirebase) {
-      try {
-        await setDoc(doc(db, "courts", c.id), c);
-      } catch (err) {
+      setDoc(doc(db, "courts", c.id), c).catch((err) => {
         handleFirestoreError(err, OperationType.WRITE, `courts/${c.id}`);
         this.addNotification(
           "Cancha guardada en Sandbox",
           "Pista '" + c.name + "' guardada localmente en tu navegador.",
           "warning"
         );
-      }
+      });
     }
   }
 
@@ -930,16 +950,14 @@ class PadelRepository {
     this.saveAllToStorage();
 
     if (isRealFirebase) {
-      try {
-        await deleteDoc(doc(db, "courts", id));
-      } catch (err) {
+      deleteDoc(doc(db, "courts", id)).catch((err) => {
         handleFirestoreError(err, OperationType.DELETE, `courts/${id}`);
         this.addNotification(
           "Cancha eliminada localmente",
           "Pista removida localmente del navegador.",
           "warning"
         );
-      }
+      });
     }
   }
 
@@ -961,11 +979,9 @@ class PadelRepository {
     this.saveAllToStorage();
 
     if (isRealFirebase) {
-      try {
-        await setDoc(doc(db, "notifications", newNotif.id), newNotif);
-      } catch {
+      setDoc(doc(db, "notifications", newNotif.id), newNotif).catch(() => {
         // Safe fail-silent for non-critical logging
-      }
+      });
     }
   }
 

@@ -127,38 +127,95 @@ export const RankingManager: React.FC = () => {
         </div>
       </div>
 
-      {/* FILTER CONTROLS */}
-      <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl flex flex-col md:flex-row gap-4">
+      {/* SECCIÓN CATEGORÍAS ORGANIZADAS */}
+      <div className="bg-slate-900 border border-slate-800 p-5 rounded-xl space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-850 pb-3.5">
+          <h2 className="text-xs font-mono uppercase tracking-widest text-[#22d3ee] font-bold flex items-center gap-1.5">
+            <Trophy className="w-3.5 h-3.5" /> Selección por Categoría y Género
+          </h2>
+          <button
+            onClick={() => setCategoryFilter("all")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all uppercase cursor-pointer ${
+              categoryFilter === "all"
+                ? "bg-[#d4fc34] text-slate-950 font-black shadow-lg shadow-[#d4fc34]/20"
+                : "bg-slate-950 text-slate-400 hover:text-white border border-slate-800"
+            }`}
+          >
+            Todas las Categorías
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* MASCULINAS */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-300 font-mono">
+              <span className="w-2 h-2 rounded-full bg-cyan-400"></span>
+              MASCULINO
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { label: "Libre", value: "Libre Masculina" },
+                { label: "4ta Cat", value: "4ta Masculina" },
+                { label: "5ta Cat", value: "5ta Masculina" },
+                { label: "6ta Cat", value: "6ta Masculina" },
+                { label: "7ma Cat", value: "7ma Masculina" }
+              ].map(cat => (
+                <button
+                  key={cat.value}
+                  onClick={() => setCategoryFilter(cat.value)}
+                  className={`px-3 py-2 rounded-lg text-xs font-bold tracking-wide transition-all uppercase whitespace-nowrap cursor-pointer border ${
+                    categoryFilter === cat.value
+                      ? "bg-[#d4fc34] text-slate-950 border-[#d4fc34] font-black shadow-lg shadow-[#d4fc34]/15"
+                      : "bg-slate-950 text-slate-400 hover:text-white border-slate-800/80 hover:border-slate-750"
+                  }`}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* FEMENINAS */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-300 font-mono">
+              <span className="w-2 h-2 rounded-full bg-rose-400"></span>
+              FEMENINO
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { label: "6ta Cat", value: "6ta Femenina" },
+                { label: "7ma Cat", value: "7ma Femenina" }
+              ].map(cat => (
+                <button
+                  key={cat.value}
+                  onClick={() => setCategoryFilter(cat.value)}
+                  className={`px-3 py-2 rounded-lg text-xs font-bold tracking-wide transition-all uppercase whitespace-nowrap cursor-pointer border ${
+                    categoryFilter === cat.value
+                      ? "bg-[#d4fc34] text-slate-950 border-[#d4fc34] font-black shadow-lg shadow-[#d4fc34]/15"
+                      : "bg-slate-950 text-slate-400 hover:text-white border-slate-800/80 hover:border-slate-750"
+                  }`}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* FILTER SEARCH CONTROLS */}
+      <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl">
         
         {/* Search */}
-        <div className="flex-1 relative">
+        <div className="relative">
           <Search className="w-4 h-4 text-slate-500 absolute left-3 top-2.5" />
           <input
             type="text"
-            placeholder="Buscar por nombre, apellido, club o ciudad..."
+            placeholder="Buscar por nombre, apellido o ciudad en esta categoría..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-100 placeholder-slate-500 outline-none"
+            className="w-full bg-slate-950 border border-slate-800 focus:border-cyan-500 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-100 placeholder-slate-500 outline-none"
           />
-        </div>
-
-        {/* Filter Selection */}
-        <div className="flex items-center gap-2">
-          <Filter className="w-3.5 h-3.5 text-slate-500" />
-          <select
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
-            className="bg-slate-950 border border-slate-800 text-xs text-slate-200 rounded-lg px-2.5 py-2 outline-none"
-          >
-            <option value="all">Todas las Categorías</option>
-            <option value="Libre Masculina">Libre Masculina</option>
-            <option value="4ta Masculina">4ta Masculina</option>
-            <option value="5ta Masculina">5ta Masculina</option>
-            <option value="6ta Masculina">6ta Masculina</option>
-            <option value="7ma Masculina">7ma Masculina</option>
-            <option value="6ta Femenina">6ta Femenina</option>
-            <option value="7ma Femenina">7ma Femenina</option>
-          </select>
         </div>
 
       </div>
@@ -298,8 +355,8 @@ export const RankingManager: React.FC = () => {
             <span className="font-bold text-amber-400">100 Pts</span>
           </div>
           <div className="p-2.5 rounded bg-slate-950 border border-slate-800 flex items-center justify-between">
-            <span className="text-slate-400">🥈 Finalista:</span>
-            <span className="font-bold text-slate-300">70 Pts</span>
+            <span className="text-slate-400">🥈 Subcampeón:</span>
+            <span className="font-bold text-slate-350">75 Pts</span>
           </div>
           <div className="p-2.5 rounded bg-slate-950 border border-slate-800 flex items-center justify-between">
             <span className="text-slate-400">⚡ Semifinalista:</span>

@@ -346,6 +346,21 @@ export function generatePlayoffSchedules(
         status: "pending",
         scoreSummary: "Por jugar",
         winnerPairId: ""
+      },
+      {
+        id: `match_${tournamentId}_playoff_final`,
+        tournamentId,
+        phase: "playoff",
+        roundNumber: 2,
+        stageName: "Final",
+        pair1Id: "",
+        pair2Id: "",
+        courtId: "",
+        date: "",
+        time: "",
+        status: "pending",
+        scoreSummary: "Por jugar",
+        winnerPairId: ""
       }
     );
   }
@@ -424,6 +439,55 @@ export function generatePlayoffSchedules(
         });
       });
     }
+
+    // Pre-generate subsequent Semifinals & Final
+    matches.push(
+      {
+        id: `match_${tournamentId}_playoff_sf1`,
+        tournamentId,
+        phase: "playoff",
+        roundNumber: 2,
+        stageName: "Semifinal 1",
+        pair1Id: "",
+        pair2Id: "",
+        courtId: "",
+        date: "",
+        time: "",
+        status: "pending",
+        scoreSummary: "Por jugar",
+        winnerPairId: ""
+      },
+      {
+        id: `match_${tournamentId}_playoff_sf2`,
+        tournamentId,
+        phase: "playoff",
+        roundNumber: 2,
+        stageName: "Semifinal 2",
+        pair1Id: "",
+        pair2Id: "",
+        courtId: "",
+        date: "",
+        time: "",
+        status: "pending",
+        scoreSummary: "Por jugar",
+        winnerPairId: ""
+      },
+      {
+        id: `match_${tournamentId}_playoff_final`,
+        tournamentId,
+        phase: "playoff",
+        roundNumber: 3,
+        stageName: "Final",
+        pair1Id: "",
+        pair2Id: "",
+        courtId: "",
+        date: "",
+        time: "",
+        status: "pending",
+        scoreSummary: "Por jugar",
+        winnerPairId: ""
+      }
+    );
   }
   else if (numTeams <= 16) {
     // Octavos de Final (8avos - 8 matches)
@@ -444,6 +508,74 @@ export function generatePlayoffSchedules(
         winnerPairId: ""
       });
     }
+
+    // Pre-generate subsequent Cuartos de Final (1 to 4)
+    for (let i = 0; i < 4; i++) {
+      matches.push({
+        id: `match_${tournamentId}_playoff_q${i+1}`,
+        tournamentId,
+        phase: "playoff",
+        roundNumber: 2,
+        stageName: `Cuartos de Final ${i+1}`,
+        pair1Id: "",
+        pair2Id: "",
+        courtId: "",
+        date: "",
+        time: "",
+        status: "pending",
+        scoreSummary: "Por jugar",
+        winnerPairId: ""
+      });
+    }
+
+    // Pre-generate subsequent Semifinals & Final
+    matches.push(
+      {
+        id: `match_${tournamentId}_playoff_sf1`,
+        tournamentId,
+        phase: "playoff",
+        roundNumber: 3,
+        stageName: "Semifinal 1",
+        pair1Id: "",
+        pair2Id: "",
+        courtId: "",
+        date: "",
+        time: "",
+        status: "pending",
+        scoreSummary: "Por jugar",
+        winnerPairId: ""
+      },
+      {
+        id: `match_${tournamentId}_playoff_sf2`,
+        tournamentId,
+        phase: "playoff",
+        roundNumber: 3,
+        stageName: "Semifinal 2",
+        pair1Id: "",
+        pair2Id: "",
+        courtId: "",
+        date: "",
+        time: "",
+        status: "pending",
+        scoreSummary: "Por jugar",
+        winnerPairId: ""
+      },
+      {
+        id: `match_${tournamentId}_playoff_final`,
+        tournamentId,
+        phase: "playoff",
+        roundNumber: 4,
+        stageName: "Final",
+        pair1Id: "",
+        pair2Id: "",
+        courtId: "",
+        date: "",
+        time: "",
+        status: "pending",
+        scoreSummary: "Por jugar",
+        winnerPairId: ""
+      }
+    );
   }
   else {
     // 16avos de Final (Round of 32 - 16 matches)
@@ -464,6 +596,93 @@ export function generatePlayoffSchedules(
         winnerPairId: ""
       });
     }
+
+    // Pre-generate subsequent Octavos de Final (1 to 8)
+    for (let i = 0; i < 8; i++) {
+      matches.push({
+        id: `match_${tournamentId}_playoff_oct_${i+1}`,
+        tournamentId,
+        phase: "playoff",
+        roundNumber: 2,
+        stageName: `Octavos de Final ${i+1}`,
+        pair1Id: "",
+        pair2Id: "",
+        courtId: "",
+        date: "",
+        time: "",
+        status: "pending",
+        scoreSummary: "Por jugar",
+        winnerPairId: ""
+      });
+    }
+
+    // Pre-generate subsequent Cuartos de Final (1 to 4)
+    for (let i = 0; i < 4; i++) {
+      matches.push({
+        id: `match_${tournamentId}_playoff_q${i+1}`,
+        tournamentId,
+        phase: "playoff",
+        roundNumber: 3,
+        stageName: `Cuartos de Final ${i+1}`,
+        pair1Id: "",
+        pair2Id: "",
+        courtId: "",
+        date: "",
+        time: "",
+        status: "pending",
+        scoreSummary: "Por jugar",
+        winnerPairId: ""
+      });
+    }
+
+    // Pre-generate subsequent Semifinals & Final
+    matches.push(
+      {
+        id: `match_${tournamentId}_playoff_sf1`,
+        tournamentId,
+        phase: "playoff",
+        roundNumber: 4,
+        stageName: "Semifinal 1",
+        pair1Id: "",
+        pair2Id: "",
+        courtId: "",
+        date: "",
+        time: "",
+        status: "pending",
+        scoreSummary: "Por jugar",
+        winnerPairId: ""
+      },
+      {
+        id: `match_${tournamentId}_playoff_sf2`,
+        tournamentId,
+        phase: "playoff",
+        roundNumber: 4,
+        stageName: "Semifinal 2",
+        pair1Id: "",
+        pair2Id: "",
+        courtId: "",
+        date: "",
+        time: "",
+        status: "pending",
+        scoreSummary: "Por jugar",
+        winnerPairId: ""
+      },
+      {
+        id: `match_${tournamentId}_playoff_final`,
+        tournamentId,
+        phase: "playoff",
+        roundNumber: 5,
+        stageName: "Final",
+        pair1Id: "",
+        pair2Id: "",
+        courtId: "",
+        date: "",
+        time: "",
+        status: "pending",
+        scoreSummary: "Por jugar",
+        winnerPairId: ""
+      }
+    );
   }
 
   return matches;
@@ -479,12 +698,12 @@ export function generatePlayoffSchedules(
  */
 export function calculateRankingPointsGained(stageReached: string, isWinner: boolean): number {
   if (stageReached === "Final") {
-    return isWinner ? 100 : 70;
+    return isWinner ? 100 : 75;
   }
   if (stageReached.startsWith("Semifinal")) {
     return 50;
   }
-  if (stageReached.startsWith("Cuartos")) {
+  if (stageReached.startsWith("Cuartos") || stageReached.startsWith("Cuartos de Final")) {
     return 25;
   }
   return 10; // Default group stage points
