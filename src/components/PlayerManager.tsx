@@ -49,6 +49,7 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole }) => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [divisionFilter, setDivisionFilter] = useState("all");
+  const [loggedEmail, setLoggedEmail] = useState<string>("");
   
   // Form State
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -78,14 +79,40 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole }) => {
     loadPlayers();
   }, []);
 
+  useEffect(() => {
+    const handleCheckUser = () => {
+      const uJson = localStorage.getItem("padel_mgr_mock_user");
+      if (uJson) {
+        try {
+          const u = JSON.parse(uJson);
+          setLoggedEmail(u.email || "");
+        } catch (e) {}
+      } else {
+        setLoggedEmail("");
+      }
+    };
+    handleCheckUser();
+    // Also attach listener for custom login updates
+    window.addEventListener("storage", handleCheckUser);
+    return () => window.removeEventListener("storage", handleCheckUser);
+  }, [players]);
+
   const handleOpenCreateForm = () => {
+    let prefilledEmail = "";
+    const localUserJson = localStorage.getItem("padel_mgr_mock_user");
+    if (localUserJson) {
+      try {
+        prefilledEmail = JSON.parse(localUserJson).email || "";
+      } catch (e) {}
+    }
+
     setEditingPlayer(null);
     setNewPlayer({
       firstName: "",
       lastName: "",
       dni: "",
       phone: "",
-      email: "",
+      email: prefilledEmail,
       city: "",
       birthDate: "1995-01-01",
       category: "6ta Masculina",
@@ -221,8 +248,8 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole }) => {
           </p>
         </div>
         
-        {userRole === "admin" && (
-          <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2">
+          {userRole === "admin" && (
             <button
               onClick={async () => {
                 await repository.addDemoPlayersBatch();
@@ -233,18 +260,19 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole }) => {
                 );
                 loadPlayers();
               }}
-              className="bg-[#d4fc34] hover:bg-[#c5f015] text-slate-950 text-xs font-black px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition cursor-pointer uppercase tracking-wider"
+              className="bg-[#d4fc34] hover:bg-[#c5f015] text-slate-950 text-xs font-black px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition cursor-pointer uppercase tracking-wider text-center"
             >
-              <Users className="w-4 h-4 text-slate-950" /> Cargar 8 Jugadores de Prueba
+              <Users className="w-4 h-4 text-slate-950" /> Cargar 8 de Prueba
             </button>
-            <button
-              onClick={handleOpenCreateForm}
-              className="bg-[#d4fc34] hover:bg-[#c5f015] text-slate-950 text-xs font-black px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition cursor-pointer uppercase tracking-wider"
-            >
-              <Plus className="w-4 h-4 text-slate-950" /> Registrar Jugador
-            </button>
-          </div>
-        )}
+          )}
+          <button
+            onClick={handleOpenCreateForm}
+            className="bg-[#d4fc34] hover:bg-[#c5f015] text-slate-950 text-xs font-black px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition cursor-pointer uppercase tracking-wider text-center"
+          >
+            <Plus className="w-4 h-4 text-slate-950" /> 
+            <span>{userRole === "admin" ? "Registrar Jugador" : "Inscribirse como Jugador"}</span>
+          </button>
+        </div>
       </div>
 
       {/* SEARCH AND FILTERS */}
@@ -287,32 +315,37 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredPlayers.map(p => {
             const winRate = p.matchesPlayed > 0 ? (p.matchesWon / p.matchesPlayed) * 100 : 0;
+            const isMe = p.email && loggedEmail && p.email.toLowerCase() === loggedEmail.toLowerCase();
             return (
               <div 
                 key={p.id}
-                className="bg-slate-900 border border-slate-800 hover:border-slate-700 transition rounded-xl overflow-hidden flex flex-col justify-between"
+                className={`bg-slate-900 border transition rounded-xl overflow-hidden flex flex-col justify-between relative ${
+                  isMe ? 'border-cyan-500/70 shadow-lg shadow-cyan-500/5' : 'border-slate-800 hover:border-slate-700'
+                }`}
                 id={`player-card-${p.id}`}
               >
                 {/* Header card info */}
                 <div className="p-4 relative">
                   
-                  {/* Edit/Delete overlays for Admin */}
-                  {userRole === "admin" && (
+                  {/* Edit/Delete overlays for Admin / Self Edit for Matching Player */}
+                  {(userRole === "admin" || isMe) && (
                     <div className="absolute top-3 right-3 flex gap-1">
                       <button
                         onClick={() => handleOpenEditForm(p)}
                         className="p-1.5 bg-slate-950/80 hover:bg-slate-800 text-slate-400 hover:text-white rounded-md transition"
-                        title="Editar Jugador"
+                        title="Editar Perfil"
                       >
                         <Edit3 className="w-3.5 h-3.5" />
                       </button>
-                      <button
-                        onClick={() => handleDelete(p.id, `${p.firstName} ${p.lastName}`)}
-                        className="p-1.5 bg-slate-950/80 hover:bg-red-900/40 text-slate-400 hover:text-red-400 rounded-md transition"
-                        title="Eliminar Jugador"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      {userRole === "admin" && (
+                        <button
+                          onClick={() => handleDelete(p.id, `${p.firstName} ${p.lastName}`)}
+                          className="p-1.5 bg-slate-950/80 hover:bg-red-900/40 text-slate-400 hover:text-red-400 rounded-md transition"
+                          title="Eliminar Jugador"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
                   )}
 
@@ -324,9 +357,16 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole }) => {
                       className="w-12 h-12 rounded-full object-cover border border-slate-700 shadow-md"
                     />
                     <div>
-                      <span className="bg-slate-950 text-blue-400 border border-slate-800 px-2 py-0.5 rounded text-[9px] font-mono font-bold block w-fit mb-1">
-                        {p.category}
-                      </span>
+                      <div className="flex items-center gap-1 mb-1 flex-wrap">
+                        <span className="bg-slate-950 text-blue-400 border border-slate-800 px-2 py-0.5 rounded text-[9px] font-mono font-bold block w-fit">
+                          {p.category}
+                        </span>
+                        {isMe && (
+                          <span className="bg-cyan-500 text-slate-950 px-1.5 py-0.5 rounded text-[9px] font-sans font-extrabold uppercase animate-pulse">
+                            ★ tú
+                          </span>
+                        )}
+                      </div>
                       <h4 className="font-extrabold text-sm text-white">
                         {p.lastName}, {p.firstName}
                       </h4>

@@ -38,6 +38,111 @@ import {
   PairDosVidasStats
 } from '../lib/tournamentEngine';
 
+// Generates placeholder empty matches for all playoff phases
+export const preGeneratePlayoffsHelper = (tId: string, cat: string): Match[] => {
+  const list: Match[] = [];
+  
+  // 1. 16avos de Final (16 matches)
+  for (let i = 1; i <= 16; i++) {
+    list.push({
+      id: `match_${tId}_playoff_16avos_${cat.replace(/[^a-zA-Z0-9]/g, "")}_m${i}`,
+      tournamentId: tId,
+      phase: "playoff",
+      roundNumber: 1,
+      stageName: `16avos de Final ${i}`,
+      pair1Id: "",
+      pair2Id: "",
+      courtId: "",
+      date: "",
+      time: "",
+      status: "pending",
+      scoreSummary: "Por jugar",
+      winnerPairId: "",
+      category: cat
+    });
+  }
+
+  // 2. Octavos de Final (8 matches)
+  for (let i = 1; i <= 8; i++) {
+    list.push({
+      id: `match_${tId}_playoff_8avos_${cat.replace(/[^a-zA-Z0-9]/g, "")}_m${i}`,
+      tournamentId: tId,
+      phase: "playoff",
+      roundNumber: 2,
+      stageName: `Octavos de Final ${i}`,
+      pair1Id: "",
+      pair2Id: "",
+      courtId: "",
+      date: "",
+      time: "",
+      status: "pending",
+      scoreSummary: "Por jugar",
+      winnerPairId: "",
+      category: cat
+    });
+  }
+
+  // 3. Cuartos de Final (4 matches)
+  for (let i = 1; i <= 4; i++) {
+    list.push({
+      id: `match_${tId}_playoff_4tos_${cat.replace(/[^a-zA-Z0-9]/g, "")}_m${i}`,
+      tournamentId: tId,
+      phase: "playoff",
+      roundNumber: 3,
+      stageName: `Cuartos de Final ${i}`,
+      pair1Id: "",
+      pair2Id: "",
+      courtId: "",
+      date: "",
+      time: "",
+      status: "pending",
+      scoreSummary: "Por jugar",
+      winnerPairId: "",
+      category: cat
+    });
+  }
+
+  // 4. Semifinales (2 matches)
+  for (let i = 1; i <= 2; i++) {
+    list.push({
+      id: `match_${tId}_playoff_sf_${cat.replace(/[^a-zA-Z0-9]/g, "")}_m${i}`,
+      tournamentId: tId,
+      phase: "playoff",
+      roundNumber: 4,
+      stageName: `Semifinal ${i}`,
+      pair1Id: "",
+      pair2Id: "",
+      courtId: "",
+      date: "",
+      time: "",
+      status: "pending",
+      scoreSummary: "Por jugar",
+      winnerPairId: "",
+      category: cat
+    });
+  }
+
+  // 5. Final (1 match)
+  list.push({
+    id: `match_${tId}_playoff_final_${cat.replace(/[^a-zA-Z0-9]/g, "")}`,
+    tournamentId: tId,
+    phase: "playoff",
+    roundNumber: 5,
+    stageName: "Final",
+    pair1Id: "",
+    pair2Id: "",
+    courtId: "",
+    date: "",
+    time: "",
+    status: "pending",
+    scoreSummary: "Por jugar",
+    winnerPairId: "",
+    category: cat
+  });
+
+  return list;
+};
+
 interface TournamentDetailProps {
   tournamentId: string;
   userRole: "admin" | "player";
@@ -77,6 +182,7 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
   const [courts, setCourts] = useState<Court[]>([]);
   const [activeTab, setActiveTab] = useState<"inscriptions" | "groups" | "matches" | "standings" | "playoffs">("inscriptions");
   const [playoffFilter, setPlayoffFilter] = useState<"all" | "16avos" | "8avos" | "4tos" | "semifinal" | "final">("all");
+  const [fixtureFilter, setFixtureFilter] = useState<"all" | "group" | "16avos" | "8avos" | "4tos" | "semifinal" | "final">("all");
 
   // Selected Category
   const [selectedCategory, setSelectedCategory] = useState<string>("Libre Masculina");
@@ -210,8 +316,9 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
   };
 
   const getPairName = (pairId: string) => {
+    if (!pairId) return "Por determinar";
     const pr = pairs.find(p => p.id === pairId);
-    if (!pr) return "Pareja no registrada";
+    if (!pr) return "Por determinar";
     const p1 = players.find(p => p.id === pr.player1Id);
     const p2 = players.find(p => p.id === pr.player2Id);
     return `${p1?.lastName || "???"} / ${p2?.lastName || "???"}`;
@@ -315,6 +422,12 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
 
       // Force save all matches to repository
       for (const m of allGeneratedMatches) {
+        await repository.saveMatch(m);
+      }
+
+      // Pre-generate all empty playoff phases (16avos, 8avos, 4tos, semis, final)
+      const emptyPlayoffs = preGeneratePlayoffsHelper(tournamentId, selectedCategory);
+      for (const m of emptyPlayoffs) {
         await repository.saveMatch(m);
       }
 
@@ -507,42 +620,97 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
     } else if (totalPairsCount <= 9) {
       bracketSize = 4;
       stageLabel = "Semifinales";
-    } else {
+    } else if (totalPairsCount <= 16) {
       bracketSize = 8;
       stageLabel = "Cuartos de Final";
+    } else {
+      bracketSize = 16;
+      stageLabel = "Octavos de Final";
     }
 
-    // Qualify the top N pairs from our unified standings table
-    const qualifiedPairs = stands.slice(0, bracketSize).map((s, index) => ({
-      pairId: s.pairId,
-      sourceGroup: `Clasificado ${index + 1}`,
-      rank: (index < bracketSize / 2 ? 1 : 2) as 1 | 2
-    }));
+    // Qualify the top N pairs from our standings table
+    const qualifiedIds = stands.slice(0, bracketSize).map(s => s.pairId);
 
-    if (qualifiedPairs.length < 2) {
+    if (qualifiedIds.length < 2) {
       alert("No hay suficientes parejas para generar los playoffs. Se necesitan al menos 2.");
       return;
     }
 
-    // Generate schedules using the playoff engine
-    const playoffMatches = generatePlayoffSchedules(qualifiedPairs, tournamentId);
-
-    // Delete prior playoffs for this category
-    const oldPlayoffs = matches.filter(m => m.tournamentId === tournamentId && m.category === selectedCategory && m.phase === "playoff");
-    for (const o of oldPlayoffs) {
-      await repository.deleteMatch(o.id);
+    // Load active playoff matches for this tournament and category
+    let playoffMatches = matches.filter(m => m.tournamentId === tournamentId && m.category === selectedCategory && m.phase === "playoff");
+    
+    // Fallback if none exist
+    if (playoffMatches.length === 0) {
+      playoffMatches = preGeneratePlayoffsHelper(tournamentId, selectedCategory);
     }
 
-    // Save all new playoff matches
-    for (const pm of playoffMatches) {
-      pm.category = selectedCategory;
-      pm.status = "pending";
+    // Reset all playoff matches to blank/initial values
+    const resetMatches = playoffMatches.map(m => ({
+      ...m,
+      pair1Id: "",
+      pair2Id: "",
+      winnerPairId: "",
+      status: "pending" as Match["status"],
+      scoreSummary: "Por jugar"
+    }));
+
+    // Seeding templates
+    const seeds16 = [[0, 31], [15, 16], [8, 23], [7, 24], [4, 27], [11, 20], [12, 19], [3, 28], [2, 29], [13, 18], [10, 21], [5, 26], [6, 25], [9, 22], [14, 17], [1, 30]];
+    const seeds8 = [[0, 15], [7, 8], [4, 11], [3, 12], [2, 13], [5, 10], [6, 9], [1, 14]];
+    const seeds4 = [[0, 7], [3, 4], [2, 5], [1, 6]];
+
+    // Populate the starting round
+    const updatedPlayoffs = [...resetMatches];
+
+    if (bracketSize === 16) {
+      // Starting round is Octavos (which is the 8-matches round of 16)
+      for (let idx = 0; idx < 8; idx++) {
+        const mObj = updatedPlayoffs.find(m => m.stageName === `Octavos de Final ${idx + 1}`);
+        if (mObj) {
+          const [s1, s2] = seeds8[idx];
+          mObj.pair1Id = qualifiedIds[s1] || "";
+          mObj.pair2Id = qualifiedIds[s2] || "";
+        }
+      }
+    } else if (bracketSize === 8) {
+      // Starting round is Cuartos de Final (4 matches)
+      for (let idx = 0; idx < 4; idx++) {
+        const mObj = updatedPlayoffs.find(m => m.stageName === `Cuartos de Final ${idx + 1}` || m.stageName === `Cuartos ${idx + 1}`);
+        if (mObj) {
+          const [s1, s2] = seeds4[idx];
+          mObj.pair1Id = qualifiedIds[s1] || "";
+          mObj.pair2Id = qualifiedIds[s2] || "";
+        }
+      }
+    } else if (bracketSize === 4) {
+      // Starting round is Semifinal
+      const sf1 = updatedPlayoffs.find(m => m.stageName === "Semifinal 1");
+      const sf2 = updatedPlayoffs.find(m => m.stageName === "Semifinal 2");
+      if (sf1) {
+        sf1.pair1Id = qualifiedIds[0] || "";
+        sf1.pair2Id = qualifiedIds[3] || "";
+      }
+      if (sf2) {
+        sf2.pair1Id = qualifiedIds[1] || "";
+        sf2.pair2Id = qualifiedIds[2] || "";
+      }
+    } else if (bracketSize === 2) {
+      // Starting round is Final
+      const f = updatedPlayoffs.find(m => m.stageName === "Final");
+      if (f) {
+        f.pair1Id = qualifiedIds[0] || "";
+        f.pair2Id = qualifiedIds[1] || "";
+      }
+    }
+
+    // Save all updated playoff matches
+    for (const pm of updatedPlayoffs) {
       await repository.saveMatch(pm);
     }
 
     await repository.addNotification(
       "Playoffs Generados",
-      `Cuadro final de playoffs (${stageLabel}) para la categoría '${selectedCategory}' generado correctamente con las mejores ${qualifiedPairs.length} parejas.`,
+      `Cuadro final de playoffs (${stageLabel}) para la categoría '${selectedCategory}' generado correctamente con las mejores ${qualifiedIds.length} parejas.`,
       "success"
     );
 
@@ -752,6 +920,102 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
     // Handle Playoff progressions automatically if in bracket
     if (activeScoreMatch.phase === "playoff") {
       await handlePlayoffProgression(updatedMatch, winnerId);
+    }
+
+    // Automatically launch playoffs if this was the last group match
+    if (activeScoreMatch.phase === "group") {
+      const allCategoryMatches = [...matches.filter(m => m.id !== updatedMatch.id), updatedMatch]
+        .filter(m => m.category === selectedCategory);
+      const remainingGroupMatches = allCategoryMatches.filter(m => m.phase === "group" && m.status === "pending");
+      
+      if (remainingGroupMatches.length === 0) {
+        const stands = calculateDosVidasStandings(pairs.filter(p => p.category === selectedCategory), allCategoryMatches.filter(m => m.phase === "group"), getPairName);
+        const totalPairsCount = pairs.filter(p => p.category === selectedCategory).length;
+        
+        let bracketSize = 8;
+        let stageLabel = "Cuartos de Final";
+        if (totalPairsCount <= 4) {
+          bracketSize = 2;
+          stageLabel = "Final";
+        } else if (totalPairsCount <= 9) {
+          bracketSize = 4;
+          stageLabel = "Semifinales";
+        } else if (totalPairsCount <= 16) {
+          bracketSize = 8;
+          stageLabel = "Cuartos de Final";
+        } else {
+          bracketSize = 16;
+          stageLabel = "Octavos de Final";
+        }
+
+        const qualifiedIds = stands.slice(0, bracketSize).map(s => s.pairId);
+        if (qualifiedIds.length >= 2) {
+          let playoffMatches = matches.filter(m => m.tournamentId === tournamentId && m.category === selectedCategory && m.phase === "playoff");
+          if (playoffMatches.length === 0) {
+            playoffMatches = preGeneratePlayoffsHelper(tournamentId, selectedCategory);
+          }
+
+          const resetMatches = playoffMatches.map(m => ({
+            ...m,
+            pair1Id: "",
+            pair2Id: "",
+            winnerPairId: "",
+            status: "pending" as Match["status"],
+            scoreSummary: "Por jugar"
+          }));
+
+          const seeds8 = [[0, 15], [7, 8], [4, 11], [3, 12], [2, 13], [5, 10], [6, 9], [1, 14]];
+          const seeds4 = [[0, 7], [3, 4], [2, 5], [1, 6]];
+          const updatedPlayoffs = [...resetMatches];
+
+          if (bracketSize === 16) {
+            for (let idx = 0; idx < 8; idx++) {
+              const mObj = updatedPlayoffs.find(m => m.stageName === `Octavos de Final ${idx + 1}`);
+              if (mObj) {
+                const [s1, s2] = seeds8[idx];
+                mObj.pair1Id = qualifiedIds[s1] || "";
+                mObj.pair2Id = qualifiedIds[s2] || "";
+              }
+            }
+          } else if (bracketSize === 8) {
+            for (let idx = 0; idx < 4; idx++) {
+              const mObj = updatedPlayoffs.find(m => m.stageName === `Cuartos de Final ${idx + 1}` || m.stageName === `Cuartos ${idx + 1}`);
+              if (mObj) {
+                const [s1, s2] = seeds4[idx];
+                mObj.pair1Id = qualifiedIds[s1] || "";
+                mObj.pair2Id = qualifiedIds[s2] || "";
+              }
+            }
+          } else if (bracketSize === 4) {
+            const sf1 = updatedPlayoffs.find(m => m.stageName === "Semifinal 1");
+            const sf2 = updatedPlayoffs.find(m => m.stageName === "Semifinal 2");
+            if (sf1) {
+              sf1.pair1Id = qualifiedIds[0] || "";
+              sf1.pair2Id = qualifiedIds[3] || "";
+            }
+            if (sf2) {
+              sf2.pair1Id = qualifiedIds[1] || "";
+              sf2.pair2Id = qualifiedIds[2] || "";
+            }
+          } else if (bracketSize === 2) {
+            const f = updatedPlayoffs.find(m => m.stageName === "Final");
+            if (f) {
+              f.pair1Id = qualifiedIds[0] || "";
+              f.pair2Id = qualifiedIds[1] || "";
+            }
+          }
+
+          for (const pm of updatedPlayoffs) {
+            await repository.saveMatch(pm);
+          }
+
+          await repository.addNotification(
+            "Fase de Clasificación Completada",
+            `Se han finalizado las rondas de grupo. Se clasificaron automáticamente las parejas y se completó la primera fase eliminatoria (${stageLabel}) para la categoría '${selectedCategory}'.`,
+            "success"
+          );
+        }
+      }
     }
 
     setActiveScoreMatch(null);
@@ -1388,95 +1652,237 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
               </div>
             )}
 
-            <div className="bg-slate-900 border border-slate-800 rounded-xl divide-y divide-slate-800">
-              {matches.filter(m => m.category === selectedCategory).map(m => {
-                const finished = m.status === "completed" || m.status === "wo";
-                return (
-                  <div 
-                    key={m.id}
-                    className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-slate-950/40 transition"
+            {/* BUTTON BAR FOR EACH TOURNAMENT PHASE */}
+            {matches.filter(m => m.category === selectedCategory).length > 0 && (() => {
+              const currentMatches = matches.filter(m => m.category === selectedCategory);
+              const hasGroup = currentMatches.some(m => m.phase === "group" || m.stageName.toLowerCase().includes("grupo") || m.stageName.toLowerCase().includes("ronda"));
+              const has16 = currentMatches.some(m => m.phase === "playoff" && (m.stageName.toLowerCase().includes("16avos") || m.stageName.toLowerCase().includes("dieciseisavos")));
+              const has8 = currentMatches.some(m => m.phase === "playoff" && (m.stageName.toLowerCase().includes("octavos") || m.stageName.toLowerCase().includes("8avos")));
+              const has4 = currentMatches.some(m => m.phase === "playoff" && (m.stageName.toLowerCase().includes("cuartos") || m.stageName.toLowerCase().includes("4tos")));
+              const hasSf = currentMatches.some(m => m.phase === "playoff" && m.stageName.toLowerCase().includes("semifinal"));
+              const hasF = currentMatches.some(m => m.phase === "playoff" && m.stageName.toLowerCase() === "final");
+
+              return (
+                <div className="flex flex-wrap gap-1.5 bg-slate-900/40 p-2.5 rounded-xl border border-slate-800 shadow-sm">
+                  <span className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-wider px-2 py-1.5 flex items-center">Fases:</span>
+                  <button
+                    type="button"
+                    onClick={() => setFixtureFilter("all")}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold leading-none cursor-pointer transition-all ${
+                      fixtureFilter === "all"
+                        ? "bg-indigo-650/20 text-indigo-400 border border-indigo-500/30 font-black"
+                        : "bg-slate-950 text-slate-400 border border-slate-900 hover:text-white"
+                    }`}
                   >
-                    {/* Metadata column */}
-                    <div className="space-y-1">
-                      <span className="bg-slate-950 text-slate-400 border border-slate-850 px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase">
-                        {m.stageName} • Ronda {m.roundNumber}
-                      </span>
-                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400 mt-1">
-                        <div className="flex items-center gap-1">
-                          <MapPin className="w-3.5 h-3.5 text-slate-500" />
-                          <span className={m.courtId ? "text-slate-200" : "text-amber-400 font-medium"}>
-                            {courts.find(c => c.id === m.courtId)?.name || "Pista por asignar"}
-                          </span>
-                          {m.date && (
-                            <span className="font-mono text-[11px] text-slate-500 ml-1">
-                              ({m.date} • {m.time} h)
+                    Ver Todo ({currentMatches.length})
+                  </button>
+                  {hasGroup && (
+                    <button
+                      type="button"
+                      onClick={() => setFixtureFilter("group")}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold leading-none cursor-pointer transition-all ${
+                        fixtureFilter === "group"
+                          ? "bg-[#d4fc34]/20 text-[#d4fc34] border border-[#d4fc34]/30 font-black"
+                          : "bg-slate-950 text-slate-400 border border-slate-900 hover:text-white"
+                      }`}
+                    >
+                      Fase de Grupos ({currentMatches.filter(m => m.phase === "group" || m.stageName.toLowerCase().includes("grupo") || m.stageName.toLowerCase().includes("ronda")).length})
+                    </button>
+                  )}
+                  {has16 && (
+                    <button
+                      type="button"
+                      onClick={() => setFixtureFilter("16avos")}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold leading-none cursor-pointer transition-all ${
+                        fixtureFilter === "16avos"
+                          ? "bg-[#d4fc34]/20 text-[#d4fc34] border border-[#d4fc34]/30 font-black"
+                          : "bg-slate-950 text-slate-400 border border-slate-900 hover:text-white"
+                      }`}
+                    >
+                      16avos ({currentMatches.filter(m => m.phase === "playoff" && (m.stageName.toLowerCase().includes("16avos") || m.stageName.toLowerCase().includes("dieciseisavos"))).length})
+                    </button>
+                  )}
+                  {has8 && (
+                    <button
+                      type="button"
+                      onClick={() => setFixtureFilter("8avos")}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold leading-none cursor-pointer transition-all ${
+                        fixtureFilter === "8avos"
+                          ? "bg-[#d4fc34]/20 text-[#d4fc34] border border-[#d4fc34]/30 font-black"
+                          : "bg-slate-950 text-slate-400 border border-slate-900 hover:text-white"
+                      }`}
+                    >
+                      8avos ({currentMatches.filter(m => m.phase === "playoff" && (m.stageName.toLowerCase().includes("octavos") || m.stageName.toLowerCase().includes("8avos"))).length})
+                    </button>
+                  )}
+                  {has4 && (
+                    <button
+                      type="button"
+                      onClick={() => setFixtureFilter("4tos")}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold leading-none cursor-pointer transition-all ${
+                        fixtureFilter === "4tos"
+                          ? "bg-[#d4fc34]/20 text-[#d4fc34] border border-[#d4fc34]/30 font-black"
+                          : "bg-slate-950 text-slate-400 border border-slate-900 hover:text-white"
+                      }`}
+                    >
+                      4tos ({currentMatches.filter(m => m.phase === "playoff" && (m.stageName.toLowerCase().includes("cuartos") || m.stageName.toLowerCase().includes("4tos"))).length})
+                    </button>
+                  )}
+                  {hasSf && (
+                    <button
+                      type="button"
+                      onClick={() => setFixtureFilter("semifinal")}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold leading-none cursor-pointer transition-all ${
+                        fixtureFilter === "semifinal"
+                          ? "bg-[#d4fc34]/20 text-[#d4fc34] border border-[#d4fc34]/30 font-black"
+                          : "bg-slate-950 text-slate-400 border border-slate-900 hover:text-white"
+                      }`}
+                    >
+                      Semifinal ({currentMatches.filter(m => m.phase === "playoff" && m.stageName.toLowerCase().includes("semifinal")).length})
+                    </button>
+                  )}
+                  {hasF && (
+                    <button
+                      type="button"
+                      onClick={() => setFixtureFilter("final")}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold leading-none cursor-pointer transition-all ${
+                        fixtureFilter === "final"
+                          ? "bg-[#d4fc34]/20 text-[#d4fc34] border border-[#d4fc34]/30 font-black"
+                          : "bg-slate-950 text-slate-400 border border-slate-900 hover:text-white"
+                      }`}
+                    >
+                      Final ({currentMatches.filter(m => m.phase === "playoff" && m.stageName.toLowerCase() === "final").length})
+                    </button>
+                  )}
+                </div>
+              );
+            })()}
+
+            {(() => {
+              const matchesToRender = matches.filter(m => m.category === selectedCategory).filter(m => {
+                if (fixtureFilter === "all") return true;
+                if (fixtureFilter === "group") {
+                  return m.phase === "group" || m.stageName.toLowerCase().includes("grupo") || m.stageName.toLowerCase().includes("ronda");
+                }
+                if (fixtureFilter === "16avos") {
+                  return m.phase === "playoff" && (m.stageName.toLowerCase().includes("16avos") || m.stageName.toLowerCase().includes("dieciseisavos"));
+                }
+                if (fixtureFilter === "8avos") {
+                  return m.phase === "playoff" && (m.stageName.toLowerCase().includes("octavos") || m.stageName.toLowerCase().includes("8avos"));
+                }
+                if (fixtureFilter === "4tos") {
+                  return m.phase === "playoff" && (m.stageName.toLowerCase().includes("cuartos") || m.stageName.toLowerCase().includes("4tos"));
+                }
+                if (fixtureFilter === "semifinal") {
+                  return m.phase === "playoff" && m.stageName.toLowerCase().includes("semifinal");
+                }
+                if (fixtureFilter === "final") {
+                  return m.phase === "playoff" && m.stageName.toLowerCase() === "final";
+                }
+                return true;
+              });
+
+              return (
+                <div className="bg-slate-900 border border-slate-800 rounded-xl divide-y divide-slate-800">
+                  {matchesToRender.length === 0 ? (
+                    <div className="p-8 text-center text-slate-500 text-xs font-mono">
+                      No hay partidos registrados de momento para esta fase del torneo.
+                    </div>
+                  ) : (
+                    matchesToRender.map(m => {
+                      const finished = m.status === "completed" || m.status === "wo";
+                      return (
+                        <div 
+                          key={m.id}
+                          className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-slate-950/40 transition"
+                        >
+                          {/* Metadata column */}
+                          <div className="space-y-1">
+                            <span className="bg-slate-950 text-slate-400 border border-slate-850 px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase">
+                              {m.stageName} • Ronda {m.roundNumber}
                             </span>
-                          )}
-                        </div>
-                        {userRole === "admin" && !finished && (
-                          <button
-                            onClick={() => handleOpenCourtAssigner(m)}
-                            className="bg-[#d4fc34] hover:bg-[#c5f015] text-slate-950 text-[10px] font-black px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer uppercase tracking-wider text-center ml-2"
-                          >
-                            <Calendar className="w-3 h-3 text-slate-950" /> Asignar Cancha / Hora
-                          </button>
-                        )}
-                      </div>
-                    </div>
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400 mt-1">
+                              <div className="flex items-center gap-1">
+                                <MapPin className="w-3.5 h-3.5 text-slate-500" />
+                                <span className={m.courtId ? "text-slate-200" : "text-amber-400 font-medium"}>
+                                  {courts.find(c => c.id === m.courtId)?.name || "Pista por asignar"}
+                                </span>
+                                {m.date && (
+                                  <span className="font-mono text-[11px] text-slate-500 ml-1">
+                                    ({m.date} • {m.time} h)
+                                  </span>
+                                )}
+                              </div>
+                              {userRole === "admin" && !finished && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenCourtAssigner(m)}
+                                  className="bg-[#d4fc34] hover:bg-[#c5f015] text-slate-950 text-[10px] font-black px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer uppercase tracking-wider text-center ml-2"
+                                >
+                                  <Calendar className="w-3 h-3 text-slate-950" /> Asignar Cancha / Hora
+                                </button>
+                              )}
+                            </div>
+                          </div>
 
-                    {/* Team versus */}
-                    <div className="flex-1 max-w-lg">
-                      <div className="grid grid-cols-2 gap-4 items-center">
-                        <div className="text-right">
-                          <span className={`block text-xs font-bold ${finished && m.winnerPairId === m.pair1Id ? 'text-blue-400' : 'text-slate-200'}`}>
-                            {getPairName(m.pair1Id)}
-                          </span>
-                          {finished && m.winnerPairId === m.pair1Id && <span className="text-[10px] text-green-400 font-bold uppercase">WIN</span>}
-                        </div>
-                        <div className="border-l border-slate-800 pl-4">
-                          <span className={`block text-xs font-bold ${finished && m.winnerPairId === m.pair2Id ? 'text-blue-400' : 'text-slate-200'}`}>
-                            {getPairName(m.pair2Id)}
-                          </span>
-                          {finished && m.winnerPairId === m.pair2Id && <span className="text-[10px] text-green-400 font-bold uppercase">WIN</span>}
-                        </div>
-                      </div>
-                    </div>
+                          {/* Team versus */}
+                          <div className="flex-1 max-w-lg">
+                            <div className="grid grid-cols-2 gap-4 items-center">
+                              <div className="text-right">
+                                <span className={`block text-xs font-bold ${finished && m.winnerPairId === m.pair1Id ? 'text-blue-400' : 'text-slate-200'}`}>
+                                  {getPairName(m.pair1Id)}
+                                </span>
+                                {finished && m.winnerPairId === m.pair1Id && <span className="text-[10px] text-green-400 font-bold uppercase">WIN</span>}
+                              </div>
+                              <div className="border-l border-slate-800 pl-4">
+                                <span className={`block text-xs font-bold ${finished && m.winnerPairId === m.pair2Id ? 'text-blue-400' : 'text-slate-200'}`}>
+                                  {getPairName(m.pair2Id)}
+                                </span>
+                                {finished && m.winnerPairId === m.pair2Id && <span className="text-[10px] text-green-400 font-bold uppercase">WIN</span>}
+                              </div>
+                            </div>
+                          </div>
 
-                    {/* Actions and Score */}
-                    <div className="flex items-center md:justify-end gap-3 shrink-0">
-                      {finished ? (
-                        <div className="text-right">
-                          <span className="bg-blue-600/10 text-blue-400 border border-blue-500/20 font-mono font-black px-2.5 py-1 rounded text-xs block">
-                            {m.scoreSummary}
-                          </span>
-                          {userRole === "admin" && (
-                            <button 
-                              onClick={() => handleOpenScorer(m)}
-                              className="text-[10px] text-slate-500 hover:text-slate-300 font-semibold hover:underline mt-1 block"
-                            >
-                              Corregir Marcador
-                            </button>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="flex gap-2">
-                          <span className="text-xs text-slate-505 font-mono italic flex items-center">Por jugar</span>
-                          {userRole === "admin" && (
-                            <button
-                              onClick={() => handleOpenScorer(m)}
-                              className="bg-slate-800 hover:bg-slate-700 hover:text-blue-400 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition border border-slate-700 cursor-pointer"
-                            >
-                              Cargar Resultado
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </div>
+                          {/* Actions and Score */}
+                          <div className="flex items-center md:justify-end gap-3 shrink-0">
+                            {finished ? (
+                              <div className="text-right">
+                                <span className="bg-blue-600/10 text-blue-400 border border-blue-500/20 font-mono font-black px-2.5 py-1 rounded text-xs block">
+                                  {m.scoreSummary}
+                                </span>
+                                {userRole === "admin" && (
+                                  <button 
+                                    type="button"
+                                    onClick={() => handleOpenScorer(m)}
+                                    className="text-[10px] text-slate-500 hover:text-slate-300 font-semibold hover:underline mt-1 block"
+                                  >
+                                    Corregir Marcador
+                                  </button>
+                                )}
+                              </div>
+                            ) : (
+                              <div className="flex gap-2">
+                                <span className="text-xs text-slate-505 font-mono italic flex items-center">Por jugar</span>
+                                {userRole === "admin" && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenScorer(m)}
+                                    className="bg-slate-800 hover:bg-slate-700 hover:text-blue-400 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition border border-slate-700 cursor-pointer"
+                                  >
+                                    Cargar Resultado
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                          </div>
 
-                  </div>
-                );
-              })}
-            </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              );
+            })()}
 
           </div>
         )}

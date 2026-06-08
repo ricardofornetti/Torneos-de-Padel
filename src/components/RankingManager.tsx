@@ -9,7 +9,15 @@ import {
   FileSpreadsheet,
   Zap,
   RotateCcw,
-  Sparkles
+  Sparkles,
+  X,
+  User,
+  Calendar,
+  MapPin,
+  Phone,
+  Mail,
+  Percent,
+  Activity
 } from 'lucide-react';
 import { repository } from '../lib/repository';
 import { Player } from '../types';
@@ -24,6 +32,7 @@ export const RankingManager: React.FC<RankingManagerProps> = ({ userRole }) => {
   const [resetting, setResetting] = useState(false);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
 
   const loadRankings = async () => {
     setLoading(true);
@@ -62,6 +71,34 @@ export const RankingManager: React.FC<RankingManagerProps> = ({ userRole }) => {
         console.error("Error resetting points", err);
       } finally {
         setResetting(false);
+      }
+    }
+  };
+
+  const handleResetIndividualPlayerPoints = async (player: Player) => {
+    if (confirm(`⚠️ ¿Estás seguro de que deseas reiniciar todos los puntos y estadísticas del jugador ${player.firstName} ${player.lastName} a 0? Esta acción es irreversible.`)) {
+      try {
+        const updated: Player = {
+          ...player,
+          rankingPoints: 0,
+          matchesPlayed: 0,
+          matchesWon: 0,
+          matchesLost: 0,
+          setsWon: 0,
+          setsLost: 0,
+          gamesWon: 0,
+          gamesLost: 0
+        };
+        await repository.savePlayer(updated);
+        await repository.addNotification(
+          "Jugador Reiniciado",
+          `El administrador ha reiniciado los puntos y estadísticas de ${player.firstName} ${player.lastName}.`,
+          "warning"
+        );
+        setSelectedPlayer(updated);
+        await loadRankings();
+      } catch (err) {
+        console.error("Error resetting individual player points:", err);
       }
     }
   };
@@ -131,16 +168,14 @@ export const RankingManager: React.FC<RankingManagerProps> = ({ userRole }) => {
             <FileSpreadsheet className="w-4 h-4 text-emerald-500" /> Exportar Ranking (CSV)
           </button>
           
-          {userRole === "admin" && (
-            <button
-              onClick={handleResetPoints}
-              disabled={resetting}
-              className="bg-red-950/30 hover:bg-red-950/60 border border-red-900/40 text-red-400 text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"
-            >
-              <RotateCcw className={`w-3.5 h-3.5 text-red-500 ${resetting ? 'animate-spin' : ''}`} /> 
-              <span>{resetting ? 'Reiniciando...' : 'Reiniciar Puntos'}</span>
-            </button>
-          )}
+          <button
+            onClick={handleResetPoints}
+            disabled={resetting}
+            className="bg-red-950/30 hover:bg-red-950/60 border border-red-900/40 text-red-400 text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"
+          >
+            <RotateCcw className={`w-3.5 h-3.5 text-red-500 ${resetting ? 'animate-spin' : ''}`} /> 
+            <span>{resetting ? 'Reiniciando...' : 'Reiniciar Puntos'}</span>
+          </button>
         </div>
       </div>
 
@@ -286,8 +321,9 @@ export const RankingManager: React.FC<RankingManagerProps> = ({ userRole }) => {
                   return (
                     <tr 
                       key={p.id} 
-                      className={`${rowStyles} transition`}
+                      className={`${rowStyles} hover:bg-slate-800/40 cursor-pointer transition`}
                       id={`rank-row-${p.id}`}
+                      onClick={() => setSelectedPlayer(p)}
                     >
                       {/* Placement index */}
                       <td className="py-3.5 px-4 text-center font-bold font-mono">
@@ -359,7 +395,7 @@ export const RankingManager: React.FC<RankingManagerProps> = ({ userRole }) => {
       )}
 
       {/* Informative section about adjudication rules */}
-      <div className="bg-slate-900/40 border border-slate-800 rounded-xl p-5 space-y-3">
+      <div className="bg-slate-900/40 border border-slate-800 rounded-xl p-5 space-y-3 pb-6">
         <h4 className="font-extrabold text-sm text-white flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-blue-400" /> Sistema de Adjudicación de Puntos
         </h4>
@@ -385,6 +421,188 @@ export const RankingManager: React.FC<RankingManagerProps> = ({ userRole }) => {
           </div>
         </div>
       </div>
+
+      {/* DETAILED PLAYER STATISTICS SHEET / DRAWER */}
+      {selectedPlayer && (
+        <div className="fixed inset-0 z-50 flex justify-end bg-slate-950/80 backdrop-blur-sm transition-all">
+          {/* Backdrop click closer */}
+          <div className="absolute inset-0" onClick={() => setSelectedPlayer(null)}></div>
+          
+          {/* Sheet Body */}
+          <div className="relative w-full max-w-md bg-slate-900 border-l border-slate-800 h-full flex flex-col shadow-2xl z-10 overflow-hidden">
+            {/* Sheet Header */}
+            <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950">
+              <span className="font-extrabold text-sm text-white flex items-center gap-1.5 font-mono uppercase tracking-wider">
+                <Activity className="w-4 h-4 text-cyan-400 animate-pulse" /> Rendimiento & Estadísticas
+              </span>
+              <button
+                onClick={() => setSelectedPlayer(null)}
+                className="p-1.5 bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white rounded-lg cursor-pointer border border-slate-800"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto p-5 space-y-6 text-xs">
+              
+              {/* Profile Card Summary */}
+              <div className="flex items-center gap-4 bg-slate-950 p-4 rounded-xl border border-slate-850">
+                <img 
+                  src={selectedPlayer.photoUrl} 
+                  alt={`${selectedPlayer.firstName} ${selectedPlayer.lastName}`} 
+                  className="w-14 h-14 rounded-full object-cover border-2 border-cyan-400/80 shrink-0 shadow-lg shadow-cyan-400/10" 
+                  referrerPolicy="no-referrer"
+                />
+                <div>
+                  <h3 className="font-black text-lg text-white leading-tight">
+                    {selectedPlayer.lastName}, {selectedPlayer.firstName}
+                  </h3>
+                  <p className="text-slate-400 font-mono text-[10px] mt-0.5">{selectedPlayer.city}</p>
+                  <span className="inline-block mt-2 bg-cyan-700/25 text-[#22d3ee] px-2.5 py-0.5 rounded text-[9px] font-mono font-bold uppercase border border-cyan-500/20">
+                    Categoría: {selectedPlayer.category}
+                  </span>
+                </div>
+              </div>
+
+              {/* Point highlights (Stat Bento Card) */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-slate-950 p-4 rounded-xl border border-slate-850 flex flex-col justify-between">
+                  <span className="text-[10px] uppercase font-mono text-slate-400 font-bold">Puntos Anuales</span>
+                  <span className="text-2xl font-black text-amber-400 font-mono mt-1.5">{selectedPlayer.rankingPoints} pts</span>
+                </div>
+                <div className="bg-slate-950 p-4 rounded-xl border border-slate-850 flex flex-col justify-between">
+                  <span className="text-[10px] uppercase font-mono text-slate-400 font-bold">Efectividad</span>
+                  <span className="text-2xl font-black text-blue-400 font-mono mt-1.5">
+                    {selectedPlayer.matchesPlayed > 0 
+                      ? ((selectedPlayer.matchesWon / selectedPlayer.matchesPlayed) * 100).toFixed(0) 
+                      : 0}%
+                  </span>
+                </div>
+              </div>
+
+              {/* Match Stats breakdown */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-mono uppercase text-slate-300 font-bold flex items-center gap-1.5 border-b border-slate-800 pb-1.5">
+                  <Trophy className="w-3.5 h-3.5 text-amber-500" /> Historial de Partidos
+                </h4>
+                <div className="grid grid-cols-3 gap-2 text-center text-[11px] font-mono">
+                  <div className="bg-slate-950 p-3 rounded-lg border border-slate-850">
+                    <span className="text-xs text-slate-400 block font-semibold mb-1">PJ</span>
+                    <span className="text-sm font-black text-white">{selectedPlayer.matchesPlayed}</span>
+                  </div>
+                  <div className="bg-slate-950 p-3 rounded-lg border border-slate-850 bg-green-500/5">
+                    <span className="text-xs text-green-400 block font-semibold mb-1">PG</span>
+                    <span className="text-sm font-black text-green-400">{selectedPlayer.matchesWon}</span>
+                  </div>
+                  <div className="bg-slate-950 p-3 rounded-lg border border-slate-850 bg-rose-500/5">
+                    <span className="text-xs text-rose-450 block font-semibold mb-1">PP</span>
+                    <span className="text-sm font-black text-rose-450">{selectedPlayer.matchesLost}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Set Stats breakdown */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-mono uppercase text-slate-300 font-bold flex items-center gap-1.5 border-b border-slate-800 pb-1.5">
+                  <Percent className="w-3.5 h-3.5 text-cyan-400" /> Rendimiento de Sets
+                </h4>
+                <div className="bg-slate-950 p-4 rounded-xl border border-slate-850 space-y-3 font-mono">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-slate-400">Sets Ganados:</span>
+                    <span className="font-bold text-green-450">{selectedPlayer.setsWon}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-slate-400">Sets Perdidos:</span>
+                    <span className="font-bold text-rose-450">{selectedPlayer.setsLost}</span>
+                  </div>
+                  <div className="w-full bg-slate-900 h-2 rounded-full overflow-hidden flex">
+                    {selectedPlayer.setsWon + selectedPlayer.setsLost > 0 ? (
+                      <>
+                        <div className="bg-green-500 h-full" style={{ width: `${(selectedPlayer.setsWon / (selectedPlayer.setsWon + selectedPlayer.setsLost)) * 100}%` }}></div>
+                        <div className="bg-rose-500 h-full" style={{ width: `${(selectedPlayer.setsLost / (selectedPlayer.setsWon + selectedPlayer.setsLost)) * 100}%` }}></div>
+                      </>
+                    ) : (
+                      <div className="bg-slate-800 w-full h-full"></div>
+                    )}
+                  </div>
+                  <div className="text-[10px] text-slate-500 text-center">
+                    Efectividad en sets disputados
+                  </div>
+                </div>
+              </div>
+
+              {/* Games Stats breakdown */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-mono uppercase text-slate-300 font-bold flex items-center gap-1.5 border-b border-slate-800 pb-1.5">
+                  <Zap className="w-3.5 h-3.5 text-[#d4fc34]" /> Rendimiento de Games
+                </h4>
+                <div className="bg-slate-950 p-4 rounded-xl border border-slate-850 space-y-3 font-mono">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-slate-400">Games Ganados:</span>
+                    <span className="font-bold text-green-450">{selectedPlayer.gamesWon}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-slate-400">Games Perdidos:</span>
+                    <span className="font-bold text-rose-450">{selectedPlayer.gamesLost}</span>
+                  </div>
+                  <div className="w-full bg-slate-900 h-2 rounded-full overflow-hidden flex">
+                    {selectedPlayer.gamesWon + selectedPlayer.gamesLost > 0 ? (
+                      <>
+                        <div className="bg-green-500 h-full" style={{ width: `${(selectedPlayer.gamesWon / (selectedPlayer.gamesWon + selectedPlayer.gamesLost)) * 100}%` }}></div>
+                        <div className="bg-rose-500 h-full" style={{ width: `${(selectedPlayer.gamesLost / (selectedPlayer.gamesWon + selectedPlayer.gamesLost)) * 100}%` }}></div>
+                      </>
+                    ) : (
+                      <div className="bg-slate-800 w-full h-full"></div>
+                    )}
+                  </div>
+                  <div className="text-[10px] text-slate-500 text-center">
+                    Efectividad en juegos (games) individuales
+                  </div>
+                </div>
+              </div>
+
+              {/* Personal Details */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-mono uppercase text-slate-300 font-bold flex items-center gap-1.5 border-b border-slate-800 pb-1.5">
+                  <User className="w-3.5 h-3.5 text-blue-400" /> Contacto e Información
+                </h4>
+                <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-850 space-y-2 mt-2 font-mono text-[11px] text-slate-400">
+                  <div className="flex justify-between">
+                    <span className="flex items-center gap-1"><MapPin className="w-3 h-3 text-slate-500" /> Ciudad:</span>
+                    <span className="text-white font-bold">{selectedPlayer.city || 'N/A'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="flex items-center gap-1"><Mail className="w-3 h-3 text-slate-500" /> Email:</span>
+                    <span className="text-white font-bold truncate max-w-[180px]">{selectedPlayer.email || 'N/A'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="flex items-center gap-1"><Phone className="w-3 h-3 text-slate-500" /> Teléfono:</span>
+                    <span className="text-white font-bold">{selectedPlayer.phone || 'N/A'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="flex items-center gap-1"><Calendar className="w-3 h-3 text-slate-500" /> Nacimiento:</span>
+                    <span className="text-white font-bold">{selectedPlayer.birthDate || 'N/A'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Reset button only for this player (Organizadores / Admin can reset stats) */}
+              <div className="bg-red-950/10 p-4 border border-red-900/30 rounded-xl space-y-2.5 mt-4">
+                <span className="text-[10px] font-bold text-red-400 block font-mono uppercase tracking-wide">Acciones Administrativas:</span>
+                <button
+                  onClick={() => handleResetIndividualPlayerPoints(selectedPlayer)}
+                  className="w-full py-2.5 bg-red-950/35 hover:bg-red-950/60 border border-red-900/55 hover:border-red-500/40 text-red-400 hover:text-red-300 font-bold text-xs rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <RotateCcw className="w-3.5 h-3.5 text-red-500" /> 
+                  <span>Reiniciar puntos de este jugador</span>
+                </button>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

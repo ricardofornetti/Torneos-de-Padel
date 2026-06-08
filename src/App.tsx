@@ -100,9 +100,9 @@ export default function App() {
               />
             )}
 
-            {activeView === "rankings" && (
-              <RankingManager />
-            )}
+             {activeView === "rankings" && (
+               <RankingManager userRole={userRole} />
+             )}
 
             {activeView === "courts" && (
               <CourtManager 
