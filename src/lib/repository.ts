@@ -10,7 +10,7 @@ import {
   query,
   where
 } from 'firebase/firestore';
-import { Tournament, Player, Pair, Match, Court, AppNotification } from '../types';
+import { Tournament, Player, Pair, Match, Court, AppNotification, GalleryMedia } from '../types';
 
 export enum OperationType {
   CREATE = 'create',
@@ -561,6 +561,29 @@ const INITIAL_NOTIFICATIONS: AppNotification[] = [
   }
 ];
 
+const INITIAL_MEDIA: GalleryMedia[] = [
+  {
+    id: "m1",
+    tournamentId: "t_madrid_master",
+    matchId: "m_madrid_g_1",
+    url: "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&q=80&w=600",
+    type: "photo",
+    title: "Espectacular bandeja de Coello",
+    caption: "Punto decisivo en la final del torneo en Madrid.",
+    createdAt: "2026-06-05T18:30:00Z"
+  },
+  {
+    id: "m2",
+    tournamentId: "t_madrid_master",
+    matchId: "m_madrid_g_1",
+    url: "https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&q=80&w=600",
+    type: "photo",
+    title: "Saludo post-partido de Tapia",
+    caption: "Deportividad absoluta en la pista central de padel.",
+    createdAt: "2026-06-05T19:10:00Z"
+  }
+];
+
 // Helper to secure storage keys
 const STORAGE_PREFIX = "padel_mgr_";
 
@@ -584,6 +607,7 @@ class PadelRepository {
     matches: Match[];
     courts: Court[];
     notifications: AppNotification[];
+    galleryMedia: GalleryMedia[];
   };
 
   constructor() {
@@ -594,6 +618,7 @@ class PadelRepository {
       matches: getLocal("matches", INITIAL_MATCHES),
       courts: getLocal("courts", INITIAL_COURTS),
       notifications: getLocal("notifications", INITIAL_NOTIFICATIONS),
+      galleryMedia: getLocal("galleryMedia", INITIAL_MEDIA),
     };
 
     // Keep LocalStorage populated initially
@@ -607,9 +632,12 @@ class PadelRepository {
 
   async bootstrapFirebaseIfNeeded() {
     try {
-      const snap = await withTimeout(getDocs(collection(db, "tournaments")), 5000);
-      if (snap.empty) {
+      const metaRef = doc(db, "metadata", "bootstrap");
+      const metaSnap = await withTimeout(getDoc(metaRef), 5000).catch(() => null);
+      if (!metaSnap || !metaSnap.exists()) {
         console.log("Seeding Firestore with initial Padel Master data...");
+        await setDoc(metaRef, { seeded: true, seededAt: new Date().toISOString() }).catch(() => {});
+        
         for (const t of INITIAL_TOURNAMENTS) {
           setDoc(doc(db, "tournaments", t.id), t).catch(() => {});
         }
@@ -628,6 +656,9 @@ class PadelRepository {
         for (const n of INITIAL_NOTIFICATIONS) {
           setDoc(doc(db, "notifications", n.id), n).catch(() => {});
         }
+        for (const g of INITIAL_MEDIA) {
+          setDoc(doc(db, "galleryMedia", g.id), g).catch(() => {});
+        }
         console.log("Firestore successfully seeded in background!");
       }
     } catch (err) {
@@ -642,6 +673,7 @@ class PadelRepository {
     setLocal("matches", this.cache.matches);
     setLocal("courts", this.cache.courts);
     setLocal("notifications", this.cache.notifications);
+    setLocal("galleryMedia", this.cache.galleryMedia);
   }
 
   // TOURNAMENTS
@@ -730,14 +762,16 @@ class PadelRepository {
     this.saveAllToStorage();
 
     if (isRealFirebase) {
-      setDoc(doc(db, "players", p.id), p).catch((err) => {
+      try {
+        await setDoc(doc(db, "players", p.id), p);
+      } catch (err) {
         handleFirestoreError(err, OperationType.WRITE, `players/${p.id}`);
         this.addNotification(
           "Guardado en Sandbox Local",
           "Jugador '" + p.firstName + " " + p.lastName + "' guardado en el navegador. Requiere permisos de administrador para sincronizar online.",
           "warning"
         );
-      });
+      }
     }
   }
 
@@ -995,6 +1029,74 @@ class PadelRepository {
       n.read = true;
     });
     this.saveAllToStorage();
+  }
+
+  // GALLERY MEDIA
+  async getGalleryMedia(tournamentId?: string, matchId?: string): Promise<GalleryMedia[]> {
+    if (isRealFirebase) {
+      try {
+        const snap = await withTimeout(getDocs(collection(db, "galleryMedia")), 5000);
+        const list: GalleryMedia[] = [];
+        snap.forEach(docSnap => {
+          list.push(docSnap.data() as GalleryMedia);
+        });
+        let filtered = list;
+        if (tournamentId) {
+          filtered = filtered.filter(g => g.tournamentId === tournamentId);
+        }
+        if (matchId) {
+          filtered = filtered.filter(g => g.matchId === matchId);
+        }
+        // sort by newest
+        return filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      } catch (err) {
+        handleFirestoreError(err, OperationType.LIST, "galleryMedia");
+        let filtered = this.cache.galleryMedia;
+        if (tournamentId) filtered = filtered.filter(g => g.tournamentId === tournamentId);
+        if (matchId) filtered = filtered.filter(g => g.matchId === matchId);
+        return filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      }
+    }
+    let filtered = this.cache.galleryMedia;
+    if (tournamentId) filtered = filtered.filter(g => g.tournamentId === tournamentId);
+    if (matchId) filtered = filtered.filter(g => g.matchId === matchId);
+    return filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  async saveGalleryMedia(g: GalleryMedia): Promise<void> {
+    const idx = this.cache.galleryMedia.findIndex(item => item.id === g.id);
+    if (idx >= 0) {
+      this.cache.galleryMedia[idx] = g;
+    } else {
+      this.cache.galleryMedia.push(g);
+    }
+    this.saveAllToStorage();
+
+    if (isRealFirebase) {
+      try {
+        await setDoc(doc(db, "galleryMedia", g.id), g);
+      } catch (err) {
+        handleFirestoreError(err, OperationType.WRITE, `galleryMedia/${g.id}`);
+        this.addNotification(
+          "Guardado en Sandbox Local",
+          "Imagen guardada localmente en tu navegador. Conéctate con Google para subirla a la nube.",
+          "warning"
+        );
+      }
+    }
+  }
+
+  async deleteGalleryMedia(id: string): Promise<void> {
+    this.cache.galleryMedia = this.cache.galleryMedia.filter(item => item.id !== id);
+    this.saveAllToStorage();
+
+    if (isRealFirebase) {
+      try {
+        await deleteDoc(doc(db, "galleryMedia", id));
+      } catch (err) {
+        handleFirestoreError(err, OperationType.DELETE, `galleryMedia/${id}`);
+      }
+    }
   }
 }
 

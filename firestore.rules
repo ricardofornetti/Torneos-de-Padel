@@ -53,6 +53,11 @@ service cloud.firestore {
       allow read, write: if true; 
     }
 
+    // Gallery Media
+    match /galleryMedia/{mediaId} {
+      allow read, write: if true;
+    }
+
     // Notifications
     match /notifications/{notifId} {
       allow read, write: if true; 

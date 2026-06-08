@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Trophy, Bell, Shield, User, LogIn, LogOut, CheckCircle, Crown } from 'lucide-react';
+import { Trophy, Bell, Shield, User, LogIn, LogOut, CheckCircle, Crown, Camera } from 'lucide-react';
 import { repository } from '../lib/repository';
 import { AppNotification } from '../types';
 import { auth, isRealFirebase } from '../lib/firebase';
@@ -8,7 +8,7 @@ import { signInWithPopup, GoogleAuthProvider, signOut, User as FirebaseUser } fr
 interface NavbarProps {
   userRole: "admin" | "player";
   onChangeRole: (role: "admin" | "player") => void;
-  onNavigate: (view: "dashboard" | "tournaments" | "players" | "rankings" | "courts") => void;
+  onNavigate: (view: "dashboard" | "tournaments" | "players" | "rankings" | "courts" | "gallery") => void;
   activeView: string;
   notifications?: AppNotification[];
   onClearNotifications?: () => void;
@@ -173,16 +173,33 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             Complejo / Canchas
           </button>
+          <button
+            onClick={() => onNavigate("gallery")}
+            className={`px-3.5 py-1.5 rounded-lg text-xs tracking-wide transition-all uppercase whitespace-nowrap ${
+              activeView === "gallery"
+                ? "bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 shadow-md shadow-cyan-500/5 font-bold"
+                : "text-slate-400 hover:text-white hover:bg-slate-900/50"
+            }`}
+          >
+            Galería
+          </button>
         </div>
 
         {/* Roles and System Settings Desktop */}
         <div className="hidden md:flex items-center gap-4">
           
-          {/* Active Firebase / Local Sandbox indicator */}
-          <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-slate-900 border border-slate-800 text-[10px] font-mono text-slate-400">
-            <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${isRealFirebase ? 'bg-cyan-400' : 'bg-amber-400'}`}></span>
-            <span>{isRealFirebase ? 'Firestore Online' : 'Local Sandbox Ready'}</span>
-          </div>
+          {/* Gallery Button */}
+          <button
+            onClick={() => onNavigate("gallery")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer border ${
+              activeView === "gallery"
+                ? "bg-[#d4fc34] text-slate-950 font-black border-[#d4fc34] shadow-md shadow-[#d4fc34]/10"
+                : "bg-slate-900 text-slate-300 border-slate-800 hover:text-white hover:bg-slate-850"
+            }`}
+          >
+            <Camera className="w-3.5 h-3.5" />
+            <span>Galería de Partidos</span>
+          </button>
 
           {/* Action-Based Role Picker */}
           <div className="flex bg-[#0f172a] border border-slate-800 p-0.5 rounded-lg">
@@ -209,58 +226,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               Organizador
             </button>
           </div>
-
-          {/* Real Google Auth Provider Box */}
-          {isRealFirebase && (
-            <div className="flex items-center gap-2 border-l border-slate-800 pl-4">
-              {currentUser ? (
-                <div className="flex items-center gap-2">
-                  <div className="relative group/user">
-                    {currentUser.photoURL ? (
-                      <img 
-                        src={currentUser.photoURL} 
-                        alt={currentUser.displayName || 'Me'} 
-                        className="w-7 h-7 rounded-full border border-cyan-500"
-                        referrerPolicy="no-referrer"
-                      />
-                    ) : (
-                      <div className="w-7 h-7 rounded-full bg-cyan-600/20 flex items-center justify-center border border-cyan-500 text-cyan-400 text-xs font-semibold">
-                        {currentUser.email?.charAt(0).toUpperCase()}
-                      </div>
-                    )}
-                    
-                    {/* Admin Badge display */}
-                    {currentUser.email === 'fornettiricardo@gmail.com' && (
-                      <span className="absolute -top-1 -right-1 bg-amber-500 text-black p-0.5 rounded-full text-[8px] font-bold">
-                        <Crown className="w-2 h-2" />
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex flex-col text-left">
-                    <span className="text-[10px] text-slate-400 max-w-[80px] truncate font-sans font-medium line-clamp-1">
-                      {currentUser.displayName || 'Organizador'}
-                    </span>
-                    <button 
-                      onClick={handleLogout} 
-                      className="text-[9px] text-red-400 hover:text-red-300 hover:underline flex items-center gap-0.5"
-                    >
-                      <LogOut className="w-2 h-2" /> Cerrar
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <button
-                  onClick={handleGoogleLogin}
-                  className="flex items-center gap-1 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-slate-950 px-2.5 py-1 rounded-md text-xs font-black transition-all shadow shadow-cyan-500/20 active:scale-95"
-                  title="Conectar con Google para guardar datos"
-                >
-                  <LogIn className="w-3 h-3 text-slate-950" />
-                  <span>Google</span>
-                </button>
-              )}
-            </div>
-          )}
 
           {/* Mini-Notification center */}
           <div className="relative">

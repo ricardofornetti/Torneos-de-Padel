@@ -131,3 +131,15 @@ export interface AppNotification {
   type: "info" | "success" | "warning";
   read: boolean;
 }
+
+export interface GalleryMedia {
+  id: string;
+  tournamentId?: string;
+  matchId?: string;
+  url: string; // Blob or base64 or external url
+  type: "photo" | "video";
+  title?: string;
+  caption?: string;
+  createdAt: string;
+}
+

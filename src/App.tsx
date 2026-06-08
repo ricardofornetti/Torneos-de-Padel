@@ -19,10 +19,11 @@ import { TournamentDetail } from './components/TournamentDetail';
 import { PlayerManager } from './components/PlayerManager';
 import { RankingManager } from './components/RankingManager';
 import { CourtManager } from './components/CourtManager';
+import { Gallery } from './components/Gallery';
 import { repository } from './lib/repository';
 
 export default function App() {
-  const [activeView, setActiveView] = useState<"dashboard" | "tournaments" | "players" | "rankings" | "courts">("dashboard");
+  const [activeView, setActiveView] = useState<"dashboard" | "tournaments" | "players" | "rankings" | "courts" | "gallery">("dashboard");
   const [selectedTournamentId, setSelectedTournamentId] = useState<string | null>(null);
   
   // High fidelity roles (Admin has creation/draw powers, Player has read-only exploration powers)
@@ -105,6 +106,12 @@ export default function App() {
 
             {activeView === "courts" && (
               <CourtManager 
+                userRole={userRole}
+              />
+            )}
+
+            {activeView === "gallery" && (
+              <Gallery 
                 userRole={userRole}
               />
             )}

@@ -14,9 +14,14 @@ import {
 import { repository } from '../lib/repository';
 import { Player } from '../types';
 
-export const RankingManager: React.FC = () => {
+interface RankingManagerProps {
+  userRole: "admin" | "player";
+}
+
+export const RankingManager: React.FC<RankingManagerProps> = ({ userRole }) => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
+  const [resetting, setResetting] = useState(false);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
 
@@ -34,22 +39,30 @@ export const RankingManager: React.FC = () => {
 
   const handleResetPoints = async () => {
     if (confirm("⚠️ ¿Estás seguro de que deseas reiniciar todos los puntos del ranking a 0 para el inicio del nuevo año deportivo? Esta acción es irreversible.")) {
-      const updated = players.map(p => ({
-        ...p,
-        rankingPoints: 0,
-        matchesPlayed: 0,
-        matchesWon: 0,
-        matchesLost: 0,
-        setsWon: 0,
-        setsLost: 0,
-        gamesWon: 0,
-        gamesLost: 0
-      }));
-      for (const p of updated) {
-        await repository.savePlayer(p);
+      setResetting(true);
+      try {
+        const updated = players.map(p => ({
+          ...p,
+          rankingPoints: 0,
+          matchesPlayed: 0,
+          matchesWon: 0,
+          matchesLost: 0,
+          setsWon: 0,
+          setsLost: 0,
+          gamesWon: 0,
+          gamesLost: 0
+        }));
+        
+        // Execute saves in parallel to prevent network lag frozen UI
+        await Promise.all(updated.map(p => repository.savePlayer(p)));
+        
+        await repository.addNotification("Reinicio de Ranking", "El administrador ha reiniciado todos los puntajes anuales de la temporada.", "warning");
+        await loadRankings();
+      } catch (err) {
+        console.error("Error resetting points", err);
+      } finally {
+        setResetting(false);
       }
-      await repository.addNotification("Reinicio de Ranking", "El administrador ha reiniciado todos los puntajes anuales de la temporada.", "warning");
-      loadRankings();
     }
   };
 
@@ -118,12 +131,16 @@ export const RankingManager: React.FC = () => {
             <FileSpreadsheet className="w-4 h-4 text-emerald-500" /> Exportar Ranking (CSV)
           </button>
           
-          <button
-            onClick={handleResetPoints}
-            className="bg-red-950/30 hover:bg-red-950/60 border border-red-900/30 text-red-400 text-xs font-semibold px-3 py-2 rounded-xl flex items-center gap-1.5 transition"
-          >
-            <RotateCcw className="w-3.5 h-3.5 text-red-500 animate-spin" /> Reiniciar Puntos
-          </button>
+          {userRole === "admin" && (
+            <button
+              onClick={handleResetPoints}
+              disabled={resetting}
+              className="bg-red-950/30 hover:bg-red-950/60 border border-red-900/40 text-red-400 text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"
+            >
+              <RotateCcw className={`w-3.5 h-3.5 text-red-500 ${resetting ? 'animate-spin' : ''}`} /> 
+              <span>{resetting ? 'Reiniciando...' : 'Reiniciar Puntos'}</span>
+            </button>
+          )}
         </div>
       </div>
 
