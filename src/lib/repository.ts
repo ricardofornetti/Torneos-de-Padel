@@ -91,7 +91,8 @@ export function withTimeout<T>(promise: Promise<T>, ms: number = 5000): Promise<
 // -----------------------------------------------------------------------------
 // HIGH-FIDELITY PRELOADED DEMO DATA
 // -----------------------------------------------------------------------------
-const INITIAL_PLAYERS: Player[] = [
+const INITIAL_PLAYERS: Player[] = [];
+const OLD_INITIAL_PLAYERS: any[] = [
   {
     id: "p1",
     firstName: "Arturo",
@@ -414,7 +415,8 @@ const INITIAL_PLAYERS: Player[] = [
   }
 ];
 
-const INITIAL_TOURNAMENTS: Tournament[] = [
+const INITIAL_TOURNAMENTS: Tournament[] = [];
+const OLD_INITIAL_TOURNAMENTS: any[] = [
   {
     id: "t_madrid_master",
     name: "Master Open Madrid 2026",
@@ -459,7 +461,8 @@ const INITIAL_TOURNAMENTS: Tournament[] = [
   }
 ];
 
-const INITIAL_PAIRS: Pair[] = [
+const INITIAL_PAIRS: Pair[] = [];
+const OLD_INITIAL_PAIRS: any[] = [
   // Madrid Master Pairs
   { id: "pair_t_madrid_p1_p2", tournamentId: "t_madrid_master", player1Id: "p1", player2Id: "p2", category: "Masculino - Primera", combinedRanking: 2380, status: "confirmed" },
   { id: "pair_t_madrid_p3_p4", tournamentId: "t_madrid_master", player1Id: "p3", player2Id: "p4", category: "Masculino - Primera", combinedRanking: 2220, status: "confirmed" },
@@ -471,7 +474,8 @@ const INITIAL_PAIRS: Pair[] = [
   { id: "pair_t_sevilla_p5_p7", tournamentId: "t_sevilla_premier", player1Id: "p5", player2Id: "p7", category: "Masculino - Primera", combinedRanking: 1840, status: "registered" }
 ];
 
-const INITIAL_COURTS: Court[] = [
+const INITIAL_COURTS: Court[] = [];
+const OLD_INITIAL_COURTS: any[] = [
   { id: "court_1", name: "Pista 1 - Central Cristal", club: "Club Cristal Padel Recoletos", active: true },
   { id: "court_2", name: "Pista 2 - Panorámica Negra", club: "Club Cristal Padel Recoletos", active: true },
   { id: "court_3", name: "Pista 3 - Techada Lateral", club: "Club Cristal Padel Recoletos", active: true },
@@ -479,7 +483,8 @@ const INITIAL_COURTS: Court[] = [
   { id: "court_5", name: "Pista Central Polo", club: "Real Club Polo Padel", active: true }
 ];
 
-const INITIAL_MATCHES: Match[] = [
+const INITIAL_MATCHES: Match[] = [];
+const OLD_INITIAL_MATCHES: any[] = [
   {
     id: "m_madrid_g_1",
     tournamentId: "t_madrid_master",
@@ -542,7 +547,8 @@ const INITIAL_MATCHES: Match[] = [
   }
 ];
 
-const INITIAL_NOTIFICATIONS: AppNotification[] = [
+const INITIAL_NOTIFICATIONS: AppNotification[] = [];
+const OLD_INITIAL_NOTIFICATIONS: any[] = [
   {
     id: "n1",
     title: "Torneo Lanzado",
@@ -561,7 +567,8 @@ const INITIAL_NOTIFICATIONS: AppNotification[] = [
   }
 ];
 
-const INITIAL_MEDIA: GalleryMedia[] = [
+const INITIAL_MEDIA: GalleryMedia[] = [];
+const OLD_INITIAL_MEDIA: any[] = [
   {
     id: "m1",
     tournamentId: "t_madrid_master",
@@ -621,7 +628,23 @@ class PadelRepository {
       galleryMedia: getLocal("galleryMedia", INITIAL_MEDIA),
     };
 
-    // Keep LocalStorage populated initially
+    // Clean up mock data of previous sessions from local storage cache
+    const mockTournamentIds = ["t_madrid_master", "t_sevilla_premier", "t_bcn_grand_slam"];
+    const mockPlayerIds = new Set(Array.from({ length: 20 }, (_, i) => `p${i + 1}`));
+    const mockCourtIds = ["court_1", "court_2", "court_3", "court_4", "court_5"];
+    const mockNotificationIds = ["n1", "n2"];
+    const mockMediaIds = ["m1", "m2"];
+
+    this.cache.tournaments = this.cache.tournaments.filter(t => !mockTournamentIds.includes(t.id));
+    this.cache.players = this.cache.players.filter(p => !mockPlayerIds.has(p.id));
+    this.cache.courts = this.cache.courts.filter(c => !mockCourtIds.includes(c.id));
+    this.cache.notifications = this.cache.notifications.filter(n => !mockNotificationIds.includes(n.id));
+    this.cache.galleryMedia = this.cache.galleryMedia.filter(m => !mockMediaIds.includes(m.id));
+    
+    this.cache.pairs = this.cache.pairs.filter(p => !mockTournamentIds.includes(p.tournamentId) && !mockPlayerIds.has(p.player1Id) && !mockPlayerIds.has(p.player2Id));
+    this.cache.matches = this.cache.matches.filter(m => !mockTournamentIds.includes(m.tournamentId));
+
+    // Keep LocalStorage populated/snyced
     this.saveAllToStorage();
 
     // Bootstrap Firestore async if real Firebase is available
@@ -682,8 +705,12 @@ class PadelRepository {
       try {
         const snap = await withTimeout(getDocs(collection(db, "tournaments")), 5000);
         const list: Tournament[] = [];
+        const mockTournamentIds = ["t_madrid_master", "t_sevilla_premier", "t_bcn_grand_slam"];
         snap.forEach(docSnap => {
-          list.push(docSnap.data() as Tournament);
+          const t = docSnap.data() as Tournament;
+          if (!mockTournamentIds.includes(t.id)) {
+            list.push(t);
+          }
         });
         return list;
       } catch (err) {
@@ -740,8 +767,12 @@ class PadelRepository {
       try {
         const snap = await withTimeout(getDocs(collection(db, "players")), 5000);
         const list: Player[] = [];
+        const mockPlayerIds = new Set(Array.from({ length: 20 }, (_, i) => `p${i + 1}`));
         snap.forEach(docSnap => {
-          list.push(docSnap.data() as Player);
+          const p = docSnap.data() as Player;
+          if (!mockPlayerIds.has(p.id)) {
+            list.push(p);
+          }
         });
         return list;
       } catch (err) {
@@ -934,9 +965,11 @@ class PadelRepository {
     this.saveAllToStorage();
 
     if (isRealFirebase) {
-      deleteDoc(doc(db, "matches", id)).catch((err) => {
+      try {
+        await deleteDoc(doc(db, "matches", id));
+      } catch (err: any) {
         handleFirestoreError(err, OperationType.DELETE, `matches/${id}`);
-      });
+      }
     }
   }
 

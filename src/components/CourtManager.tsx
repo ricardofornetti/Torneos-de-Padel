@@ -32,6 +32,8 @@ export const CourtManager: React.FC<{ userRole: "admin" | "player" }> = ({ userR
   const [editingCourtId, setEditingCourtId] = useState<string | null>(null);
   const [isManageModalOpen, setIsManageModalOpen] = useState(false);
   const [deleteCourtConfirm, setDeleteCourtConfirm] = useState<{ id: string; name: string } | null>(null);
+  const [showDeleteAllCourtsModal, setShowDeleteAllCourtsModal] = useState(false);
+  const [deletingCourts, setDeletingCourts] = useState(false);
 
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [selectedMatchId, setSelectedMatchId] = useState("");
@@ -104,6 +106,28 @@ export const CourtManager: React.FC<{ userRole: "admin" | "player" }> = ({ userR
     await repository.saveCourt(updatedCourt);
     await repository.addNotification("Pista Actualizada", `Cancha '${name}' modificada con éxito.`, "info");
     loadData();
+  };
+
+  const handleDeleteAllCourts = () => {
+    setShowDeleteAllCourtsModal(true);
+  };
+
+  const executeDeleteAllCourts = async () => {
+    setShowDeleteAllCourtsModal(false);
+    setDeletingCourts(true);
+    try {
+      await Promise.all(courts.map(c => repository.deleteCourt(c.id)));
+      await repository.addNotification(
+        "Limpieza de Pistas", 
+        "Se han eliminado todos los complejos y canchas cargados hasta el momento.", 
+        "warning"
+      );
+      await loadData();
+    } catch (err) {
+      console.error("Error deleting all courts:", err);
+    } finally {
+      setDeletingCourts(false);
+    }
   };
 
   const executeDeleteCourt = async () => {
@@ -248,6 +272,15 @@ export const CourtManager: React.FC<{ userRole: "admin" | "player" }> = ({ userR
               className="bg-[#d4fc34] hover:bg-[#c5f015] text-slate-950 text-xs font-black px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition cursor-pointer uppercase tracking-wider shadow-lg"
             >
               <Edit className="w-4 h-4 text-slate-950" /> {courts.length > 0 ? "Guardar" : "Modificar y Eliminar"}
+            </button>
+            <button
+              onClick={handleDeleteAllCourts}
+              disabled={deletingCourts}
+              className="bg-red-900/20 hover:bg-red-1000/40 border border-red-800/50 text-red-300 text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50 uppercase tracking-wider animate-fade-in"
+              title="Eliminar todos los complejos y canchas cargados"
+            >
+              <Trash2 className="w-4 h-4 text-red-400" />
+              <span>{deletingCourts ? 'Eliminando...' : 'Eliminar Complexes'}</span>
             </button>
           </div>
         )}
@@ -588,6 +621,42 @@ export const CourtManager: React.FC<{ userRole: "admin" | "player" }> = ({ userR
                 className="flex-1 bg-red-600 hover:bg-red-500 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition cursor-pointer"
               >
                 Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* DELETE ALL COURTS CONFIRMATION MODAL */}
+      {showDeleteAllCourtsModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+          <div className="bg-[#0f172a] border border-slate-900 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl p-6 space-y-6">
+            <div className="text-center space-y-2">
+              <div className="mx-auto w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center text-red-500">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <h3 className="font-extrabold text-white text-base">
+                ¿Eliminar Todos los Complejos?
+              </h3>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                ¿Estás seguro de que deseas eliminar <strong className="text-white">TODAS</strong> las canchas y complejos deportivos registrados hasta el momento? No se puede deshacer.
+              </p>
+            </div>
+            
+            <div className="flex gap-3 justify-center">
+              <button
+                type="button"
+                onClick={() => setShowDeleteAllCourtsModal(false)}
+                className="flex-1 bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-bold px-4 py-2.5 rounded-lg border border-slate-800 transition cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={executeDeleteAllCourts}
+                className="flex-1 bg-red-650 hover:bg-red-500 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition cursor-pointer"
+              >
+                Eliminar Todo
               </button>
             </div>
           </div>

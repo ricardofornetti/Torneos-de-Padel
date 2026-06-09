@@ -16,7 +16,7 @@ import {
   Edit
 } from 'lucide-react';
 import { repository } from '../lib/repository';
-import { Tournament } from '../types';
+import { Tournament, Pair, Match } from '../types';
 
 interface TournamentManagerProps {
   userRole: "admin" | "player";
@@ -38,14 +38,17 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
   // Form State
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [isSizeSelectorOpen, setIsSizeSelectorOpen] = useState(false);
+  const [prefillDemo16, setPrefillDemo16] = useState(true);
+  const [prefillDemo32, setPrefillDemo32] = useState(true);
   const [newT, setNewT] = useState({
     name: "",
     club: "",
     city: "",
     startDate: "",
     endDate: "",
-    maxPairs: 8,
-    numGroups: 2,
+    maxPairs: 16,
+    numGroups: 4,
     numCourts: 3
   });
 
@@ -84,11 +87,12 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
       city: "",
       startDate: today.toISOString().split('T')[0],
       endDate: nextWeek.toISOString().split('T')[0],
-      maxPairs: 8,
-      numGroups: 2,
+      maxPairs: 16,
+      numGroups: 4,
       numCourts: activeCourtsCount > 0 ? Math.min(3, activeCourtsCount) : 3
     });
-    setIsFormOpen(true);
+    setPrefillDemo16(true);
+    setIsSizeSelectorOpen(true);
   };
 
   const handleOpenEditForm = (t: Tournament) => {
@@ -138,8 +142,12 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
         "success"
       );
     } else {
+      const tId = `tournament_${Date.now()}`;
+      const is16Prefill = Number(newT.maxPairs) === 16 && prefillDemo16;
+      const is32Prefill = Number(newT.maxPairs) === 32 && prefillDemo32;
+
       const tObj: Tournament = {
-        id: `tournament_${Date.now()}`,
+        id: tId,
         name: newT.name,
         club: newT.club,
         city: newT.city,
@@ -147,7 +155,7 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
         tournamentType: "Grupos + Eliminatorias",
         startDate: newT.startDate,
         endDate: newT.endDate,
-        status: "registration", // Stays in registration pending drawing
+        status: (is16Prefill || is32Prefill) ? "in_progress" : "registration",
         maxPairs: Number(newT.maxPairs) || 8,
         numGroups: Number(newT.numGroups) || 2,
         numCourts: Number(newT.numCourts) || 3
@@ -159,6 +167,450 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
         `Se ha habilitado la inscripción multicategoría para el torneo '${tObj.name}'.`,
         "success"
       );
+
+      if (is32Prefill) {
+        // Create 64 famous players
+        const playersList32 = [
+          { firstName: "Arturo", lastName: "Coello", pts: 1200 },
+          { firstName: "Agustín", lastName: "Tapia", pts: 1180 },
+          { firstName: "Alejandro", lastName: "Galán", pts: 1120 },
+          { firstName: "Juan", lastName: "Lebrón", pts: 1100 },
+          { firstName: "Paquito", lastName: "Navarro", pts: 950 },
+          { firstName: "Martín", lastName: "Di Nenno", pts: 940 },
+          { firstName: "Fernando", lastName: "Belasteguín", pts: 890 },
+          { firstName: "Sanyo", lastName: "Gutiérrez", pts: 870 },
+          { firstName: "Franco", lastName: "Stupaczuk", pts: 920 },
+          { firstName: "Federico", lastName: "Chingotto", pts: 910 },
+          { firstName: "Momo", lastName: "González", pts: 810 },
+          { firstName: "Mike", lastName: "Yanguas", pts: 830 },
+          { firstName: "Jon", lastName: "Sanz", pts: 800 },
+          { firstName: "Coki", lastName: "Nieto", pts: 790 },
+          { firstName: "Javi", lastName: "Garrido", pts: 780 },
+          { firstName: "Edu", lastName: "Alonso", pts: 760 },
+          { firstName: "Álex", lastName: "Ruiz", pts: 750 },
+          { firstName: "Juan", lastName: "Tello", pts: 730 },
+          { firstName: "Lucas", lastName: "Campagnolo", pts: 700 },
+          { firstName: "Javi", lastName: "Leal", pts: 650 },
+          { firstName: "Maxi", lastName: "Sánchez", pts: 670 },
+          { firstName: "Lucho", lastName: "Capra", pts: 620 },
+          { firstName: "Gonzalo", lastName: "Rubio", pts: 610 },
+          { firstName: "Javier", lastName: "Ruiz", pts: 610 },
+          { firstName: "Pincho", lastName: "Fernández", pts: 580 },
+          { firstName: "José", lastName: "G. Diestro", pts: 560 },
+          { firstName: "Ramiro", lastName: "Moyano", pts: 550 },
+          { firstName: "Xisco", lastName: "Gil", pts: 540 },
+          { firstName: "Agustín", lastName: "Gutiérrez", pts: 510 },
+          { firstName: "José", lastName: "Rico", pts: 500 },
+          { firstName: "Teo", lastName: "Zapata", pts: 480 },
+          { firstName: "Enrique", lastName: "Goenaga", pts: 440 },
+          { firstName: "Javi", lastName: "Rico", pts: 450 },
+          { firstName: "Miguel", lastName: "Lamperti", pts: 460 },
+          { firstName: "Álvaro", lastName: "Cepero", pts: 430 },
+          { firstName: "Arnau", lastName: "Ayats", pts: 420 },
+          { firstName: "Denis", lastName: "Perino", pts: 410 },
+          { firstName: "Facundo", lastName: "Domínguez", pts: 400 },
+          { firstName: "Aris", lastName: "Patiniotis", pts: 390 },
+          { firstName: "Ignacio", lastName: "Vilariño", pts: 380 },
+          { firstName: "Mario", lastName: "Del Castillo", pts: 370 },
+          { firstName: "Iván", lastName: "Ramírez", pts: 360 },
+          { firstName: "José", lastName: "Solano", pts: 350 },
+          { firstName: "Jaime", lastName: "Muñoz", pts: 340 },
+          { firstName: "Jairo", lastName: "Bautista", pts: 330 },
+          { firstName: "Martín", lastName: "S. Piñeiro", pts: 320 },
+          { firstName: "Rafa", lastName: "Méndez", pts: 310 },
+          { firstName: "Salva", lastName: "Oria", pts: 300 },
+          { firstName: "Toni", lastName: "Bueno", pts: 290 },
+          { firstName: "Marc", lastName: "Quílez", pts: 280 },
+          { firstName: "Federico", lastName: "Mouriño", pts: 270 },
+          { firstName: "Ignacio", lastName: "Sager", pts: 260 },
+          { firstName: "Luis", lastName: "Hernández", pts: 250 },
+          { firstName: "Íñigo", lastName: "Jofre", pts: 240 },
+          { firstName: "Álvaro", lastName: "Meléndez", pts: 230 },
+          { firstName: "Pedro", lastName: "Meléndez", pts: 220 },
+          { firstName: "Cristian", lastName: "Germán", pts: 210 },
+          { firstName: "Miguel", lastName: "Semmler", pts: 200 },
+          { firstName: "Pablo", lastName: "Cardona", pts: 190 },
+          { firstName: "Javier", lastName: "Valdés", pts: 180 },
+          { firstName: "Raúl", lastName: "Marcos", pts: 170 },
+          { firstName: "Thomas", lastName: "Leygue", pts: 160 },
+          { firstName: "David", lastName: "Gala", pts: 150 },
+          { firstName: "Pol", lastName: "Hernández", pts: 140 }
+        ];
+
+        const savedPlayerIds: string[] = [];
+        for (let idx = 0; idx < playersList32.length; idx++) {
+          const item = playersList32[idx];
+          const pId = `tp_srtc32_${idx + 1}_${Date.now()}`;
+          await repository.savePlayer({
+            id: pId,
+            firstName: item.firstName,
+            lastName: item.lastName,
+            dni: `${20020000 + idx}B`,
+            phone: `+34 600 032 ${String(idx).padStart(3, "0")}`,
+            email: `${item.firstName.toLowerCase()}.${item.lastName.toLowerCase().replace(/[^a-zA-Z]/g, "")}@demo-padel.com`,
+            city: newT.city || "Madrid",
+            birthDate: "1998-05-15",
+            category: "5ta Masculina",
+            rankingPoints: item.pts,
+            photoUrl: "https://images.unsplash.com/photo-1594381898411-846e7d193883?auto=format&fit=crop&q=80&w=200",
+            matchesPlayed: 10,
+            matchesWon: 5,
+            matchesLost: 5,
+            setsWon: 10,
+            setsLost: 10,
+            gamesWon: 100,
+            gamesLost: 100
+          });
+          savedPlayerIds.push(pId);
+        }
+
+        const createdPairs: Pair[] = [];
+        for (let i = 0; i < 32; i++) {
+          const p1Id = savedPlayerIds[i * 2];
+          const p2Id = savedPlayerIds[i * 2 + 1];
+          const prObj: Pair = {
+            id: `pair_${tId}_srtc32_${i + 1}`,
+            tournamentId: tId,
+            player1Id: p1Id,
+            player2Id: p2Id,
+            category: "5ta Masculina",
+            combinedRanking: playersList32[i * 2].pts + playersList32[i * 2 + 1].pts,
+            status: "confirmed"
+          };
+          await repository.savePair(prObj);
+          createdPairs.push(prObj);
+        }
+
+        const allGeneratedMatches32: Match[] = [];
+        const dateString = newT.startDate || new Date().toISOString().split("T")[0];
+
+        // 3.1. Ronda 1 Matches (16 matches)
+        for (let i = 0; i < 16; i++) {
+          const letter = String.fromCharCode(65 + i); // 'A' to 'P'
+          const p1 = createdPairs[i * 2];
+          const p2 = createdPairs[i * 2 + 1];
+          allGeneratedMatches32.push({
+            id: `match_${tId}_srtc32_5taMasculina_r1_m${i + 1}`,
+            tournamentId: tId,
+            phase: "group",
+            roundNumber: 1,
+            stageName: `Ronda 1 - Grupo ${letter}`,
+            pair1Id: p1.id,
+            pair2Id: p2.id,
+            courtId: i < Number(newT.numCourts) ? `court_${(i % Number(newT.numCourts)) + 1}` : "court_1",
+            date: dateString,
+            time: `${17 + Math.floor(i / 4)}:00`,
+            status: "pending",
+            scoreSummary: "Por jugar",
+            winnerPairId: "",
+            category: "5ta Masculina"
+          });
+        }
+
+        // 3.2. Ronda 2 Placeholder Matches (16 matches, Partidos 17 to 32)
+        for (let i = 17; i <= 32; i++) {
+          allGeneratedMatches32.push({
+            id: `match_${tId}_srtc32_5taMasculina_r2_m${i}`,
+            tournamentId: tId,
+            phase: "group",
+            roundNumber: 2,
+            stageName: `Ronda 2 - Partido ${i}`,
+            pair1Id: "",
+            pair2Id: "",
+            courtId: "",
+            date: dateString,
+            time: `${18 + Math.floor((i - 17) / 4)}:00`,
+            status: "pending",
+            scoreSummary: "Por jugar",
+            winnerPairId: "",
+            category: "5ta Masculina"
+          });
+        }
+
+        // 3.3. Octavos de Final Placeholder Matches (8 matches)
+        for (let i = 1; i <= 8; i++) {
+          allGeneratedMatches32.push({
+            id: `match_${tId}_srtc32_5taMasculina_8_m${i}`,
+            tournamentId: tId,
+            phase: "playoff",
+            roundNumber: 3,
+            stageName: `Octavos de Final ${i}`,
+            pair1Id: "",
+            pair2Id: "",
+            courtId: "",
+            date: dateString,
+            time: "19:00",
+            status: "pending",
+            scoreSummary: "Por jugar",
+            winnerPairId: "",
+            category: "5ta Masculina"
+          });
+        }
+
+        // 3.4. Cuartos de final Placeholder Matches (4 matches)
+        for (let i = 1; i <= 4; i++) {
+          allGeneratedMatches32.push({
+            id: `match_${tId}_srtc32_5taMasculina_q_m${i}`,
+            tournamentId: tId,
+            phase: "playoff",
+            roundNumber: 4,
+            stageName: `Cuartos de Final ${i}`,
+            pair1Id: "",
+            pair2Id: "",
+            courtId: "",
+            date: dateString,
+            time: "20:00",
+            status: "pending",
+            scoreSummary: "Por jugar",
+            winnerPairId: "",
+            category: "5ta Masculina"
+          });
+        }
+
+        // 3.5. Semifinales Placeholder Matches (2 matches)
+        for (let i = 1; i <= 2; i++) {
+          allGeneratedMatches32.push({
+            id: `match_${tId}_srtc32_5taMasculina_sf_m${i}`,
+            tournamentId: tId,
+            phase: "playoff",
+            roundNumber: 5,
+            stageName: `Semifinal ${i}`,
+            pair1Id: "",
+            pair2Id: "",
+            courtId: "",
+            date: dateString,
+            time: "20:30",
+            status: "pending",
+            scoreSummary: "Por jugar",
+            winnerPairId: "",
+            category: "5ta Masculina"
+          });
+        }
+
+        // 3.6. Final Placeholder Match
+        allGeneratedMatches32.push({
+          id: `match_${tId}_srtc32_5taMasculina_final`,
+          tournamentId: tId,
+          phase: "playoff",
+          roundNumber: 6,
+          stageName: "Final",
+          pair1Id: "",
+          pair2Id: "",
+          courtId: "",
+          date: dateString,
+          time: "21:30",
+          status: "pending",
+          scoreSummary: "Por jugar",
+          winnerPairId: "",
+          category: "5ta Masculina"
+        });
+
+        for (const m of allGeneratedMatches32) {
+          await repository.saveMatch(m);
+        }
+
+        await repository.addNotification(
+          "Fixture Confeccionado",
+          `Se han creado 32 parejas de ejemplo y el fixture oficial SRTC 32 de 47 partidos para la categoría '5ta Masculina' en el torneo '${newT.name}'.`,
+          "success"
+        );
+      }
+
+      if (is16Prefill) {
+        // Create 32 famous players
+        const playersList = [
+          { firstName: "Arturo", lastName: "Coello", pts: 1200 },
+          { firstName: "Agustín", lastName: "Tapia", pts: 1180 },
+          { firstName: "Alejandro", lastName: "Galán", pts: 1120 },
+          { firstName: "Juan", lastName: "Lebrón", pts: 1100 },
+          { firstName: "Paquito", lastName: "Navarro", pts: 950 },
+          { firstName: "Martín", lastName: "Di Nenno", pts: 940 },
+          { firstName: "Fernando", lastName: "Belasteguín", pts: 890 },
+          { firstName: "Sanyo", lastName: "Gutiérrez", pts: 870 },
+          { firstName: "Franco", lastName: "Stupaczuk", pts: 920 },
+          { firstName: "Federico", lastName: "Chingotto", pts: 910 },
+          { firstName: "Momo", lastName: "González", pts: 810 },
+          { firstName: "Mike", lastName: "Yanguas", pts: 830 },
+          { firstName: "Jon", lastName: "Sanz", pts: 800 },
+          { firstName: "Coki", lastName: "Nieto", pts: 790 },
+          { firstName: "Javi", lastName: "Garrido", pts: 780 },
+          { firstName: "Edu", lastName: "Alonso", pts: 760 },
+          { firstName: "Álex", lastName: "Ruiz", pts: 750 },
+          { firstName: "Juan", lastName: "Tello", pts: 730 },
+          { firstName: "Lucas", lastName: "Campagnolo", pts: 700 },
+          { firstName: "Javi", lastName: "Leal", pts: 650 },
+          { firstName: "Maxi", lastName: "Sánchez", pts: 670 },
+          { firstName: "Lucho", lastName: "Capra", pts: 620 },
+          { firstName: "Gonzalo", lastName: "Rubio", pts: 610 },
+          { firstName: "Javier", lastName: "Ruiz", pts: 610 },
+          { firstName: "Pincho", lastName: "Fernández", pts: 580 },
+          { firstName: "José", lastName: "G. Diestro", pts: 560 },
+          { firstName: "Ramiro", lastName: "Moyano", pts: 550 },
+          { firstName: "Xisco", lastName: "Gil", pts: 540 },
+          { firstName: "Agustín", lastName: "Gutiérrez", pts: 510 },
+          { firstName: "José", lastName: "Rico", pts: 500 },
+          { firstName: "Teo", lastName: "Zapata", pts: 480 },
+          { firstName: "Enrique", lastName: "Goenaga", pts: 440 }
+        ];
+
+        const savedPlayerIds: string[] = [];
+        for (let idx = 0; idx < playersList.length; idx++) {
+          const item = playersList[idx];
+          const pId = `tp_srtc16_${idx + 1}_${Date.now()}`;
+          await repository.savePlayer({
+            id: pId,
+            firstName: item.firstName,
+            lastName: item.lastName,
+            dni: `${10020000 + idx}A`,
+            phone: `+34 600 000 ${String(idx).padStart(3, "0")}`,
+            email: `${item.firstName.toLowerCase()}.${item.lastName.toLowerCase().replace(/[^a-zA-Z]/g, "")}@demo-padel.com`,
+            city: newT.city || "Madrid",
+            birthDate: "1998-05-15",
+            category: "5ta Masculina",
+            rankingPoints: item.pts,
+            photoUrl: "https://images.unsplash.com/photo-1594381898411-846e7d193883?auto=format&fit=crop&q=80&w=200",
+            matchesPlayed: 10,
+            matchesWon: 5,
+            matchesLost: 5,
+            setsWon: 10,
+            setsLost: 10,
+            gamesWon: 100,
+            gamesLost: 100
+          });
+          savedPlayerIds.push(pId);
+        }
+
+        const createdPairs: Pair[] = [];
+        for (let i = 0; i < 16; i++) {
+          const p1Id = savedPlayerIds[i * 2];
+          const p2Id = savedPlayerIds[i * 2 + 1];
+          const prObj: Pair = {
+            id: `pair_${tId}_srtc16_${i + 1}`,
+            tournamentId: tId,
+            player1Id: p1Id,
+            player2Id: p2Id,
+            category: "5ta Masculina",
+            combinedRanking: playersList[i * 2].pts + playersList[i * 2 + 1].pts,
+            status: "confirmed"
+          };
+          await repository.savePair(prObj);
+          createdPairs.push(prObj);
+        }
+
+        const allGeneratedMatches: Match[] = [];
+        const dateString = newT.startDate || new Date().toISOString().split("T")[0];
+
+        // 3.1. Ronda 1 Matches (8 matches)
+        for (let i = 0; i < 8; i++) {
+          const letter = String.fromCharCode(65 + i); // 'A' to 'H'
+          const p1 = createdPairs[i * 2];
+          const p2 = createdPairs[i * 2 + 1];
+          allGeneratedMatches.push({
+            id: `match_${tId}_srtc16_5taMasculina_r1_m${i + 1}`,
+            tournamentId: tId,
+            phase: "group",
+            roundNumber: 1,
+            stageName: `Ronda 1 - Grupo ${letter}`,
+            pair1Id: p1.id,
+            pair2Id: p2.id,
+            courtId: i < Number(newT.numCourts) ? `court_${(i % Number(newT.numCourts)) + 1}` : "court_1",
+            date: dateString,
+            time: `${17 + Math.floor(i / 3)}:00`,
+            status: "pending",
+            scoreSummary: "Por jugar",
+            winnerPairId: "",
+            category: "5ta Masculina"
+          });
+        }
+
+        // 3.2. Ronda 2 Placeholder Matches (8 matches, Partidos 9 to 16)
+        for (let i = 9; i <= 16; i++) {
+          allGeneratedMatches.push({
+            id: `match_${tId}_srtc16_5taMasculina_r2_m${i}`,
+            tournamentId: tId,
+            phase: "group",
+            roundNumber: 2,
+            stageName: `Ronda 2 - Partido ${i}`,
+            pair1Id: "",
+            pair2Id: "",
+            courtId: "",
+            date: dateString,
+            time: `${18 + Math.floor((i - 9) / 3)}:00`,
+            status: "pending",
+            scoreSummary: "Por jugar",
+            winnerPairId: "",
+            category: "5ta Masculina"
+          });
+        }
+
+        // 3.3. Cuartos de Final Placeholder Matches (4 matches)
+        for (let i = 1; i <= 4; i++) {
+          allGeneratedMatches.push({
+            id: `match_${tId}_srtc16_5taMasculina_q_m${i}`,
+            tournamentId: tId,
+            phase: "playoff",
+            roundNumber: 3,
+            stageName: `Cuartos de Final ${i}`,
+            pair1Id: "",
+            pair2Id: "",
+            courtId: "",
+            date: dateString,
+            time: "19:00",
+            status: "pending",
+            scoreSummary: "Por jugar",
+            winnerPairId: "",
+            category: "5ta Masculina"
+          });
+        }
+
+        // 3.4. Semifinales Placeholder Matches (2 matches)
+        for (let i = 1; i <= 2; i++) {
+          allGeneratedMatches.push({
+            id: `match_${tId}_srtc16_5taMasculina_sf_m${i}`,
+            tournamentId: tId,
+            phase: "playoff",
+            roundNumber: 4,
+            stageName: `Semifinal ${i}`,
+            pair1Id: "",
+            pair2Id: "",
+            courtId: "",
+            date: dateString,
+            time: "20:00",
+            status: "pending",
+            scoreSummary: "Por jugar",
+            winnerPairId: "",
+            category: "5ta Masculina"
+          });
+        }
+
+        // 3.5. Final Placeholder Match
+        allGeneratedMatches.push({
+          id: `match_${tId}_srtc16_5taMasculina_final`,
+          tournamentId: tId,
+          phase: "playoff",
+          roundNumber: 5,
+          stageName: "Final",
+          pair1Id: "",
+          pair2Id: "",
+          courtId: "",
+          date: dateString,
+          time: "21:00",
+          status: "pending",
+          scoreSummary: "Por jugar",
+          winnerPairId: "",
+          category: "5ta Masculina"
+        });
+
+        for (const m of allGeneratedMatches) {
+          await repository.saveMatch(m);
+        }
+
+        await repository.addNotification(
+          "Fixture Confeccionado",
+          `Se han creado 16 parejas de ejemplo y el fixture oficial SRTC 16 de 23 partidos para la categoría '5ta Masculina' en el torneo '${newT.name}'.`,
+          "success"
+        );
+      }
     }
 
     setIsFormOpen(false);
@@ -471,9 +923,15 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
                     onChange={(e) => setNewT({...newT, numGroups: Number(e.target.value)})}
                     className="w-full bg-slate-900 border border-slate-800 rounded p-1 text-slate-100 outline-none"
                   >
-                    {[1, 2, 3, 4, 6, 8].map(n => (
-                      <option key={n} value={n}>{n} Grupos</option>
-                    ))}
+                    {(() => {
+                      const groupOptions = [1, 2, 3, 4, 6, 8];
+                      if (newT.maxPairs === 32) {
+                        groupOptions.push(18);
+                      }
+                      return groupOptions.map(n => (
+                        <option key={n} value={n}>{n} Grupos</option>
+                      ));
+                    })()}
                   </select>
                 </div>
 
@@ -517,6 +975,178 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
               </div>
 
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* SYSTEM PROMPT: ASK FOR TOURNAMENT SIZE & FIXTURE TYPE */}
+      {isSizeSelectorOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+            
+            <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-900">
+              <span className="font-extrabold text-sm text-white flex items-center gap-1.5">
+                <Trophy className="w-4 h-4 text-emerald-400" /> Configuración Inicial: Cantidad de Parejas
+              </span>
+              <button
+                onClick={() => setIsSizeSelectorOpen(false)}
+                className="p-1 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-lg cursor-pointer transition border border-slate-700"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="overflow-y-auto p-6 space-y-6 text-xs text-slate-300">
+              
+              <div className="space-y-1">
+                <h4 className="text-white text-base font-black">¿De cuántas parejas será el torneo?</h4>
+                <p className="text-slate-400 text-xs">
+                  Selecciona la cantidad de parejas participantes. El sistema adaptará los sorteos, zonas y fases de eliminación en base a tu elección.
+                </p>
+              </div>
+
+              {/* Grid of couples options */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {[4, 6, 8, 12, 16, 24, 32].map((size) => {
+                  const is16 = size === 16 || size === 32;
+                  const isSelected = newT.maxPairs === size;
+                  return (
+                    <button
+                      key={size}
+                      type="button"
+                      onClick={() => {
+                        let estGroups = 2;
+                        if (size <= 5) estGroups = 1;
+                        else if (size <= 9) estGroups = 2;
+                        else if (size <= 14) estGroups = 3;
+                        else if (size <= 18) estGroups = 4;
+                        else if (size <= 24) estGroups = 6;
+                        else estGroups = 8;
+
+                        setNewT({
+                          ...newT, 
+                          maxPairs: size,
+                          numGroups: estGroups
+                        });
+                      }}
+                      className={`relative border p-4 rounded-xl flex flex-col items-center justify-center text-center transition gap-1.5 cursor-pointer ${
+                        isSelected
+                          ? is16
+                            ? "bg-indigo-950/40 border-indigo-500 ring-2 ring-indigo-500/10 text-white"
+                            : "bg-blue-950/40 border-blue-500 ring-2 ring-blue-500/10 text-white"
+                          : "bg-slate-950 border-slate-800 hover:border-slate-750 text-slate-400 hover:text-slate-200"
+                      }`}
+                    >
+                      {is16 && (
+                        <span className="absolute -top-2.5 bg-indigo-500 text-slate-950 font-mono text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full shadow-sm">
+                          OFICIAL SRTC
+                        </span>
+                      )}
+                      <span className={`text-lg font-black ${isSelected ? "text-[#d4fc34]" : "text-slate-300"}`}>
+                        {size}
+                      </span>
+                      <span className="text-[10px] font-bold">Parejas</span>
+                      
+                      <span className="text-[8px] opacity-70 font-mono">
+                        {size <= 5 ? "1 Zona" : `${Math.ceil(size / 4)} Zonas`}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Dynamic Information Banner based on selection */}
+              {newT.maxPairs === 32 ? (
+                <div className="bg-indigo-950/20 border border-indigo-500/20 rounded-2xl p-4 space-y-4 shadow-sm">
+                  <div className="flex gap-2">
+                    <Sparkles className="w-5 h-5 text-indigo-400 shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="font-extrabold text-[#d4fc34] text-xs">Formato Directo Oficial SRTC 32</h4>
+                      <p className="text-[11px] text-slate-300 mt-1 leading-relaxed">
+                        Sistema oficial de 32 parejas con **Dos Partidos Garantizados**. Los perdedores de Ronda 1 disputan ronda de repechaje en Ronda 2, clasificando únicamente los ganadores de Ronda 2 a Octavos de Final.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* PREFILL CHECKS */}
+                  <div className="bg-slate-950/80 p-3.5 rounded-xl border border-slate-800 flex items-start gap-3">
+                    <label className="flex items-start gap-3 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={prefillDemo32}
+                        onChange={(e) => setPrefillDemo32(e.target.checked)}
+                        className="w-4 h-4 accent-[#d4fc34] cursor-pointer mt-0.5 shrink-0 rounded"
+                      />
+                      <div className="text-left">
+                        <span className="text-xs text-white font-extrabold block">Confeccionar Fixture Automático SRTC 32</span>
+                        <span className="text-[10px] text-slate-400 block mt-0.5 leading-normal">
+                          Generar de forma inmediata 64 jugadores (32 parejas de demostración) y confeccionar su fixture completo en la categoría '5ta Masculina'. ¡Listo para jugar!
+                        </span>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+              ) : newT.maxPairs === 16 ? (
+                <div className="bg-indigo-950/20 border border-indigo-500/20 rounded-2xl p-4 space-y-4 shadow-sm">
+                  <div className="flex gap-2">
+                    <Sparkles className="w-5 h-5 text-indigo-400 shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="font-extrabold text-[#d4fc34] text-xs">Formato Directo Oficial SRTC 16</h4>
+                      <p className="text-[11px] text-slate-300 mt-1 leading-relaxed">
+                        Sistema de cuadro reglamentario de 16 parejas coordinado con un fixture pre-armado y progresión sincronizada. Cada pareja jugará partidos de alto rendimiento y progresión conforme al modelo de doble eliminación.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* PREFILL CHECKS */}
+                  <div className="bg-slate-950/80 p-3.5 rounded-xl border border-slate-800 flex items-start gap-3">
+                    <label className="flex items-start gap-3 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={prefillDemo16}
+                        onChange={(e) => setPrefillDemo16(e.target.checked)}
+                        className="w-4 h-4 accent-[#d4fc34] cursor-pointer mt-0.5 shrink-0 rounded"
+                      />
+                      <div className="text-left">
+                        <span className="text-xs text-white font-extrabold block">Confeccionar Fixture Automático</span>
+                        <span className="text-[10px] text-slate-400 block mt-0.5 leading-normal">
+                          Generar de forma inmediata 32 jugadores (16 parejas de demostración) y confeccionar su fixture completo en la categoría '5ta Masculina'. ¡Podrás jugar y registrar marcadores al instante!
+                        </span>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-slate-950 p-4 rounded-xl border border-slate-850 flex gap-2">
+                  <Activity className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                  <p className="text-[11px] text-slate-400 leading-normal">
+                    Este torneo funcionará con inscripción regular bajo el sistema de <strong>Dos Vidas</strong>. Una vez completado el registro de parejas, podrás ejecutar el sorteo en el panel interno.
+                  </p>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="pt-4 border-t border-slate-800 flex justify-end gap-3 font-sans">
+                <button
+                  type="button"
+                  onClick={() => setIsSizeSelectorOpen(false)}
+                  className="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold px-4 py-2 rounded-lg transition cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsSizeSelectorOpen(false);
+                    setIsFormOpen(true);
+                  }}
+                  className="bg-[#d4fc34] hover:bg-[#c5f015] text-slate-950 text-xs font-black px-5 py-2.5 rounded-xl flex items-center gap-1.5 transition cursor-pointer uppercase tracking-wider"
+                >
+                  Continuar <ArrowRight className="w-3.5 h-3.5 text-slate-950" />
+                </button>
+              </div>
+
+            </div>
           </div>
         </div>
       )}

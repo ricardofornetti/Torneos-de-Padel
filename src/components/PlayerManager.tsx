@@ -50,6 +50,15 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole }) => {
   const [search, setSearch] = useState("");
   const [divisionFilter, setDivisionFilter] = useState("all");
   const [loggedEmail, setLoggedEmail] = useState<string>("");
+  const [genderFilter, setGenderFilter] = useState<"all" | "Masculino" | "Femenino">("Masculino");
+  
+  const getPlayerGender = (p: Player): "Masculino" | "Femenino" => {
+    const cat = (p.category || "").toLowerCase();
+    if (cat.includes("femenina") || cat.includes("femenino")) {
+      return "Femenino";
+    }
+    return "Masculino";
+  };
   
   // Form State
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -64,7 +73,7 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole }) => {
     city: "",
     birthDate: "",
     category: "6ta Masculina",
-    rankingPoints: 100,
+    rankingPoints: 0,
     photoUrl: ""
   });
 
@@ -116,7 +125,7 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole }) => {
       city: "",
       birthDate: "1995-01-01",
       category: "6ta Masculina",
-      rankingPoints: 100,
+      rankingPoints: 0,
       photoUrl: AVATARS[Math.floor(Math.random() * AVATARS.length)]
     });
     setIsFormOpen(true);
@@ -225,13 +234,22 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole }) => {
     }
   };
 
-  // Filter players based on search & filters
+  // Filter players based on search & filters (including gender)
   const filteredPlayers = players.filter(p => {
     const pFullName = `${p.firstName} ${p.lastName}`.toLowerCase();
     const matchesSearch = pFullName.includes(search.toLowerCase()) || p.city.toLowerCase().includes(search.toLowerCase());
     
-    if (divisionFilter === "all") return matchesSearch;
-    return matchesSearch && p.category.startsWith(divisionFilter);
+    // Category match - ensure exact match when selected
+    const matchesCategory = divisionFilter === "all" ? true : p.category === divisionFilter;
+    
+    // Gender match
+    let matchesGender = true;
+    if (genderFilter !== "all") {
+      const pGender = getPlayerGender(p);
+      matchesGender = (pGender === genderFilter);
+    }
+    
+    return matchesSearch && matchesCategory && matchesGender;
   });
 
   return (
@@ -249,22 +267,6 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole }) => {
         </div>
         
         <div className="flex flex-wrap gap-2">
-          {userRole === "admin" && (
-            <button
-              onClick={async () => {
-                await repository.addDemoPlayersBatch();
-                await repository.addNotification(
-                  "Demo Creado",
-                  "Se han agregado 8 jugadores profesionales de prueba a las estadísticas anuales.",
-                  "success"
-                );
-                loadPlayers();
-              }}
-              className="bg-[#d4fc34] hover:bg-[#c5f015] text-slate-950 text-xs font-black px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition cursor-pointer uppercase tracking-wider text-center"
-            >
-              <Users className="w-4 h-4 text-slate-950" /> Cargar 8 de Prueba
-            </button>
-          )}
           <button
             onClick={handleOpenCreateForm}
             className="bg-[#d4fc34] hover:bg-[#c5f015] text-slate-950 text-xs font-black px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition cursor-pointer uppercase tracking-wider text-center"
@@ -273,6 +275,49 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole }) => {
             <span>{userRole === "admin" ? "Registrar Jugador" : "Inscribirse como Jugador"}</span>
           </button>
         </div>
+      </div>
+
+      {/* GENDER / RAMA TABS */}
+      <div className="flex border-b border-slate-800 gap-2 pb-px justify-start">
+        <button
+          onClick={() => {
+            setGenderFilter("Masculino");
+            setDivisionFilter("all");
+          }}
+          className={`px-5 py-3 text-xs font-black uppercase tracking-wider transition-all relative cursor-pointer ${
+            genderFilter === "Masculino"
+              ? "text-blue-400 border-b-2 border-blue-500 font-extrabold"
+              : "text-slate-400 hover:text-slate-205"
+          }`}
+        >
+          Rama Masculina
+        </button>
+        <button
+          onClick={() => {
+            setGenderFilter("Femenino");
+            setDivisionFilter("all");
+          }}
+          className={`px-5 py-3 text-xs font-black uppercase tracking-wider transition-all relative cursor-pointer ${
+            genderFilter === "Femenino"
+              ? "text-pink-400 border-b-2 border-pink-500 font-extrabold"
+              : "text-slate-400 hover:text-slate-205"
+          }`}
+        >
+          Rama Femenina
+        </button>
+        <button
+          onClick={() => {
+            setGenderFilter("all");
+            setDivisionFilter("all");
+          }}
+          className={`px-5 py-3 text-xs font-black uppercase tracking-wider transition-all relative cursor-pointer ${
+            genderFilter === "all"
+              ? "text-[#d4fc34] border-b-2 border-[#d4fc34] font-extrabold"
+              : "text-slate-400 hover:text-slate-205"
+          }`}
+        >
+          Ver Todos
+        </button>
       </div>
 
       {/* SEARCH AND FILTERS */}
@@ -295,14 +340,18 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole }) => {
             className="bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-lg px-2.5 py-2 text-xs text-slate-300 outline-none w-full md:w-auto"
           >
             <option value="all">Todas las Categorías</option>
-            {PADEL_CATEGORIES.map(cat => (
+            {PADEL_CATEGORIES.filter(cat => {
+              if (genderFilter === "Masculino") return !cat.toLowerCase().includes("femenina") && !cat.toLowerCase().includes("femenino");
+              if (genderFilter === "Femenino") return cat.toLowerCase().includes("femenina") || cat.toLowerCase().includes("femenino");
+              return true;
+            }).map(cat => (
               <option key={cat} value={cat}>{cat}</option>
             ))}
           </select>
         </div>
       </div>
 
-      {/* PLAYERS Bento LISTING */}
+      {/* PLAYERS Bento LISTING SECTION */}
       {loading ? (
         <div className="text-center py-10 font-mono text-xs text-slate-500 animate-pulse">
           Sincronizando jugadores...
@@ -312,126 +361,291 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole }) => {
           Ningún jugador coincide con los filtros especificados.
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredPlayers.map(p => {
-            const winRate = p.matchesPlayed > 0 ? (p.matchesWon / p.matchesPlayed) * 100 : 0;
-            const isMe = p.email && loggedEmail && p.email.toLowerCase() === loggedEmail.toLowerCase();
+        <div className="space-y-10">
+          {(() => {
+            // Determine active categories to display
+            const categoriesToRender = PADEL_CATEGORIES.filter(cat => {
+              const matchesDiv = divisionFilter === "all" || cat === divisionFilter;
+              
+              let matchesGend = true;
+              if (genderFilter === "Masculino") {
+                matchesGend = !cat.toLowerCase().includes("femenina") && !cat.toLowerCase().includes("femenino");
+              } else if (genderFilter === "Femenino") {
+                matchesGend = cat.toLowerCase().includes("femenina") || cat.toLowerCase().includes("femenino");
+              }
+              
+              return matchesDiv && matchesGend;
+            });
+
+            const otherPlayers = filteredPlayers.filter(p => !PADEL_CATEGORIES.includes(p.category));
+
             return (
-              <div 
-                key={p.id}
-                className={`bg-slate-900 border transition rounded-xl overflow-hidden flex flex-col justify-between relative ${
-                  isMe ? 'border-cyan-500/70 shadow-lg shadow-cyan-500/5' : 'border-slate-800 hover:border-slate-700'
-                }`}
-                id={`player-card-${p.id}`}
-              >
-                {/* Header card info */}
-                <div className="p-4 relative">
-                  
-                  {/* Edit/Delete overlays for Admin / Self Edit for Matching Player */}
-                  {(userRole === "admin" || isMe) && (
-                    <div className="absolute top-3 right-3 flex gap-1">
-                      <button
-                        onClick={() => handleOpenEditForm(p)}
-                        className="p-1.5 bg-slate-950/80 hover:bg-slate-800 text-slate-400 hover:text-white rounded-md transition"
-                        title="Editar Perfil"
-                      >
-                        <Edit3 className="w-3.5 h-3.5" />
-                      </button>
-                      {userRole === "admin" && (
-                        <button
-                          onClick={() => handleDelete(p.id, `${p.firstName} ${p.lastName}`)}
-                          className="p-1.5 bg-slate-950/80 hover:bg-red-900/40 text-slate-400 hover:text-red-400 rounded-md transition"
-                          title="Eliminar Jugador"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
-                  )}
+              <>
+                {categoriesToRender.map(catName => {
+                  const catPlayers = filteredPlayers.filter(p => p.category === catName);
+                  if (catPlayers.length === 0) return null;
 
-                  {/* Player Image and Badge Category */}
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={p.photoUrl}
-                      alt={`${p.firstName} ${p.lastName}`}
-                      className="w-12 h-12 rounded-full object-cover border border-slate-700 shadow-md"
-                    />
-                    <div>
-                      <div className="flex items-center gap-1 mb-1 flex-wrap">
-                        <span className="bg-slate-950 text-blue-400 border border-slate-800 px-2 py-0.5 rounded text-[9px] font-mono font-bold block w-fit">
-                          {p.category}
+                  return (
+                    <div key={catName} className="space-y-4" id={`p-sect-${catName.replace(/\s+/g, '-').toLowerCase()}`}>
+                      <div className="flex items-center gap-2 border-b border-slate-800/80 pb-2">
+                        <span className="w-1.5 h-3.5 bg-blue-500 rounded-full"></span>
+                        <h3 className="text-xs font-bold text-slate-200 tracking-wide uppercase font-mono">
+                          {catName}
+                        </h3>
+                        <span className="bg-slate-950 text-slate-500 text-[10px] px-2 py-0.5 rounded-md font-mono border border-slate-800">
+                          {catPlayers.length}
                         </span>
-                        {isMe && (
-                          <span className="bg-cyan-500 text-slate-950 px-1.5 py-0.5 rounded text-[9px] font-sans font-extrabold uppercase animate-pulse">
-                            ★ tú
-                          </span>
-                        )}
                       </div>
-                      <h4 className="font-extrabold text-sm text-white">
-                        {p.lastName}, {p.firstName}
-                      </h4>
-                    </div>
-                  </div>
 
-                  {/* Body particulars email / phone / DNI */}
-                  <div className="mt-4 pt-3 border-t border-slate-800/60 space-y-2 text-xs text-slate-400">
-                    <div className="flex items-center gap-2">
-                      <CreditCard className="w-3.5 h-3.5 text-slate-600 shrink-0" />
-                      <span className="font-mono text-[11px] text-slate-300">DNI: {p.dni}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Mail className="w-3.5 h-3.5 text-slate-600 shrink-0" />
-                      <span className="truncate">{p.email}</span>
-                    </div>
-                    {p.phone && (
-                      <div className="flex items-center gap-2">
-                        <Phone className="w-3.5 h-3.5 text-slate-600 shrink-0" />
-                        <span>{p.phone}</span>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        {catPlayers.map(p => {
+                          const winRate = p.matchesPlayed > 0 ? (p.matchesWon / p.matchesPlayed) * 100 : 0;
+                          const isMe = p.email && loggedEmail && p.email.toLowerCase() === loggedEmail.toLowerCase();
+                          return (
+                            <div 
+                              key={p.id}
+                              className={`bg-slate-900 border transition rounded-xl overflow-hidden flex flex-col justify-between relative ${
+                                isMe ? 'border-cyan-500/70 shadow-lg shadow-cyan-500/5' : 'border-slate-800 hover:border-slate-700'
+                              }`}
+                              id={`player-card-${p.id}`}
+                            >
+                              {/* Header card info */}
+                              <div className="p-4 relative">
+                                
+                                {/* Edit/Delete overlays for Admin / Self Edit */}
+                                {(userRole === "admin" || isMe) && (
+                                  <div className="absolute top-3 right-3 flex gap-1">
+                                    <button
+                                      onClick={() => handleOpenEditForm(p)}
+                                      className="p-1.5 bg-slate-950/80 hover:bg-slate-800 text-slate-400 hover:text-white rounded-md transition"
+                                      title="Editar Perfil"
+                                    >
+                                      <Edit3 className="w-3.5 h-3.5" />
+                                    </button>
+                                    {userRole === "admin" && (
+                                      <button
+                                        onClick={() => handleDelete(p.id, `${p.firstName} ${p.lastName}`)}
+                                        className="p-1.5 bg-slate-950/80 hover:bg-red-900/40 text-slate-400 hover:text-red-400 rounded-md transition"
+                                        title="Eliminar Jugador"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    )}
+                                  </div>
+                                )}
+
+                                {/* Player Image and Badge Category */}
+                                <div className="flex items-center gap-3">
+                                  <img
+                                    src={p.photoUrl}
+                                    alt={`${p.firstName} ${p.lastName}`}
+                                    className="w-12 h-12 rounded-full object-cover border border-slate-700 shadow-md"
+                                    referrerPolicy="no-referrer"
+                                  />
+                                  <div>
+                                    <div className="flex items-center gap-1 mb-1 flex-wrap">
+                                      <span className="bg-slate-950 text-blue-400 border border-slate-800 px-2 py-0.5 rounded text-[9px] font-mono font-bold block w-fit">
+                                        {p.category}
+                                      </span>
+                                      {isMe && (
+                                        <span className="bg-cyan-500 text-slate-950 px-1.5 py-0.5 rounded text-[9px] font-sans font-extrabold uppercase animate-pulse">
+                                          ★ tú
+                                        </span>
+                                      )}
+                                    </div>
+                                    <h4 className="font-extrabold text-sm text-white">
+                                      {p.lastName}, {p.firstName}
+                                    </h4>
+                                  </div>
+                                </div>
+
+                                {/* Body particulars */}
+                                <div className="mt-4 pt-3 border-t border-slate-800/60 space-y-2 text-xs text-slate-400">
+                                  <div className="flex items-center gap-2">
+                                    <CreditCard className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+                                    <span className="font-mono text-[11px] text-slate-300">DNI: {p.dni}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Mail className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+                                    <span className="truncate">{p.email}</span>
+                                  </div>
+                                  {p.phone && (
+                                    <div className="flex items-center gap-2">
+                                      <Phone className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+                                      <span>{p.phone}</span>
+                                    </div>
+                                  )}
+                                  <div className="flex items-center gap-2">
+                                    <MapPin className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+                                    <span>{p.city}</span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Lifetime Advanced Stats footer */}
+                              <div className="bg-slate-950 p-3 border-t border-slate-800">
+                                <div className="grid grid-cols-3 text-center gap-1">
+                                  <div>
+                                    <span className="block text-[10px] text-slate-500 uppercase font-mono tracking-wider">PUNTOS</span>
+                                    <span className="font-black text-white text-xs">{p.rankingPoints}</span>
+                                  </div>
+                                  <div>
+                                    <span className="block text-[10px] text-slate-500 uppercase font-mono tracking-wider">PJ</span>
+                                    <span className="font-bold text-slate-300 text-xs font-mono">{p.matchesPlayed}</span>
+                                  </div>
+                                  <div>
+                                    <span className="block text-[10px] text-slate-500 uppercase font-mono tracking-wider">V / D</span>
+                                    <span className="font-mono text-green-400 text-xs font-semibold">
+                                      {p.matchesWon} - {p.matchesLost}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {/* Progress winrate bar */}
+                                <div className="mt-2 text-[10px] flex items-center justify-between text-slate-400 font-mono">
+                                  <span>Efectividad:</span>
+                                  <span className="font-bold text-blue-400">{winRate.toFixed(0)}%</span>
+                                </div>
+                                <div className="w-full bg-slate-900 h-1.5 rounded-full mt-1 overflow-hidden">
+                                  <div className="bg-blue-500 h-full rounded-full" style={{ width: `${winRate}%` }}></div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
-                    )}
-                    <div className="flex items-center gap-2">
-                      <MapPin className="w-3.5 h-3.5 text-slate-600 shrink-0" />
-                      <span>{p.city}</span>
                     </div>
-                  </div>
-                </div>
+                  );
+                })}
 
-                {/* Lifetime Advanced Stats footer panel */}
-                <div className="bg-slate-950 p-3 border-t border-slate-800">
-                  <div className="grid grid-cols-3 text-center gap-1">
-                    
-                    <div>
-                      <span className="block text-[10px] text-slate-500 uppercase font-mono tracking-wider">PUNTOS</span>
-                      <span className="font-black text-white text-xs">{p.rankingPoints}</span>
-                    </div>
-
-                    <div>
-                      <span className="block text-[10px] text-slate-500 uppercase font-mono tracking-wider">COMPETIDOS</span>
-                      <span className="font-bold text-slate-300 text-xs font-mono">{p.matchesPlayed} PJ</span>
-                    </div>
-
-                    <div>
-                      <span className="block text-[10px] text-slate-500 uppercase font-mono tracking-wider">V / D</span>
-                      <span className="font-mono text-green-400 text-xs font-semibold">
-                        {p.matchesWon} - {p.matchesLost}
+                {/* Other fallback categories if present */}
+                {otherPlayers.length > 0 && (
+                  <div className="space-y-4" id="p-sect-other">
+                    <div className="flex items-center gap-2 border-b border-slate-800/80 pb-2">
+                      <span className="w-1.5 h-3.5 bg-slate-600 rounded-full"></span>
+                      <h3 className="text-xs font-bold text-slate-400 tracking-wide uppercase font-mono">
+                        Otras Categorías
+                      </h3>
+                      <span className="bg-slate-950 text-slate-500 text-[10px] px-2 py-0.5 rounded-md font-mono border border-slate-800">
+                        {otherPlayers.length}
                       </span>
                     </div>
 
-                  </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                      {otherPlayers.map(p => {
+                        const winRate = p.matchesPlayed > 0 ? (p.matchesWon / p.matchesPlayed) * 100 : 0;
+                        const isMe = p.email && loggedEmail && p.email.toLowerCase() === loggedEmail.toLowerCase();
+                        return (
+                          <div 
+                            key={p.id}
+                            className={`bg-slate-900 border transition rounded-xl overflow-hidden flex flex-col justify-between relative ${
+                              isMe ? 'border-cyan-500/70 shadow-lg shadow-cyan-500/5' : 'border-slate-800 hover:border-slate-700'
+                            }`}
+                            id={`player-card-${p.id}`}
+                          >
+                            <div className="p-4 relative">
+                              {(userRole === "admin" || isMe) && (
+                                <div className="absolute top-3 right-3 flex gap-1">
+                                  <button
+                                    onClick={() => handleOpenEditForm(p)}
+                                    className="p-1.5 bg-slate-950/80 hover:bg-slate-800 text-slate-400 hover:text-white rounded-md transition"
+                                    title="Editar Perfil"
+                                  >
+                                    <Edit3 className="w-3.5 h-3.5" />
+                                  </button>
+                                  {userRole === "admin" && (
+                                    <button
+                                      onClick={() => handleDelete(p.id, `${p.firstName} ${p.lastName}`)}
+                                      className="p-1.5 bg-slate-950/80 hover:bg-red-900/40 text-slate-400 hover:text-red-400 rounded-md transition"
+                                      title="Eliminar Jugador"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  )}
+                                </div>
+                              )}
 
-                  {/* Progress winrate bar */}
-                  <div className="mt-2 text-[10px] flex items-center justify-between text-slate-400 font-mono">
-                    <span>Efectividad:</span>
-                    <span className="font-bold text-blue-400">{winRate.toFixed(0)}%</span>
-                  </div>
-                  <div className="w-full bg-slate-900 h-1.5 rounded-full mt-1 overflow-hidden">
-                    <div className="bg-blue-500 h-full rounded-full" style={{ width: `${winRate}%` }}></div>
-                  </div>
-                </div>
+                              <div className="flex items-center gap-3">
+                                <img
+                                  src={p.photoUrl}
+                                  alt={`${p.firstName} ${p.lastName}`}
+                                  className="w-12 h-12 rounded-full object-cover border border-slate-700 shadow-md"
+                                  referrerPolicy="no-referrer"
+                                />
+                                <div>
+                                  <div className="flex items-center gap-1 mb-1 flex-wrap">
+                                    <span className="bg-slate-950 text-blue-400 border border-slate-800 px-2 py-0.5 rounded text-[9px] font-mono font-bold block w-fit">
+                                      {p.category}
+                                    </span>
+                                    {isMe && (
+                                      <span className="bg-cyan-500 text-slate-950 px-1.5 py-0.5 rounded text-[9px] font-sans font-extrabold uppercase animate-pulse">
+                                        ★ tú
+                                      </span>
+                                    )}
+                                  </div>
+                                  <h4 className="font-extrabold text-sm text-white">
+                                    {p.lastName}, {p.firstName}
+                                  </h4>
+                                </div>
+                              </div>
 
-              </div>
+                              <div className="mt-4 pt-3 border-t border-slate-800/60 space-y-2 text-xs text-slate-400">
+                                <div className="flex items-center gap-2">
+                                  <CreditCard className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+                                  <span className="font-mono text-[11px] text-slate-300">DNI: {p.dni}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Mail className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+                                  <span className="truncate">{p.email}</span>
+                                </div>
+                                {p.phone && (
+                                  <div className="flex items-center gap-2">
+                                    <Phone className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+                                    <span>{p.phone}</span>
+                                  </div>
+                                )}
+                                <div className="flex items-center gap-2">
+                                  <MapPin className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+                                  <span>{p.city}</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="bg-slate-950 p-3 border-t border-slate-800">
+                              <div className="grid grid-cols-3 text-center gap-1">
+                                <div>
+                                  <span className="block text-[10px] text-slate-500 uppercase font-mono tracking-wider">PUNTOS</span>
+                                  <span className="font-black text-white text-xs">{p.rankingPoints}</span>
+                                </div>
+                                <div>
+                                  <span className="block text-[10px] text-slate-500 uppercase font-mono tracking-wider">PJ</span>
+                                  <span className="font-bold text-slate-300 text-xs font-mono">{p.matchesPlayed}</span>
+                                </div>
+                                <div>
+                                  <span className="block text-[10px] text-slate-500 uppercase font-mono tracking-wider">V / D</span>
+                                  <span className="font-mono text-green-400 text-xs font-semibold">
+                                    {p.matchesWon} - {p.matchesLost}
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div className="mt-2 text-[10px] flex items-center justify-between text-slate-400 font-mono">
+                                  <span>Efectividad:</span>
+                                  <span className="font-bold text-blue-400">{winRate.toFixed(0)}%</span>
+                              </div>
+                              <div className="w-full bg-slate-900 h-1.5 rounded-full mt-1 overflow-hidden">
+                                <div className="bg-blue-500 h-full rounded-full" style={{ width: `${winRate}%` }}></div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </>
             );
-          })}
+          })()}
         </div>
       )}
 

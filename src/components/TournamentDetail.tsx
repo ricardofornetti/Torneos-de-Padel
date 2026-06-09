@@ -24,7 +24,9 @@ import {
   Clock,
   ArrowLeft,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  FlaskConical,
+  UserCheck
 } from 'lucide-react';
 import { repository } from '../lib/repository';
 import { Tournament, Player, Pair, Match, Court, StandingsRow } from '../types';
@@ -182,7 +184,7 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
   const [courts, setCourts] = useState<Court[]>([]);
   const [activeTab, setActiveTab] = useState<"inscriptions" | "groups" | "matches" | "standings" | "playoffs">("inscriptions");
   const [playoffFilter, setPlayoffFilter] = useState<"all" | "16avos" | "8avos" | "4tos" | "semifinal" | "final">("all");
-  const [fixtureFilter, setFixtureFilter] = useState<"all" | "group" | "16avos" | "8avos" | "4tos" | "semifinal" | "final">("all");
+  const [fixtureFilter, setFixtureFilter] = useState<"all" | "group" | "16avos" | "8avos" | "4tos" | "semifinal" | "final" | "r1" | "r2">("all");
 
   // Selected Category
   const [selectedCategory, setSelectedCategory] = useState<string>("Libre Masculina");
@@ -194,6 +196,7 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
   // Inscriptions state
   const [p1Select, setP1Select] = useState("");
   const [p2Select, setP2Select] = useState("");
+  const [pairToDelete, setPairToDelete] = useState<{ id: string; name: string } | null>(null);
 
   // Results state
   const [activeScoreMatch, setActiveScoreMatch] = useState<Match | null>(null);
@@ -213,6 +216,13 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
   const [selectedTime, setSelectedTime] = useState("");
   const [isEditNumCourtsOpen, setIsEditNumCourtsOpen] = useState(false);
   const [tempNumCourts, setTempNumCourts] = useState(2);
+
+  // Custom Finalizar Torneo Confirmation Dialog States
+  const [showFinishModal, setShowFinishModal] = useState(false);
+  const [finishModalTitle, setFinishModalTitle] = useState("");
+  const [finishModalWarning, setFinishModalWarning] = useState<string | null>(null);
+  const [finishModalPayload, setFinishModalPayload] = useState<{ completedCategories: string[] } | null>(null);
+  const [finishModalError, setFinishModalError] = useState<string | null>(null);
 
   // Group drawing assignments (In-memory grouping display)
   const [groupsMap, setGroupsMap] = useState<{ [gName: string]: Pair[] }>({});
@@ -376,10 +386,272 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
     }
   };
 
-  const handleDeletePair = async (id: string, name: string) => {
-    if (confirm(`¿Desas de-inscribir a la pareja ${name}?`)) {
-      await repository.deletePair(id);
-      await repository.addNotification("Desinscripción", `Se removió a la pareja ${name} del torneo.`, "warning");
+  const handleDeletePair = (id: string, name: string) => {
+    setPairToDelete({ id, name });
+  };
+
+  const executeDeletePair = async () => {
+    if (!pairToDelete) return;
+    const { id, name } = pairToDelete;
+    setPairToDelete(null);
+    await repository.deletePair(id);
+    await repository.addNotification("Desinscripción", `Se removió a la pareja ${name} del torneo.`, "warning");
+    loadAllData();
+  };
+
+  // ---------------------------------------------------------------------------
+  // QA SIMULATOR ACTIONS FOR DEVELOPER / TESTING
+  // ---------------------------------------------------------------------------
+  const handleQAAutoFill16Pairs = async () => {
+    const spanishLastNames = ["Galán", "Lebrón", "Tapia", "Coello", "Stupaczuk", "Di Nenno", "Navarro", "Chingotto", "Belasteguín", "Tello", "Garrido", "Yanguas", "González", "Ruiz", "Sanz", "Nieto", "Campagnolo", "Capra", "Bergamini", "Cardona", "Zapata", "Guerrero", "Bautista", "Muñoz", "Goenaga", "Esbri", "Rico", "Méndez", "Castillo", "Vilariño", "Ortega", "Triay"];
+    const spanishFirstNames = ["Alejandro", "Juan", "Agustín", "Arturo", "Franco", "Martín", "Paquito", "Federico", "Fernando", "Juan Cruz", "Javi", "Miguel", "Gerónimo", "Álex", "Jon", "Coki", "Lucas", "Lucho", "Víctor", "Pablo", "Teo", "Francisco", "Jairo", "Rafael", "Enrique", "Edu", "Josete", "Adrián", "Mario", "Ignacio", "Seba", "Gaby"];
+
+    const mockPlayers: Player[] = [];
+    const now = Date.now();
+    for (let i = 0; i < 32; i++) {
+      const id = `player_mock_qa_${now}_${i}`;
+      const first = spanishFirstNames[i % spanishFirstNames.length];
+      const last = spanishLastNames[i % spanishLastNames.length] + (i >= spanishLastNames.length ? " Jr." : "");
+      mockPlayers.push({
+        id,
+        firstName: first,
+        lastName: last,
+        dni: `${Math.floor(10000000 + Math.random() * 90000000)}X`,
+        phone: `+34 600 ${Math.floor(100000 + Math.random() * 900000)}`,
+        email: `${first.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")}.${last.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s/g, "")}@example.com`,
+        city: "Madrid",
+        birthDate: "1996-03-12",
+        category: selectedCategory,
+        rankingPoints: Math.floor(100 + Math.random() * 2000),
+        photoUrl: `https://api.dicebear.com/7.x/adventurer/svg?seed=${first}_${last}`,
+        matchesPlayed: 0,
+        matchesWon: 0,
+        matchesLost: 0,
+        setsWon: 0,
+        setsLost: 0,
+        gamesWon: 0,
+        gamesLost: 0
+      });
+    }
+
+    // Save all mock players
+    for (const p of mockPlayers) {
+      await repository.savePlayer(p);
+    }
+
+    // Remove existing pairs in this category
+    const currentCategoryPairs = pairs.filter(p => p.tournamentId === tournamentId && p.category === selectedCategory);
+    for (const pr of currentCategoryPairs) {
+      await repository.deletePair(pr.id);
+    }
+
+    // Form 16 pairs
+    for (let i = 0; i < 16; i++) {
+      const p1 = mockPlayers[i * 2];
+      const p2 = mockPlayers[i * 2 + 1];
+      const combined = p1.rankingPoints + p2.rankingPoints;
+
+      const newPair: Pair = {
+        id: `pair_${tournamentId}_qa_${now}_${i}`,
+        tournamentId,
+        player1Id: p1.id,
+        player2Id: p2.id,
+        category: selectedCategory,
+        combinedRanking: combined,
+        status: "confirmed"
+      };
+      await repository.savePair(newPair);
+    }
+
+    await repository.addNotification(
+      "Simulación de Inscripciones",
+      `Se crearon 32 jugadores y 16 parejas de prueba listas para participar en '${selectedCategory}'.`,
+      "success"
+    );
+
+    loadAllData();
+  };
+
+  const handleQASimulateCurrentStage = async () => {
+    const categoryMatches = matches.filter(m => m.category === selectedCategory);
+    const pendingMatches = categoryMatches.filter(
+      m => m.status === "pending" && m.pair1Id && m.pair2Id && m.pair1Id !== "BYE" && m.pair2Id !== "BYE"
+    );
+
+    if (pendingMatches.length === 0) {
+      alert("No hay partidos de fase de grupos o eliminatorias con parejas definidas listos para simular.");
+      return;
+    }
+
+    let completedCount = 0;
+    for (const m of pendingMatches) {
+      const coinFlip = Math.random() > 0.5;
+      const winnerId = coinFlip ? m.pair1Id : m.pair2Id;
+
+      const scoreStyle = Math.floor(Math.random() * 4);
+      let scoreStr = "";
+      if (scoreStyle === 0) {
+        scoreStr = coinFlip ? "6-4 6-3" : "4-6 3-6";
+      } else if (scoreStyle === 1) {
+        scoreStr = coinFlip ? "6-2 7-5" : "2-6 5-7";
+      } else if (scoreStyle === 2) {
+        scoreStr = coinFlip ? "6-3 3-6 11-9" : "3-6 6-3 9-11";
+      } else {
+        scoreStr = coinFlip ? "7-6 6-4" : "6-7 4-6";
+      }
+
+      const updated: Match = {
+        ...m,
+        status: "completed",
+        scoreSummary: scoreStr,
+        winnerPairId: winnerId,
+        settledAt: new Date().toISOString()
+      };
+
+      await repository.saveMatch(updated);
+      await updatePlayerStatsFromMatch(m, updated);
+
+      const isSRTC16Matches = pairs.filter(p => p.category === selectedCategory).length === 16;
+      const isSRTC32Matches = pairs.filter(p => p.category === selectedCategory).length === 32;
+      if (isSRTC16Matches) {
+        await handleSRTC16Progression(updated, winnerId);
+      } else if (isSRTC32Matches) {
+        await handleSRTC32Progression(updated, winnerId);
+      } else {
+        if (m.phase === "playoff") {
+          await handlePlayoffProgression(updated, winnerId);
+        }
+      }
+
+      completedCount++;
+    }
+
+    // Check group matches finished
+    const updatedMatchesList = await repository.getMatches();
+    const catMatchesPost = updatedMatchesList.filter(x => x.category === selectedCategory && x.tournamentId === tournamentId);
+    const hasGroup = catMatchesPost.some(x => x.phase === "group");
+    const remainingGroups = catMatchesPost.filter(x => x.phase === "group" && x.status === "pending");
+
+    const isSRTC16 = pairs.filter(p => p.category === selectedCategory).length === 16;
+
+    if (!isSRTC16 && hasGroup && remainingGroups.length === 0) {
+      const activePairs = pairs.filter(p => p.category === selectedCategory);
+      const stands = calculateDosVidasStandings(activePairs, catMatchesPost.filter(m => m.phase === "group"), getPairName);
+      const totalPairsCount = activePairs.length;
+
+      let bracketSize = 8;
+      let stageLabel = "Cuartos de Final";
+      if (totalPairsCount <= 4) {
+        bracketSize = 2;
+        stageLabel = "Final";
+      } else if (totalPairsCount <= 9) {
+        bracketSize = 4;
+        stageLabel = "Semifinales";
+      } else if (totalPairsCount <= 16) {
+        bracketSize = 8;
+        stageLabel = "Cuartos de Final";
+      } else {
+        bracketSize = 16;
+        stageLabel = "Octavos de Final";
+      }
+
+      const qualifiedIds = stands.slice(0, bracketSize).map(s => s.pairId);
+      if (qualifiedIds.length >= 2) {
+        let playoffMatches = catMatchesPost.filter(m => m.phase === "playoff");
+        if (playoffMatches.length === 0) {
+          playoffMatches = preGeneratePlayoffsHelper(tournamentId, selectedCategory);
+        }
+
+        const resetMatches = playoffMatches.map(m => ({
+          ...m,
+          pair1Id: m.pair1Id || "",
+          pair2Id: m.pair2Id || "",
+          winnerPairId: m.winnerPairId || "",
+          status: m.status,
+          scoreSummary: m.scoreSummary
+        }));
+
+        const seeds8 = [[0, 15], [7, 8], [4, 11], [3, 12], [2, 13], [5, 10], [6, 9], [1, 14]];
+        const seeds4 = [[0, 7], [3, 4], [2, 5], [1, 6]];
+        const updatedPlayoffs = [...resetMatches];
+
+        if (bracketSize === 16) {
+          for (let idx = 0; idx < 8; idx++) {
+            const mObj = updatedPlayoffs.find(m => m.stageName === `Octavos de Final ${idx + 1}`);
+            if (mObj) {
+              const [s1, s2] = seeds8[idx];
+              mObj.pair1Id = qualifiedIds[s1] || "";
+              mObj.pair2Id = qualifiedIds[s2] || "";
+            }
+          }
+        } else if (bracketSize === 8) {
+          for (let idx = 0; idx < 4; idx++) {
+            const mObj = updatedPlayoffs.find(m => m.stageName === `Cuartos de Final ${idx + 1}` || m.stageName === `Cuartos ${idx + 1}`);
+            if (mObj) {
+              const [s1, s2] = seeds4[idx];
+              mObj.pair1Id = qualifiedIds[s1] || "";
+              mObj.pair2Id = qualifiedIds[s2] || "";
+            }
+          }
+        } else if (bracketSize === 4) {
+          const sf1 = updatedPlayoffs.find(m => m.stageName === "Semifinal 1");
+          const sf2 = updatedPlayoffs.find(m => m.stageName === "Semifinal 2");
+          if (sf1) {
+            sf1.pair1Id = qualifiedIds[0] || "";
+            sf1.pair2Id = qualifiedIds[3] || "";
+          }
+          if (sf2) {
+            sf2.pair1Id = qualifiedIds[1] || "";
+            sf2.pair2Id = qualifiedIds[2] || "";
+          }
+        } else if (bracketSize === 2) {
+          const f = updatedPlayoffs.find(m => m.stageName === "Final");
+          if (f) {
+            f.pair1Id = qualifiedIds[0] || "";
+            f.pair2Id = qualifiedIds[1] || "";
+          }
+        }
+
+        for (const pm of updatedPlayoffs) {
+          await repository.saveMatch(pm);
+        }
+
+        await repository.addNotification(
+          "Fase de Clasificación Completada",
+          `Se han finalizado las rondas de grupo automáticamente. Las parejas clasificaron al cuadro (${stageLabel}) para '${selectedCategory}'.`,
+          "success"
+        );
+      }
+    }
+
+    await repository.addNotification(
+      "Simulación de Partidos",
+      `Se simularon ${completedCount} partidos exitosamente con resultados aleatorios y coherentes.`,
+      "success"
+    );
+
+    loadAllData();
+  };
+
+  const handleResetCategory = async () => {
+    if (confirm(`¿Estás seguro de que deseas reiniciar todos los partidos y sorteos de la categoría '${selectedCategory}'? Se eliminarán los marcadores y fixture.`)) {
+      const priorMatches = matches.filter(m => m.tournamentId === tournamentId && m.category === selectedCategory);
+      await Promise.all(priorMatches.map(oldMatch => repository.deleteMatch(oldMatch.id)));
+
+      if (tournament && tournament.status !== "registration") {
+        const updatedTournament: Tournament = {
+          ...tournament,
+          status: "registration"
+        };
+        await repository.saveTournament(updatedTournament);
+      }
+
+      await repository.addNotification(
+        "Categoría Reiniciada",
+        `Se eliminaron todos los partidos de '${selectedCategory}'. Podrás realizar un nuevo sorteo.`,
+        "warning"
+      );
+
       loadAllData();
     }
   };
@@ -405,9 +677,7 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
     try {
       // Step 2: Delete prior matches (if restarting / redrawing) only for THIS category
       const priorMatches = matches.filter(m => m.tournamentId === tournamentId && m.category === selectedCategory);
-      for (const oldMatch of priorMatches) {
-        await repository.deleteMatch(oldMatch.id);
-      }
+      await Promise.all(priorMatches.map(oldMatch => repository.deleteMatch(oldMatch.id)));
 
       // Step 3: Run the initial round draw
       const sortedPairs = [...categoryPairs];
@@ -418,6 +688,286 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
         sortedPairs.sort((a, b) => b.combinedRanking - a.combinedRanking);
       }
 
+      const isSRTC16 = sortedPairs.length === 16;
+      if (isSRTC16) {
+        const allGeneratedMatches: Match[] = [];
+        const dateString = tournament?.startDate || new Date().toISOString().split("T")[0];
+
+        // 1. Ronda 1 Matches (8 matches)
+        for (let i = 0; i < 8; i++) {
+          const letter = String.fromCharCode(65 + i); // 'A' to 'H'
+          const p1 = sortedPairs[i * 2];
+          const p2 = sortedPairs[i * 2 + 1];
+          allGeneratedMatches.push({
+            id: `match_${tournamentId}_srtc16_${selectedCategory.replace(/[^a-zA-Z0-9]/g, "")}_r1_m${i + 1}`,
+            tournamentId,
+            phase: "group",
+            roundNumber: 1,
+            stageName: `Ronda 1 - Grupo ${letter}`,
+            pair1Id: p1.id,
+            pair2Id: p2.id,
+            courtId: "",
+            date: dateString,
+            time: `${17 + (i % 3)}:00`,
+            status: "pending",
+            scoreSummary: "Por jugar",
+            winnerPairId: "",
+            category: selectedCategory
+          });
+        }
+
+        // 2. Ronda 2 Placeholder Matches (8 matches, Partidos 9 to 16)
+        for (let i = 9; i <= 16; i++) {
+          allGeneratedMatches.push({
+            id: `match_${tournamentId}_srtc16_${selectedCategory.replace(/[^a-zA-Z0-9]/g, "")}_r2_m${i}`,
+            tournamentId,
+            phase: "group",
+            roundNumber: 2,
+            stageName: `Ronda 2 - Partido ${i}`,
+            pair1Id: "",
+            pair2Id: "",
+            courtId: "",
+            date: dateString,
+            time: `${17 + (i % 3)}:00`,
+            status: "pending",
+            scoreSummary: "Por jugar",
+            winnerPairId: "",
+            category: selectedCategory
+          });
+        }
+
+        // 3. Cuartos de Final Placeholder Matches (4 matches)
+        for (let i = 1; i <= 4; i++) {
+          allGeneratedMatches.push({
+            id: `match_${tournamentId}_srtc16_${selectedCategory.replace(/[^a-zA-Z0-9]/g, "")}_q_m${i}`,
+            tournamentId,
+            phase: "playoff",
+            roundNumber: 3,
+            stageName: `Cuartos de Final ${i}`,
+            pair1Id: "",
+            pair2Id: "",
+            courtId: "",
+            date: dateString,
+            time: "18:00",
+            status: "pending",
+            scoreSummary: "Por jugar",
+            winnerPairId: "",
+            category: selectedCategory
+          });
+        }
+
+        // 4. Semifinales Placeholder Matches (2 matches)
+        for (let i = 1; i <= 2; i++) {
+          allGeneratedMatches.push({
+            id: `match_${tournamentId}_srtc16_${selectedCategory.replace(/[^a-zA-Z0-9]/g, "")}_sf_m${i}`,
+            tournamentId,
+            phase: "playoff",
+            roundNumber: 4,
+            stageName: `Semifinal ${i}`,
+            pair1Id: "",
+            pair2Id: "",
+            courtId: "",
+            date: dateString,
+            time: "19:30",
+            status: "pending",
+            scoreSummary: "Por jugar",
+            winnerPairId: "",
+            category: selectedCategory
+          });
+        }
+
+        // 5. Final Placeholder Match
+        allGeneratedMatches.push({
+          id: `match_${tournamentId}_srtc16_${selectedCategory.replace(/[^a-zA-Z0-9]/g, "")}_final`,
+          tournamentId,
+          phase: "playoff",
+          roundNumber: 5,
+          stageName: "Final",
+          pair1Id: "",
+          pair2Id: "",
+          courtId: "",
+          date: dateString,
+          time: "21:00",
+          status: "pending",
+          scoreSummary: "Por jugar",
+          winnerPairId: "",
+          category: selectedCategory
+        });
+
+        for (const m of allGeneratedMatches) {
+          await repository.saveMatch(m);
+        }
+
+        if (tournament.status === "registration") {
+          const updatedTournament: Tournament = {
+            ...tournament,
+            status: "in_progress"
+          };
+          await repository.saveTournament(updatedTournament);
+        }
+
+        await repository.addNotification(
+          "Torneo Iniciado - SRTC 16", 
+          `El Torneo SRTC 16 para la categoría '${selectedCategory}' se ha iniciado con éxito. Se pre-generaron todas las llaves y partidos hasta la Final.`,
+          "success"
+        );
+
+        loadAllData();
+        setActiveTab("matches");
+        return;
+      }
+
+      const isSRTC32 = sortedPairs.length === 32;
+      if (isSRTC32) {
+        const allGeneratedMatches: Match[] = [];
+        const dateString = tournament?.startDate || new Date().toISOString().split("T")[0];
+        const cleanCat = selectedCategory.replace(/[^a-zA-Z0-9]/g, "");
+
+        // 1. Ronda 1 Matches (16 matches)
+        for (let i = 0; i < 16; i++) {
+          const letter = String.fromCharCode(65 + i); // 'A' to 'P'
+          const p1 = sortedPairs[i * 2];
+          const p2 = sortedPairs[i * 2 + 1];
+          allGeneratedMatches.push({
+            id: `match_${tournamentId}_srtc32_${cleanCat}_r1_m${i + 1}`,
+            tournamentId,
+            phase: "group",
+            roundNumber: 1,
+            stageName: `Ronda 1 - Grupo ${letter}`,
+            pair1Id: p1.id,
+            pair2Id: p2.id,
+            courtId: "",
+            date: dateString,
+            time: `${17 + (i % 4)}:00`,
+            status: "pending",
+            scoreSummary: "Por jugar",
+            winnerPairId: "",
+            category: selectedCategory
+          });
+        }
+
+        // 2. Ronda 2 Placeholder Matches (16 matches, Partidos 17 to 32)
+        for (let i = 17; i <= 32; i++) {
+          allGeneratedMatches.push({
+            id: `match_${tournamentId}_srtc32_${cleanCat}_r2_m${i}`,
+            tournamentId,
+            phase: "group",
+            roundNumber: 2,
+            stageName: `Ronda 2 - Partido ${i}`,
+            pair1Id: "",
+            pair2Id: "",
+            courtId: "",
+            date: dateString,
+            time: `${17 + (i % 4)}:00`,
+            status: "pending",
+            scoreSummary: "Por jugar",
+            winnerPairId: "",
+            category: selectedCategory
+          });
+        }
+
+        // 3. Octavos de Final Placeholder Matches (8 matches)
+        for (let i = 1; i <= 8; i++) {
+          allGeneratedMatches.push({
+            id: `match_${tournamentId}_srtc32_${cleanCat}_8_m${i}`,
+            tournamentId,
+            phase: "playoff",
+            roundNumber: 3,
+            stageName: `Octavos de Final ${i}`,
+            pair1Id: "",
+            pair2Id: "",
+            courtId: "",
+            date: dateString,
+            time: "18:00",
+            status: "pending",
+            scoreSummary: "Por jugar",
+            winnerPairId: "",
+            category: selectedCategory
+          });
+        }
+
+        // 4. Cuartos de Final Placeholder Matches (4 matches)
+        for (let i = 1; i <= 4; i++) {
+          allGeneratedMatches.push({
+            id: `match_${tournamentId}_srtc32_${cleanCat}_q_m${i}`,
+            tournamentId,
+            phase: "playoff",
+            roundNumber: 4,
+            stageName: `Cuartos de Final ${i}`,
+            pair1Id: "",
+            pair2Id: "",
+            courtId: "",
+            date: dateString,
+            time: "19:00",
+            status: "pending",
+            scoreSummary: "Por jugar",
+            winnerPairId: "",
+            category: selectedCategory
+          });
+        }
+
+        // 5. Semifinales Placeholder Matches (2 matches)
+        for (let i = 1; i <= 2; i++) {
+          allGeneratedMatches.push({
+            id: `match_${tournamentId}_srtc32_${cleanCat}_sf_m${i}`,
+            tournamentId,
+            phase: "playoff",
+            roundNumber: 5,
+            stageName: `Semifinal ${i}`,
+            pair1Id: "",
+            pair2Id: "",
+            courtId: "",
+            date: dateString,
+            time: "20:00",
+            status: "pending",
+            scoreSummary: "Por jugar",
+            winnerPairId: "",
+            category: selectedCategory
+          });
+        }
+
+        // 6. Final Placeholder Match
+        allGeneratedMatches.push({
+          id: `match_${tournamentId}_srtc32_${cleanCat}_final`,
+          tournamentId,
+          phase: "playoff",
+          roundNumber: 6,
+          stageName: "Final",
+          pair1Id: "",
+          pair2Id: "",
+          courtId: "",
+          date: dateString,
+          time: "21:00",
+          status: "pending",
+          scoreSummary: "Por jugar",
+          winnerPairId: "",
+          category: selectedCategory
+        });
+
+        for (const m of allGeneratedMatches) {
+          await repository.saveMatch(m);
+        }
+
+        if (tournament.status === "registration") {
+          const updatedTournament: Tournament = {
+            ...tournament,
+            status: "in_progress"
+          };
+          await repository.saveTournament(updatedTournament);
+        }
+
+        await repository.addNotification(
+          "Torneo Iniciado - SRTC 32", 
+          `El Torneo SRTC 32 para la categoría '${selectedCategory}' se ha iniciado con éxito. Se pre-generaron todas las llaves y partidos hasta la Final.`,
+          "success"
+        );
+
+        loadAllData();
+        setActiveTab("matches");
+        return;
+      }
+
+      // Standard Dos Vidas Generation (Fallback for other counts)
       const allGeneratedMatches = generateNextDosVidasRound(sortedPairs, [], tournamentId, selectedCategory, tournament.startDate);
 
       // Force save all matches to repository
@@ -748,6 +1298,10 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
   const isGroupOrEarlyPlayoff = (m: Match): boolean => {
     if (m.phase === "group") return true;
     const stage = m.stageName.toLowerCase();
+    const is32 = pairs.filter(p => p.category === m.category).length === 32;
+    if (is32 && (stage.includes("octavos") || stage.includes("8avos"))) {
+      return false;
+    }
     if (stage.includes("16avos") || stage.includes("octavos") || stage.includes("8avos")) {
       return true;
     }
@@ -917,103 +1471,113 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
       "success"
     );
 
-    // Handle Playoff progressions automatically if in bracket
-    if (activeScoreMatch.phase === "playoff") {
-      await handlePlayoffProgression(updatedMatch, winnerId);
-    }
+    // Handle progressions based on tournament configuration
+    const isSRTC16 = pairs.filter(p => p.category === selectedCategory).length === 16;
+    const isSRTC32 = pairs.filter(p => p.category === selectedCategory).length === 32;
 
-    // Automatically launch playoffs if this was the last group match
-    if (activeScoreMatch.phase === "group") {
-      const allCategoryMatches = [...matches.filter(m => m.id !== updatedMatch.id), updatedMatch]
-        .filter(m => m.category === selectedCategory);
-      const remainingGroupMatches = allCategoryMatches.filter(m => m.phase === "group" && m.status === "pending");
-      
-      if (remainingGroupMatches.length === 0) {
-        const stands = calculateDosVidasStandings(pairs.filter(p => p.category === selectedCategory), allCategoryMatches.filter(m => m.phase === "group"), getPairName);
-        const totalPairsCount = pairs.filter(p => p.category === selectedCategory).length;
+    if (isSRTC16) {
+      await handleSRTC16Progression(updatedMatch, winnerId);
+    } else if (isSRTC32) {
+      await handleSRTC32Progression(updatedMatch, winnerId);
+    } else {
+      // Handle Playoff progressions automatically if in bracket
+      if (activeScoreMatch.phase === "playoff") {
+        await handlePlayoffProgression(updatedMatch, winnerId);
+      }
+
+      // Automatically launch playoffs if this was the last group match
+      if (activeScoreMatch.phase === "group") {
+        const allCategoryMatches = [...matches.filter(m => m.id !== updatedMatch.id), updatedMatch]
+          .filter(m => m.category === selectedCategory);
+        const remainingGroupMatches = allCategoryMatches.filter(m => m.phase === "group" && m.status === "pending");
         
-        let bracketSize = 8;
-        let stageLabel = "Cuartos de Final";
-        if (totalPairsCount <= 4) {
-          bracketSize = 2;
-          stageLabel = "Final";
-        } else if (totalPairsCount <= 9) {
-          bracketSize = 4;
-          stageLabel = "Semifinales";
-        } else if (totalPairsCount <= 16) {
-          bracketSize = 8;
-          stageLabel = "Cuartos de Final";
-        } else {
-          bracketSize = 16;
-          stageLabel = "Octavos de Final";
-        }
-
-        const qualifiedIds = stands.slice(0, bracketSize).map(s => s.pairId);
-        if (qualifiedIds.length >= 2) {
-          let playoffMatches = matches.filter(m => m.tournamentId === tournamentId && m.category === selectedCategory && m.phase === "playoff");
-          if (playoffMatches.length === 0) {
-            playoffMatches = preGeneratePlayoffsHelper(tournamentId, selectedCategory);
+        if (remainingGroupMatches.length === 0) {
+          const stands = calculateDosVidasStandings(pairs.filter(p => p.category === selectedCategory), allCategoryMatches.filter(m => m.phase === "group"), getPairName);
+          const totalPairsCount = pairs.filter(p => p.category === selectedCategory).length;
+          
+          let bracketSize = 8;
+          let stageLabel = "Cuartos de Final";
+          if (totalPairsCount <= 4) {
+            bracketSize = 2;
+            stageLabel = "Final";
+          } else if (totalPairsCount <= 9) {
+            bracketSize = 4;
+            stageLabel = "Semifinales";
+          } else if (totalPairsCount <= 16) {
+            bracketSize = 8;
+            stageLabel = "Cuartos de Final";
+          } else {
+            bracketSize = 16;
+            stageLabel = "Octavos de Final";
           }
 
-          const resetMatches = playoffMatches.map(m => ({
-            ...m,
-            pair1Id: "",
-            pair2Id: "",
-            winnerPairId: "",
-            status: "pending" as Match["status"],
-            scoreSummary: "Por jugar"
-          }));
+          const qualifiedIds = stands.slice(0, bracketSize).map(s => s.pairId);
+          if (qualifiedIds.length >= 2) {
+            let playoffMatches = matches.filter(m => m.tournamentId === tournamentId && m.category === selectedCategory && m.phase === "playoff");
+            if (playoffMatches.length === 0) {
+              playoffMatches = preGeneratePlayoffsHelper(tournamentId, selectedCategory);
+            }
 
-          const seeds8 = [[0, 15], [7, 8], [4, 11], [3, 12], [2, 13], [5, 10], [6, 9], [1, 14]];
-          const seeds4 = [[0, 7], [3, 4], [2, 5], [1, 6]];
-          const updatedPlayoffs = [...resetMatches];
+            const resetMatches = playoffMatches.map(m => ({
+              ...m,
+              pair1Id: "",
+              pair2Id: "",
+              winnerPairId: "",
+              status: "pending" as Match["status"],
+              scoreSummary: "Por jugar"
+            }));
 
-          if (bracketSize === 16) {
-            for (let idx = 0; idx < 8; idx++) {
-              const mObj = updatedPlayoffs.find(m => m.stageName === `Octavos de Final ${idx + 1}`);
-              if (mObj) {
-                const [s1, s2] = seeds8[idx];
-                mObj.pair1Id = qualifiedIds[s1] || "";
-                mObj.pair2Id = qualifiedIds[s2] || "";
+            const seeds8 = [[0, 15], [7, 8], [4, 11], [3, 12], [2, 13], [5, 10], [6, 9], [1, 14]];
+            const seeds4 = [[0, 7], [3, 4], [2, 5], [1, 6]];
+            const updatedPlayoffs = [...resetMatches];
+
+            if (bracketSize === 16) {
+              for (let idx = 0; idx < 8; idx++) {
+                const mObj = updatedPlayoffs.find(m => m.stageName === `Octavos de Final ${idx + 1}`);
+                if (mObj) {
+                  const [s1, s2] = seeds8[idx];
+                  mObj.pair1Id = qualifiedIds[s1] || "";
+                  mObj.pair2Id = qualifiedIds[s2] || "";
+                }
+              }
+            } else if (bracketSize === 8) {
+              for (let idx = 0; idx < 4; idx++) {
+                const mObj = updatedPlayoffs.find(m => m.stageName === `Cuartos de Final ${idx + 1}` || m.stageName === `Cuartos ${idx + 1}`);
+                if (mObj) {
+                  const [s1, s2] = seeds4[idx];
+                  mObj.pair1Id = qualifiedIds[s1] || "";
+                  mObj.pair2Id = qualifiedIds[s2] || "";
+                }
+              }
+            } else if (bracketSize === 4) {
+              const sf1 = updatedPlayoffs.find(m => m.stageName === "Semifinal 1");
+              const sf2 = updatedPlayoffs.find(m => m.stageName === "Semifinal 2");
+              if (sf1) {
+                sf1.pair1Id = qualifiedIds[0] || "";
+                sf1.pair2Id = qualifiedIds[3] || "";
+              }
+              if (sf2) {
+                sf2.pair1Id = qualifiedIds[1] || "";
+                sf2.pair2Id = qualifiedIds[2] || "";
+              }
+            } else if (bracketSize === 2) {
+              const f = updatedPlayoffs.find(m => m.stageName === "Final");
+              if (f) {
+                f.pair1Id = qualifiedIds[0] || "";
+                f.pair2Id = qualifiedIds[1] || "";
               }
             }
-          } else if (bracketSize === 8) {
-            for (let idx = 0; idx < 4; idx++) {
-              const mObj = updatedPlayoffs.find(m => m.stageName === `Cuartos de Final ${idx + 1}` || m.stageName === `Cuartos ${idx + 1}`);
-              if (mObj) {
-                const [s1, s2] = seeds4[idx];
-                mObj.pair1Id = qualifiedIds[s1] || "";
-                mObj.pair2Id = qualifiedIds[s2] || "";
-              }
-            }
-          } else if (bracketSize === 4) {
-            const sf1 = updatedPlayoffs.find(m => m.stageName === "Semifinal 1");
-            const sf2 = updatedPlayoffs.find(m => m.stageName === "Semifinal 2");
-            if (sf1) {
-              sf1.pair1Id = qualifiedIds[0] || "";
-              sf1.pair2Id = qualifiedIds[3] || "";
-            }
-            if (sf2) {
-              sf2.pair1Id = qualifiedIds[1] || "";
-              sf2.pair2Id = qualifiedIds[2] || "";
-            }
-          } else if (bracketSize === 2) {
-            const f = updatedPlayoffs.find(m => m.stageName === "Final");
-            if (f) {
-              f.pair1Id = qualifiedIds[0] || "";
-              f.pair2Id = qualifiedIds[1] || "";
-            }
-          }
 
-          for (const pm of updatedPlayoffs) {
-            await repository.saveMatch(pm);
-          }
+            for (const pm of updatedPlayoffs) {
+              await repository.saveMatch(pm);
+            }
 
-          await repository.addNotification(
-            "Fase de Clasificación Completada",
-            `Se han finalizado las rondas de grupo. Se clasificaron automáticamente las parejas y se completó la primera fase eliminatoria (${stageLabel}) para la categoría '${selectedCategory}'.`,
-            "success"
-          );
+            await repository.addNotification(
+              "Fase de Clasificación Completada",
+              `Se han finalizado las rondas de grupo. Se clasificaron automáticamente las parejas y se completó la primera fase eliminatoria (${stageLabel}) para la categoría '${selectedCategory}'.`,
+              "success"
+            );
+          }
         }
       }
     }
@@ -1164,19 +1728,232 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
     }
   };
 
-  // Close Tournament fully and trigger accumulated ranking points across categories that have played out
-  const handleFinishTournament = async () => {
+  // SRTC 16 progression logic
+  const handleSRTC16Progression = async (m: Match, winnerId: string) => {
+    const allMatches = await repository.getMatches();
+    const catMatches = allMatches.filter(x => x.tournamentId === m.tournamentId && x.category === m.category);
+
+    const loserId = m.pair1Id === winnerId ? m.pair2Id : m.pair1Id;
+
+    // Ronda 1 matches -> progress to Ronda 2
+    if (m.roundNumber === 1 && m.phase === "group") {
+      const stage = m.stageName; // e.g., "Ronda 1 - Grupo A"
+      const letter = stage.charAt(stage.length - 1); // e.g., "A"
+
+      if (letter === "A") {
+        const p9 = catMatches.find(x => x.stageName === "Ronda 2 - Partido 9");
+        if (p9) await repository.saveMatch({ ...p9, pair1Id: winnerId });
+        const p10 = catMatches.find(x => x.stageName === "Ronda 2 - Partido 10");
+        if (p10) await repository.saveMatch({ ...p10, pair2Id: loserId });
+      } else if (letter === "B") {
+        const p10 = catMatches.find(x => x.stageName === "Ronda 2 - Partido 10");
+        if (p10) await repository.saveMatch({ ...p10, pair1Id: winnerId });
+        const p9 = catMatches.find(x => x.stageName === "Ronda 2 - Partido 9");
+        if (p9) await repository.saveMatch({ ...p9, pair2Id: loserId });
+      } else if (letter === "C") {
+        const p11 = catMatches.find(x => x.stageName === "Ronda 2 - Partido 11");
+        if (p11) await repository.saveMatch({ ...p11, pair1Id: winnerId });
+        const p12 = catMatches.find(x => x.stageName === "Ronda 2 - Partido 12");
+        if (p12) await repository.saveMatch({ ...p12, pair2Id: loserId });
+      } else if (letter === "D") {
+        const p12 = catMatches.find(x => x.stageName === "Ronda 2 - Partido 12");
+        if (p12) await repository.saveMatch({ ...p12, pair1Id: winnerId });
+        const p11 = catMatches.find(x => x.stageName === "Ronda 2 - Partido 11");
+        if (p11) await repository.saveMatch({ ...p11, pair2Id: loserId });
+      } else if (letter === "E") {
+        const p13 = catMatches.find(x => x.stageName === "Ronda 2 - Partido 13");
+        if (p13) await repository.saveMatch({ ...p13, pair1Id: winnerId });
+        const p14 = catMatches.find(x => x.stageName === "Ronda 2 - Partido 14");
+        if (p14) await repository.saveMatch({ ...p14, pair2Id: loserId });
+      } else if (letter === "F") {
+        const p14 = catMatches.find(x => x.stageName === "Ronda 2 - Partido 14");
+        if (p14) await repository.saveMatch({ ...p14, pair1Id: winnerId });
+        const p13 = catMatches.find(x => x.stageName === "Ronda 2 - Partido 13");
+        if (p13) await repository.saveMatch({ ...p13, pair2Id: loserId });
+      } else if (letter === "G") {
+        const p15 = catMatches.find(x => x.stageName === "Ronda 2 - Partido 15");
+        if (p15) await repository.saveMatch({ ...p15, pair1Id: winnerId });
+        const p16 = catMatches.find(x => x.stageName === "Ronda 2 - Partido 16");
+        if (p16) await repository.saveMatch({ ...p16, pair2Id: loserId });
+      } else if (letter === "H") {
+        const p16 = catMatches.find(x => x.stageName === "Ronda 2 - Partido 16");
+        if (p16) await repository.saveMatch({ ...p16, pair1Id: winnerId });
+        const p15 = catMatches.find(x => x.stageName === "Ronda 2 - Partido 15");
+        if (p15) await repository.saveMatch({ ...p15, pair2Id: loserId });
+      }
+    }
+
+    // Ronda 2 matches -> progress to Cuartos de final
+    else if (m.roundNumber === 2 && m.phase === "group") {
+      const matchNum = parseInt(m.stageName.replace("Ronda 2 - Partido ", "")) || 9;
+      const targetQNum = Math.floor((matchNum - 9) / 2) + 1; // 1 to 4
+      const targetQ = catMatches.find(x => x.stageName === `Cuartos de Final ${targetQNum}` || x.stageName === `Cuartos ${targetQNum}`);
+      if (targetQ) {
+        const isPair1 = (matchNum % 2) !== 0; // 9, 11, 13, 15 are odd -> pair1
+        if (isPair1) {
+          await repository.saveMatch({ ...targetQ, pair1Id: winnerId });
+        } else {
+          await repository.saveMatch({ ...targetQ, pair2Id: winnerId });
+        }
+      }
+    }
+
+    // Cuartos de Final -> progress to Semifinal
+    else if (m.phase === "playoff" && (m.stageName.includes("Cuartos") || m.stageName.includes("4tos"))) {
+      const matchNum = parseInt(m.stageName.replace("Cuartos de Final ", "").replace("Cuartos ", "")) || 1;
+      const sf1 = catMatches.find(x => x.stageName === "Semifinal 1");
+      const sf2 = catMatches.find(x => x.stageName === "Semifinal 2");
+
+      if (matchNum === 1 && sf1) {
+        await repository.saveMatch({ ...sf1, pair1Id: winnerId });
+      } else if (matchNum === 2 && sf1) {
+        await repository.saveMatch({ ...sf1, pair2Id: winnerId });
+      } else if (matchNum === 3 && sf2) {
+        await repository.saveMatch({ ...sf2, pair1Id: winnerId });
+      } else if (matchNum === 4 && sf2) {
+        await repository.saveMatch({ ...sf2, pair2Id: winnerId });
+      }
+    }
+
+    // Semifinales -> progress to Final
+    else if (m.phase === "playoff" && m.stageName.startsWith("Semifinal")) {
+      const matchNum = parseInt(m.stageName.replace("Semifinal ", "")) || 1;
+      const finalMatch = catMatches.find(x => x.stageName === "Final");
+      if (finalMatch) {
+        if (matchNum === 1) {
+          await repository.saveMatch({ ...finalMatch, pair1Id: winnerId });
+        } else if (matchNum === 2) {
+          await repository.saveMatch({ ...finalMatch, pair2Id: winnerId });
+        }
+      }
+    }
+  };
+
+  // SRTC 32 progression logic
+  const handleSRTC32Progression = async (m: Match, winnerId: string) => {
+    const allMatches = await repository.getMatches();
+    const catMatches = allMatches.filter(x => x.tournamentId === m.tournamentId && x.category === m.category);
+
+    const loserId = m.pair1Id === winnerId ? m.pair2Id : m.pair1Id;
+
+    // Ronda 1 matches -> progress to Ronda 2
+    if (m.roundNumber === 1 && m.phase === "group") {
+      const stage = m.stageName; // e.g., "Ronda 1 - Grupo A"
+      const letter = stage.charAt(stage.length - 1); // e.g., "A" to "P"
+
+      // Letter mapping to matches 17 to 32:
+      const mappings: { [key: string]: { winMatch: number; winPos: 1 | 2; loseMatch: number; losePos: 1 | 2 } } = {
+        'A': { winMatch: 17, winPos: 1, loseMatch: 18, losePos: 2 },
+        'B': { winMatch: 18, winPos: 1, loseMatch: 17, losePos: 2 },
+        'C': { winMatch: 19, winPos: 1, loseMatch: 20, losePos: 2 },
+        'D': { winMatch: 20, winPos: 1, loseMatch: 19, losePos: 2 },
+        'E': { winMatch: 21, winPos: 1, loseMatch: 22, losePos: 2 },
+        'F': { winMatch: 22, winPos: 1, loseMatch: 21, losePos: 2 },
+        'G': { winMatch: 23, winPos: 1, loseMatch: 24, losePos: 2 },
+        'H': { winMatch: 24, winPos: 1, loseMatch: 23, losePos: 2 },
+        'I': { winMatch: 25, winPos: 1, loseMatch: 26, losePos: 2 },
+        'J': { winMatch: 26, winPos: 1, loseMatch: 25, losePos: 2 },
+        'K': { winMatch: 27, winPos: 1, loseMatch: 28, losePos: 2 },
+        'L': { winMatch: 28, winPos: 1, loseMatch: 27, losePos: 2 },
+        'M': { winMatch: 29, winPos: 1, loseMatch: 30, losePos: 2 },
+        'N': { winMatch: 30, winPos: 1, loseMatch: 29, losePos: 2 },
+        'O': { winMatch: 31, winPos: 1, loseMatch: 32, losePos: 2 },
+        'P': { winMatch: 32, winPos: 1, loseMatch: 31, losePos: 2 }
+      };
+
+      const map = mappings[letter];
+      if (map) {
+        const mw = catMatches.find(x => x.stageName === `Ronda 2 - Partido ${map.winMatch}`);
+        if (mw) {
+          if (map.winPos === 1) await repository.saveMatch({ ...mw, pair1Id: winnerId });
+          else await repository.saveMatch({ ...mw, pair2Id: winnerId });
+        }
+        const ml = catMatches.find(x => x.stageName === `Ronda 2 - Partido ${map.loseMatch}`);
+        if (ml) {
+          if (map.losePos === 1) await repository.saveMatch({ ...ml, pair1Id: loserId });
+          else await repository.saveMatch({ ...ml, pair2Id: loserId });
+        }
+      }
+    }
+
+    // Ronda 2 matches -> progress to Octavos de final
+    else if (m.roundNumber === 2 && m.phase === "group") {
+      const matchNum = parseInt(m.stageName.replace("Ronda 2 - Partido ", "")) || 17;
+      const targetOctNum = Math.floor((matchNum - 17) / 2) + 1; // 1 to 8
+      const targetOct = catMatches.find(x => x.stageName === `Octavos de Final ${targetOctNum}` || x.stageName === `Octavos ${targetOctNum}`);
+      if (targetOct) {
+        const isPair1 = (matchNum % 2) !== 0; // odd is pair1Id
+        if (isPair1) {
+          await repository.saveMatch({ ...targetOct, pair1Id: winnerId });
+        } else {
+          await repository.saveMatch({ ...targetOct, pair2Id: winnerId });
+        }
+      }
+    }
+
+    // Octavos de final -> progress to Cuartos de final
+    else if (m.phase === "playoff" && (m.stageName.includes("Octavos") || m.stageName.includes("8avos"))) {
+      const matchNum = parseInt(m.stageName.replace("Octavos de Final ", "").replace("Octavos ", "").replace("8avos ", "")) || 1;
+      const targetQNum = Math.floor((matchNum - 1) / 2) + 1; // 1 to 4
+      const targetQ = catMatches.find(x => x.stageName === `Cuartos de Final ${targetQNum}` || x.stageName === `Cuartos ${targetQNum}`);
+      if (targetQ) {
+        const isPair1 = (matchNum % 2) !== 0; // odd is pair1Id
+        if (isPair1) {
+          await repository.saveMatch({ ...targetQ, pair1Id: winnerId });
+        } else {
+          await repository.saveMatch({ ...targetQ, pair2Id: winnerId });
+        }
+      }
+    }
+
+    // Cuartos de Final -> progress to Semifinal
+    else if (m.phase === "playoff" && (m.stageName.includes("Cuartos") || m.stageName.includes("4tos"))) {
+      const matchNum = parseInt(m.stageName.replace("Cuartos de Final ", "").replace("Cuartos ", "").replace("4tos ", "")) || 1;
+      const sf1 = catMatches.find(x => x.stageName === "Semifinal 1");
+      const sf2 = catMatches.find(x => x.stageName === "Semifinal 2");
+
+      if (matchNum === 1 && sf1) {
+        await repository.saveMatch({ ...sf1, pair1Id: winnerId });
+      } else if (matchNum === 2 && sf1) {
+        await repository.saveMatch({ ...sf1, pair2Id: winnerId });
+      } else if (matchNum === 3 && sf2) {
+        await repository.saveMatch({ ...sf2, pair1Id: winnerId });
+      } else if (matchNum === 4 && sf2) {
+        await repository.saveMatch({ ...sf2, pair2Id: winnerId });
+      }
+    }
+
+    // Semifinales -> progress to Final
+    else if (m.phase === "playoff" && m.stageName.startsWith("Semifinal")) {
+      const matchNum = parseInt(m.stageName.replace("Semifinal ", "")) || 1;
+      const finalMatch = catMatches.find(x => x.stageName === "Final");
+      if (finalMatch) {
+        if (matchNum === 1) {
+          await repository.saveMatch({ ...finalMatch, pair1Id: winnerId });
+        } else if (matchNum === 2) {
+          await repository.saveMatch({ ...finalMatch, pair2Id: winnerId });
+        }
+      }
+    }
+  };
+
+  // Open Tourney Finish interactive modal
+  const handleOpenFinishModal = () => {
     if (!tournament) return;
 
     // Get all categories that have at least one playoff match
     const playoffCategories = Array.from(new Set(matches.filter(m => m.phase === "playoff").map(m => m.category || ""))).filter(Boolean) as string[];
 
     if (playoffCategories.length === 0) {
-      alert("No se encontraron cuadros de playoff en el torneo para clausurar.");
+      setFinishModalError("No se encontraron esquemas ni cuadros de playoff en el torneo para poder finalizarlo.");
+      setFinishModalWarning(null);
+      setFinishModalPayload({ completedCategories: [] });
+      setFinishModalTitle("No se puede Finalizar");
+      setShowFinishModal(true);
       return;
     }
 
-    // Check if the final matches of all these categories are completed
+    // Check if final matches of all these categories are completed
     const pendingCategories: string[] = [];
     const completedCategories: string[] = [];
 
@@ -1189,18 +1966,28 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
       }
     }
 
+    setFinishModalError(null);
+    setFinishModalPayload({ completedCategories });
+
     if (pendingCategories.length > 0) {
-      const proceed = confirm(
-        `🚨 Atención: Las siguientes categorías aún no tienen su partido Final definido o concluido: ${pendingCategories.join(", ")}.\n\n¿Deseas clausurar el torneo de todas formas distribuyendo puntos solo para las categorías ya completadas (${completedCategories.join(", ") || "Ninguna"})?`
+      setFinishModalTitle("⚠️ Finalizar Torneo (Pendientes)");
+      setFinishModalWarning(
+        `Atención: Las siguientes categorías aún no tienen su partido Final definido o concluido: ${pendingCategories.join(", ")}.`
       );
-      if (!proceed) return;
     } else {
-      if (!confirm("🚨 ¿Deseas clausurar el torneo definitivamente? Esto distribuirá los puntos de ranking acumulados para cada jugador de todas las categorías en base a su posición final.")) {
-        return;
-      }
+      setFinishModalTitle("🏆 Finalizar Torneo");
+      setFinishModalWarning(null);
     }
+    setShowFinishModal(true);
+  };
+
+  // Close Tournament fully and trigger accumulated ranking points across categories that have played out
+  const executeFinishTournament = async () => {
+    if (!tournament) return;
+    const completedCategories = finishModalPayload?.completedCategories || [];
 
     setLoading(true);
+    setShowFinishModal(false);
     try {
       // Reload fresh player data from repository first to prevent overriding anyone's points with stale state!
       const freshPlayers = await repository.getPlayers();
@@ -1268,7 +2055,7 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
       });
 
       await repository.addNotification(
-        "Torneo Clausurado!",
+        "Torneo Finalizado!",
         `Torneo finalizado con éxito. Los puntos de las categorías completadas se han sumado y acreditado en el Ránking Anual.`,
         "success"
       );
@@ -1276,7 +2063,11 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
       loadAllData();
     } catch (error) {
       console.error("Error closing tournament:", error);
-      alert("Ocurrió un error al clausurar el torneo.");
+      await repository.addNotification(
+        "Error al finalizar",
+        "Ocurrió un error al intentar finalizar el torneo.",
+        "danger"
+      );
     } finally {
       setLoading(false);
     }
@@ -1329,21 +2120,13 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
         </button>
 
         <div className="flex items-center gap-2">
-          {matches.length > 0 && (
-            <button
-              onClick={handleExportMatchesCSV}
-              className="bg-slate-900 text-slate-300 border border-slate-800 text-[11px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 hover:text-white transition cursor-pointer"
-            >
-              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-500" /> Exportar Fixture (CSV)
-            </button>
-          )}
-
           {userRole === "admin" && tournament.status === "in_progress" && (
             <button
-              onClick={handleFinishTournament}
-              className="bg-red-650 hover:bg-red-500 text-white text-xs font-bold px-3.5 py-1.5 rounded-lg flex items-center gap-1 transition"
+              id="finish-tournament-btn"
+              onClick={handleOpenFinishModal}
+              className="bg-red-650 hover:bg-red-500 text-white text-xs font-bold px-3.5 py-1.5 rounded-lg flex items-center gap-1 transition cursor-pointer"
             >
-              🏁 Clausurar Torneo
+              🏁 Finalizar Torneo
             </button>
           )}
         </div>
@@ -1422,6 +2205,64 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
           })}
         </div>
       </div>
+
+      {/* QA SIMULATION TOOLBAR */}
+      {userRole === "admin" && (
+        <div className="bg-gradient-to-r from-purple-950/20 to-indigo-950/20 border border-purple-500/30 p-5 rounded-2xl space-y-4 shadow-lg">
+          <div className="flex items-start gap-2.5">
+            <div className="bg-purple-500/10 text-purple-400 border border-purple-500/20 p-2 rounded-xl shrink-0 mt-0.5">
+              <FlaskConical className="w-5 h-5 text-purple-400 animate-pulse" />
+            </div>
+            <div>
+              <h4 className="font-extrabold text-sm text-white uppercase tracking-wider font-mono">Modo Desarrollador: Simulador de Torneo</h4>
+              <p className="text-xs text-slate-450 mt-0.5 leading-relaxed">
+                Herramienta interactiva para verificar la progresión íntegra del torneo desde fase de grupos hasta la eliminatoria final de manera automática.
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex flex-wrap gap-2 pt-1">
+            <button
+              type="button"
+              onClick={handleQAAutoFill16Pairs}
+              className="bg-purple-900/30 hover:bg-purple-900/50 text-purple-300 hover:text-white border border-purple-800/40 text-[11px] font-bold px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 cursor-pointer leading-none"
+              title="Crea y registra de forma automática 16 parejas reales listas para sortear."
+            >
+              <UserCheck className="w-4 h-4 text-purple-400" />
+              <span>👥 Inscribir 16 Parejas Ficticias</span>
+            </button>
+
+            {pairs.filter(p => p.category === selectedCategory).length >= 2 && matches.filter(m => m.category === selectedCategory).length === 0 && (
+              <div className="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-3.5 py-2 rounded-xl text-[11px] font-semibold animate-pulse flex items-center">
+                ⚠️ ¡Ve a la pestaña "Parejas Inscritas", baja al fondo y haz clic en "Lanzar Sorteo de Zona"!
+              </div>
+            )}
+
+            {matches.filter(m => m.category === selectedCategory && m.status === "pending").length > 0 && (
+              <button
+                type="button"
+                onClick={handleQASimulateCurrentStage}
+                className="bg-indigo-950 hover:bg-indigo-900 text-[#d4fc34] border border-[#d4fc34]/20 text-[11px] font-bold px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 cursor-pointer leading-none shadow-sm shadow-[#d4fc34]/5"
+                title="Completa con marcadores aleatorios los partidos pendientes de la ronda actual"
+              >
+                <Play className="w-3.5 h-3.5 text-[#d4fc34]" />
+                <span>🎾 Simular Partidos de Fase Actual</span>
+              </button>
+            )}
+
+            {matches.filter(m => m.category === selectedCategory).length > 0 && (
+              <button
+                type="button"
+                onClick={handleResetCategory}
+                className="bg-red-950/20 hover:bg-red-950/40 text-red-400 border border-red-900/40 text-[11px] font-bold px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 cursor-pointer leading-none"
+              >
+                <Trash2 className="w-3.5 h-3.5 text-red-550" />
+                <span>🔄 Vaciar Fixture de la Categoría</span>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* TAB MENU */}
       <div className="flex border-b border-slate-800 gap-1 overflow-x-auto">
@@ -1655,6 +2496,204 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
             {/* BUTTON BAR FOR EACH TOURNAMENT PHASE */}
             {matches.filter(m => m.category === selectedCategory).length > 0 && (() => {
               const currentMatches = matches.filter(m => m.category === selectedCategory);
+              const categoryPairs = pairs.filter(p => p.category === selectedCategory);
+              const isSRTC16 = categoryPairs.length === 16;
+              const isSRTC32 = categoryPairs.length === 32;
+
+              if (isSRTC32) {
+                const r1Matches = currentMatches.filter(m => m.roundNumber === 1 || m.stageName.toLowerCase().includes("ronda 1"));
+                const r2Matches = currentMatches.filter(m => m.roundNumber === 2 || m.stageName.toLowerCase().includes("ronda 2"));
+                const oMatches = currentMatches.filter(m => m.roundNumber === 3 || m.stageName.toLowerCase().includes("octavos") || m.stageName.toLowerCase().includes("8avos"));
+                const qMatches = currentMatches.filter(m => m.roundNumber === 4 || m.stageName.toLowerCase().includes("cuartos") || m.stageName.toLowerCase().includes("4tos"));
+                const sfMatches = currentMatches.filter(m => m.roundNumber === 5 || m.stageName.toLowerCase().includes("semifinal"));
+                const fMatches = currentMatches.filter(m => m.roundNumber === 6 || m.stageName.toLowerCase() === "final");
+
+                return (
+                  <div className="flex flex-wrap gap-1.5 bg-slate-900/40 p-2.5 rounded-xl border border-slate-800 shadow-sm">
+                    <span className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-wider px-2 py-1.5 flex items-center">Fases:</span>
+                    <button
+                      type="button"
+                      onClick={() => setFixtureFilter("all")}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold leading-none cursor-pointer transition-all ${
+                        fixtureFilter === "all"
+                          ? "bg-indigo-650/20 text-indigo-400 border border-indigo-500/30 font-black"
+                          : "bg-slate-950 text-slate-400 border border-slate-900 hover:text-white"
+                      }`}
+                    >
+                      Ver Todo ({currentMatches.length})
+                    </button>
+                    {r1Matches.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setFixtureFilter("r1")}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold leading-none cursor-pointer transition-all ${
+                          fixtureFilter === "r1"
+                            ? "bg-[#d4fc34]/20 text-[#d4fc34] border border-[#d4fc34]/30 font-black"
+                            : "bg-slate-950 text-slate-400 border border-slate-900 hover:text-white"
+                        }`}
+                      >
+                        Ronda 1 ({r1Matches.length})
+                      </button>
+                    )}
+                    {r2Matches.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setFixtureFilter("r2")}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold leading-none cursor-pointer transition-all ${
+                          fixtureFilter === "r2"
+                            ? "bg-[#d4fc34]/20 text-[#d4fc34] border border-[#d4fc34]/30 font-black"
+                            : "bg-slate-950 text-slate-400 border border-slate-900 hover:text-white"
+                        }`}
+                      >
+                        Ronda 2 ({r2Matches.length})
+                      </button>
+                    )}
+                    {oMatches.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setFixtureFilter("8avos")}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold leading-none cursor-pointer transition-all ${
+                          fixtureFilter === "8avos"
+                            ? "bg-[#d4fc34]/20 text-[#d4fc34] border border-[#d4fc34]/30 font-black"
+                            : "bg-slate-950 text-slate-400 border border-slate-900 hover:text-white"
+                        }`}
+                      >
+                        8avos ({oMatches.length})
+                      </button>
+                    )}
+                    {qMatches.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setFixtureFilter("4tos")}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold leading-none cursor-pointer transition-all ${
+                          fixtureFilter === "4tos"
+                            ? "bg-[#d4fc34]/20 text-[#d4fc34] border border-[#d4fc34]/30 font-black"
+                            : "bg-slate-950 text-slate-400 border border-slate-900 hover:text-white"
+                        }`}
+                      >
+                        4tos ({qMatches.length})
+                      </button>
+                    )}
+                    {sfMatches.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setFixtureFilter("semifinal")}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold leading-none cursor-pointer transition-all ${
+                          fixtureFilter === "semifinal"
+                            ? "bg-[#d4fc34]/20 text-[#d4fc34] border border-[#d4fc34]/30 font-black"
+                            : "bg-slate-950 text-slate-400 border border-slate-900 hover:text-white"
+                        }`}
+                      >
+                        Semifinal ({sfMatches.length})
+                      </button>
+                    )}
+                    {fMatches.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setFixtureFilter("final")}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold leading-none cursor-pointer transition-all ${
+                          fixtureFilter === "final"
+                            ? "bg-[#d4fc34]/20 text-[#d4fc34] border border-[#d4fc34]/30 font-black"
+                            : "bg-slate-950 text-slate-400 border border-slate-900 hover:text-white"
+                        }`}
+                      >
+                        Final ({fMatches.length})
+                      </button>
+                    )}
+                  </div>
+                );
+              }
+
+              if (isSRTC16) {
+                const r1Matches = currentMatches.filter(m => m.roundNumber === 1 || m.stageName.toLowerCase().includes("ronda 1"));
+                const r2Matches = currentMatches.filter(m => m.roundNumber === 2 || m.stageName.toLowerCase().includes("ronda 2"));
+                const qMatches = currentMatches.filter(m => m.roundNumber === 3 || m.stageName.toLowerCase().includes("cuartos") || m.stageName.toLowerCase().includes("4tos"));
+                const sfMatches = currentMatches.filter(m => m.roundNumber === 4 || m.stageName.toLowerCase().includes("semifinal"));
+                const fMatches = currentMatches.filter(m => m.roundNumber === 5 || m.stageName.toLowerCase() === "final");
+
+                return (
+                  <div className="flex flex-wrap gap-1.5 bg-slate-900/40 p-2.5 rounded-xl border border-slate-800 shadow-sm">
+                    <span className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-wider px-2 py-1.5 flex items-center">Fases:</span>
+                    <button
+                      type="button"
+                      onClick={() => setFixtureFilter("all")}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold leading-none cursor-pointer transition-all ${
+                        fixtureFilter === "all"
+                          ? "bg-indigo-650/20 text-indigo-400 border border-indigo-500/30 font-black"
+                          : "bg-slate-950 text-slate-400 border border-slate-900 hover:text-white"
+                      }`}
+                    >
+                      Ver Todo ({currentMatches.length})
+                    </button>
+                    {r1Matches.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setFixtureFilter("r1")}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold leading-none cursor-pointer transition-all ${
+                          fixtureFilter === "r1"
+                            ? "bg-[#d4fc34]/20 text-[#d4fc34] border border-[#d4fc34]/30 font-black"
+                            : "bg-slate-950 text-slate-400 border border-slate-900 hover:text-white"
+                        }`}
+                      >
+                        Ronda 1 ({r1Matches.length})
+                      </button>
+                    )}
+                    {r2Matches.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setFixtureFilter("r2")}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold leading-none cursor-pointer transition-all ${
+                          fixtureFilter === "r2"
+                            ? "bg-[#d4fc34]/20 text-[#d4fc34] border border-[#d4fc34]/30 font-black"
+                            : "bg-slate-950 text-slate-400 border border-slate-900 hover:text-white"
+                        }`}
+                      >
+                        Ronda 2 ({r2Matches.length})
+                      </button>
+                    )}
+                    {qMatches.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setFixtureFilter("4tos")}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold leading-none cursor-pointer transition-all ${
+                          fixtureFilter === "4tos"
+                            ? "bg-[#d4fc34]/20 text-[#d4fc34] border border-[#d4fc34]/30 font-black"
+                            : "bg-slate-950 text-slate-400 border border-slate-900 hover:text-white"
+                        }`}
+                      >
+                        4tos ({qMatches.length})
+                      </button>
+                    )}
+                    {sfMatches.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setFixtureFilter("semifinal")}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold leading-none cursor-pointer transition-all ${
+                          fixtureFilter === "semifinal"
+                            ? "bg-[#d4fc34]/20 text-[#d4fc34] border border-[#d4fc34]/30 font-black"
+                            : "bg-slate-950 text-slate-400 border border-slate-900 hover:text-white"
+                        }`}
+                      >
+                        Semifinal ({sfMatches.length})
+                      </button>
+                    )}
+                    {fMatches.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setFixtureFilter("final")}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold leading-none cursor-pointer transition-all ${
+                          fixtureFilter === "final"
+                            ? "bg-[#d4fc34]/20 text-[#d4fc34] border border-[#d4fc34]/30 font-black"
+                            : "bg-slate-950 text-slate-400 border border-slate-900 hover:text-white"
+                        }`}
+                      >
+                        Final ({fMatches.length})
+                      </button>
+                    )}
+                  </div>
+                );
+              }
+
               const hasGroup = currentMatches.some(m => m.phase === "group" || m.stageName.toLowerCase().includes("grupo") || m.stageName.toLowerCase().includes("ronda"));
               const has16 = currentMatches.some(m => m.phase === "playoff" && (m.stageName.toLowerCase().includes("16avos") || m.stageName.toLowerCase().includes("dieciseisavos")));
               const has8 = currentMatches.some(m => m.phase === "playoff" && (m.stageName.toLowerCase().includes("octavos") || m.stageName.toLowerCase().includes("8avos")));
@@ -1759,8 +2798,67 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
             })()}
 
             {(() => {
-              const matchesToRender = matches.filter(m => m.category === selectedCategory).filter(m => {
+              const categoryPairs = pairs.filter(p => p.category === selectedCategory);
+              const isSRTC16 = categoryPairs.length === 16;
+              const isSRTC32 = categoryPairs.length === 32;
+              const matchesToFilter = matches.filter(m => m.category === selectedCategory);
+
+              // Sort matches chronologically/by round order if it's SRTC16 or SRTC32
+              let sortedSourceMatches = [...matchesToFilter];
+              if (isSRTC16 || isSRTC32) {
+                sortedSourceMatches.sort((a, b) => {
+                  const rA = a.roundNumber || 0;
+                  const rB = b.roundNumber || 0;
+                  if (rA !== rB) return rA - rB;
+                  // tie break by id to keep stable order
+                  return a.id.localeCompare(b.id);
+                });
+              }
+
+              const matchesToRender = sortedSourceMatches.filter(m => {
                 if (fixtureFilter === "all") return true;
+
+                if (isSRTC16) {
+                  if (fixtureFilter === "r1") {
+                    return m.roundNumber === 1 || m.stageName.toLowerCase().includes("ronda 1");
+                  }
+                  if (fixtureFilter === "r2") {
+                    return m.roundNumber === 2 || m.stageName.toLowerCase().includes("ronda 2");
+                  }
+                  if (fixtureFilter === "4tos") {
+                    return m.roundNumber === 3 || m.stageName.toLowerCase().includes("cuartos") || m.stageName.toLowerCase().includes("4tos");
+                  }
+                  if (fixtureFilter === "semifinal") {
+                    return m.roundNumber === 4 || m.stageName.toLowerCase().includes("semifinal");
+                  }
+                  if (fixtureFilter === "final") {
+                    return m.roundNumber === 5 || m.stageName.toLowerCase() === "final";
+                  }
+                  return true;
+                }
+
+                if (isSRTC32) {
+                  if (fixtureFilter === "r1") {
+                    return m.roundNumber === 1 || m.stageName.toLowerCase().includes("ronda 1");
+                  }
+                  if (fixtureFilter === "r2") {
+                    return m.roundNumber === 2 || m.stageName.toLowerCase().includes("ronda 2");
+                  }
+                  if (fixtureFilter === "8avos") {
+                    return m.roundNumber === 3 || m.stageName.toLowerCase().includes("octavos") || m.stageName.toLowerCase().includes("8avos");
+                  }
+                  if (fixtureFilter === "4tos") {
+                    return m.roundNumber === 4 || m.stageName.toLowerCase().includes("cuartos") || m.stageName.toLowerCase().includes("4tos");
+                  }
+                  if (fixtureFilter === "semifinal") {
+                    return m.roundNumber === 5 || m.stageName.toLowerCase().includes("semifinal");
+                  }
+                  if (fixtureFilter === "final") {
+                    return m.roundNumber === 6 || m.stageName.toLowerCase() === "final";
+                  }
+                  return true;
+                }
+
                 if (fixtureFilter === "group") {
                   return m.phase === "group" || m.stageName.toLowerCase().includes("grupo") || m.stageName.toLowerCase().includes("ronda");
                 }
@@ -1910,21 +3008,35 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
 
               return (
                 <div className="space-y-6">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-5 rounded-2xl">
-                    <div>
-                      <h3 className="font-extrabold text-white text-md flex items-center gap-2">
-                        🥇 Tabla Unificada: <span className="text-[#d4fc34]">Sistema Dos Vidas SRTC</span>
-                      </h3>
-                      <p className="text-xs text-slate-400 mt-1">
-                        Cada pareja cuenta con 2 vidas. Perder 2 veces significa quedar eliminada de la competencia.
-                      </p>
-                    </div>
-                    <div className="flex gap-3 text-xs bg-slate-950 px-3.5 py-2 rounded-xl border border-slate-850 font-mono text-slate-400">
-                      <span>Parejas Inscritas: <strong className="text-white">{categoryPairs.length}</strong></span>
-                      <span className="text-slate-700">|</span>
-                      <span>Parejas Activas: <strong className="text-[#d4fc34]">{table.filter(t => !t.eliminated).length}</strong></span>
-                    </div>
-                  </div>
+                  {(() => {
+                    const isSRTC16 = categoryPairs.length === 16;
+                    const isSRTC32 = categoryPairs.length === 32;
+                    let formatTitle = "Sistema Dos Vidas SRTC";
+                    if (isSRTC16) formatTitle = "Formato Oficial SRTC 16";
+                    else if (isSRTC32) formatTitle = "Formato Oficial SRTC 32";
+
+                    let formatDesc = "Cada pareja cuenta con 2 vidas. Perder 2 veces significa quedar eliminada de la competencia.";
+                    if (isSRTC16) formatDesc = "Garantiza que todas las parejas jueguen al menos 2 partidos. Los ganadores de Ronda 2 avanzan a Cuartos de final.";
+                    else if (isSRTC32) formatDesc = "Garantiza que todas las parejas jueguen al menos 2 partidos. Los ganadores de Ronda 2 avanzan a Octavos de Final.";
+
+                    return (
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+                        <div>
+                          <h3 className="font-extrabold text-white text-md flex items-center gap-2">
+                            🥇 Tabla Unificada: <span className="text-[#d4fc34]">{formatTitle}</span>
+                          </h3>
+                          <p className="text-xs text-slate-400 mt-1">
+                            {formatDesc}
+                          </p>
+                        </div>
+                        <div className="flex gap-3 text-xs bg-slate-950 px-3.5 py-2 rounded-xl border border-slate-850 font-mono text-slate-400">
+                          <span>Parejas Inscritas: <strong className="text-white">{categoryPairs.length}</strong></span>
+                          <span className="text-slate-700">|</span>
+                          <span>Parejas Activas: <strong className="text-[#d4fc34]">{table.filter(t => !t.eliminated).length}</strong></span>
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
                     <div className="overflow-x-auto">
@@ -1997,58 +3109,78 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
                   </div>
 
                   {/* ADMIN CONTROL TERMINAL FOR PROGRESSION */}
-                  {userRole === "admin" && (
-                    <div className="bg-slate-950 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
-                      <div className="border-b border-slate-850 pb-3">
-                        <h4 className="font-extrabold text-sm text-white flex items-center gap-1.5 uppercase tracking-wider text-[#d4fc34]">
-                          ⚙️ Panel de Gestión de Rondas y Playoffs
-                        </h4>
-                        <p className="text-[11px] text-slate-400 mt-1">
-                          Como organizador oficial de SRTC, tienes el control de las transiciones de rondas del torneo.
-                        </p>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {/* Box 1: Generate next round */}
-                        <div className="bg-slate-900 border border-slate-800 p-5 rounded-xl flex flex-col justify-between space-y-4">
-                          <div className="space-y-1.5">
-                            <h5 className="font-extrabold text-xs text-white uppercase tracking-wider">Avanzar Siguiente Ronda</h5>
-                            <p className="text-[11px] text-slate-400 leading-relaxed">
-                              Crea automáticamente los nuevos emparejamientos utilizando el algoritmo suizo de Dos Vidas. Cruzará parejas con similar historial de triunfos que no hayan jugado previamente en el torneo para mayor equidad.
-                            </p>
+                  {userRole === "admin" && (() => {
+                    const isSRTC16 = pairs.filter(p => p.category === selectedCategory).length === 16;
+                    if (isSRTC16) {
+                      return (
+                        <div className="bg-slate-950 border border-indigo-500/30 rounded-2xl p-6 shadow-xl space-y-4">
+                          <h4 className="font-extrabold text-sm text-indigo-400 flex items-center gap-1.5 uppercase tracking-wider">
+                            🛡️ Sistema Oficial SRTC 16 Activo
+                          </h4>
+                          <p className="text-xs text-slate-300 leading-relaxed font-sans">
+                            Esta categoría está jugando el formato oficial **SRTC 16** de 16 parejas. El fixture completo ya se encuentra pre-generado. 
+                            Las parejas derrotadas en **Ronda 1** juegan en la ronda de repechaje (**Ronda 2 - Partidos 10, 11, 13, 15**), mientras que los ganadores de Ronda 1 juegan sus respectivos partidos de ganadores (**Ronda 2 - Partidos 9, 12, 14, 16**).
+                          </p>
+                          <div className="p-3 bg-indigo-500/10 border border-indigo-550/20 text-indigo-300 text-xs rounded-xl font-medium leading-relaxed font-sans">
+                            🎯 Los ganadores de los partidos de Ronda 2 avanzan automáticamente a los **Cuartos de Final**. La progresión de llaves es completamente automática al registrar de forma manual o automática los marcadores de cada partido. No requieres realizar sorteos adicionales.
                           </div>
-                          <button
-                            onClick={handleGenerateNextRound}
-                            className="bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white transition-colors py-2.5 px-4 rounded-xl font-bold text-xs uppercase tracking-wider cursor-pointer border border-slate-700"
-                          >
-                            Generar Siguiente Ronda Dos Vidas
-                          </button>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div className="bg-slate-950 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
+                        <div className="border-b border-slate-850 pb-3">
+                          <h4 className="font-extrabold text-sm text-white flex items-center gap-1.5 uppercase tracking-wider text-[#d4fc34]">
+                            ⚙️ Panel de Gestión de Rondas y Playoffs
+                          </h4>
+                          <p className="text-[11px] text-slate-400 mt-1">
+                            Como organizador oficial de SRTC, tienes el control de las transiciones de rondas del torneo.
+                          </p>
                         </div>
 
-                        {/* Box 2: Close and start Playoffs */}
-                        <div className="bg-slate-900/40 border border-dashed border-slate-800 p-5 rounded-xl flex flex-col justify-between space-y-4">
-                          <div className="space-y-1.5">
-                            <h5 className="font-extrabold text-xs text-amber-400 uppercase tracking-wider">Lanzar Playoffs (Cuadro Final)</h5>
-                            <p className="text-[11px] text-slate-400 leading-relaxed">
-                              Cierra definitivamente la etapa preliminaria. Avanza a las mejores parejas ordenadas por victorias y sets al cuadro final de eliminación directa (Octavos, Cuartos o Semifinal según el volumen de inscriptos).
-                            </p>
-                          </div>
-                          {!matches.some(m => m.category === selectedCategory && m.phase === "playoff") ? (
-                            <button
-                              onClick={handleLaunchPlayoffs}
-                              className="bg-[#d4fc34] hover:bg-[#c5f015] text-slate-950 transition-colors py-2.5 px-4 rounded-xl font-black text-xs uppercase tracking-wider cursor-pointer shadow-md"
-                            >
-                              Finalizar y Generar Cuadro de Eliminatorias
-                            </button>
-                          ) : (
-                            <div className="text-center py-2 px-3 bg-indigo-500/10 border border-indigo-500/15 rounded-xl text-indigo-400 font-bold text-[10px] uppercase">
-                              Playoffs Activos
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          {/* Box 1: Generate next round */}
+                          <div className="bg-slate-900 border border-slate-800 p-5 rounded-xl flex flex-col justify-between space-y-4">
+                            <div className="space-y-1.5">
+                              <h5 className="font-extrabold text-xs text-white uppercase tracking-wider">Avanzar Siguiente Ronda</h5>
+                              <p className="text-[11px] text-slate-400 leading-relaxed">
+                                Crea automáticamente los nuevos emparejamientos utilizando el algoritmo suizo de Dos Vidas. Cruzará parejas con similar historial de triunfos que no hayan jugado previamente en el torneo para mayor equidad.
+                              </p>
                             </div>
-                          )}
+                            <button
+                              onClick={handleGenerateNextRound}
+                              className="bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white transition-colors py-2.5 px-4 rounded-xl font-bold text-xs uppercase tracking-wider cursor-pointer border border-slate-700"
+                            >
+                              Generar Siguiente Ronda Dos Vidas
+                            </button>
+                          </div>
+
+                          {/* Box 2: Close and start Playoffs */}
+                          <div className="bg-slate-900/40 border border-dashed border-slate-800 p-5 rounded-xl flex flex-col justify-between space-y-4">
+                            <div className="space-y-1.5">
+                              <h5 className="font-extrabold text-xs text-amber-400 uppercase tracking-wider">Lanzar Playoffs (Cuadro Final)</h5>
+                              <p className="text-[11px] text-slate-400 leading-relaxed">
+                                Cierra definitivamente la etapa preliminaria. Avanza a las mejores parejas ordenadas por victorias y sets al cuadro final de eliminación directa (Octavos, Cuartos o Semifinal según el volumen de inscriptos).
+                              </p>
+                            </div>
+                            {!matches.some(m => m.category === selectedCategory && m.phase === "playoff") ? (
+                              <button
+                                onClick={handleLaunchPlayoffs}
+                                className="bg-[#d4fc34] hover:bg-[#c5f015] text-slate-950 transition-colors py-2.5 px-4 rounded-xl font-black text-xs uppercase tracking-wider cursor-pointer shadow-md"
+                              >
+                                Finalizar y Generar Cuadro de Eliminatorias
+                              </button>
+                            ) : (
+                              <div className="text-center py-2 px-3 bg-indigo-500/10 border border-indigo-500/15 rounded-xl text-indigo-400 font-bold text-[10px] uppercase">
+                                Playoffs Activos
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )}
+                    );
+                  })()}
                 </div>
               );
             })()}
@@ -2639,6 +3771,42 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* CONFIRM DELETE PAIR MODAL */}
+      {pairToDelete && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+          <div className="bg-[#0f172a] border border-slate-900 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl p-6 space-y-6 animate-in fade-in zoom-in-95 duration-150">
+            <div className="text-center space-y-2">
+              <div className="mx-auto w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center text-red-500">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <h3 className="font-extrabold text-white text-base">
+                ¿Desinscribir Pareja?
+              </h3>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                ¿Estás seguro de que deseas de-inscribir a la pareja <span className="text-white font-semibold">{pairToDelete.name}</span> de esta categoría? Esta acción es irreversible.
+              </p>
+            </div>
+            
+            <div className="flex gap-3 justify-center">
+              <button
+                type="button"
+                onClick={() => setPairToDelete(null)}
+                className="flex-1 bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-bold px-4 py-2.5 rounded-lg border border-slate-800 transition cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={executeDeletePair}
+                className="flex-1 bg-red-600 hover:bg-red-500 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition cursor-pointer"
+              >
+                De-inscribir
+              </button>
+            </div>
           </div>
         </div>
       )}

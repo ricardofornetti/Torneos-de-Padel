@@ -90,9 +90,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
   // Top 5 ranking players
   const topPlayers = [...players].sort((a, b) => b.rankingPoints - a.rankingPoints).slice(0, 4);
 
-  // Stats calculation
-  const totalMatchesCount = matches.length;
-  const completedMatchesCount = matches.filter(m => m.status !== "pending").length;
+  // Stats calculation - only count matches belonging to existing active/completed/registration tournaments to stay accurate
+  const validTournamentIds = new Set(tournaments.map(t => t.id));
+  const validMatches = matches.filter(m => m.tournamentId && validTournamentIds.has(m.tournamentId));
+  const totalMatchesCount = validMatches.length;
+  const completedMatchesCount = validMatches.filter(m => m.status === "completed" || m.status === "wo").length;
 
   if (loading) {
     return (

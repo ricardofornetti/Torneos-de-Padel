@@ -17,7 +17,8 @@ import {
   Phone,
   Mail,
   Percent,
-  Activity
+  Activity,
+  Trash2
 } from 'lucide-react';
 import { repository } from '../lib/repository';
 import { Player } from '../types';
@@ -33,6 +34,10 @@ export const RankingManager: React.FC<RankingManagerProps> = ({ userRole }) => {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
+  const [showResetAllModal, setShowResetAllModal] = useState(false);
+  const [showResetIndividualModal, setShowResetIndividualModal] = useState<Player | null>(null);
+  const [showDeleteAllPlayersModal, setShowDeleteAllPlayersModal] = useState(false);
+  const [deletingPlayers, setDeletingPlayers] = useState(false);
 
   const loadRankings = async () => {
     setLoading(true);
@@ -46,60 +51,91 @@ export const RankingManager: React.FC<RankingManagerProps> = ({ userRole }) => {
     loadRankings();
   }, []);
 
-  const handleResetPoints = async () => {
-    if (confirm("⚠️ ¿Estás seguro de que deseas reiniciar todos los puntos del ranking a 0 para el inicio del nuevo año deportivo? Esta acción es irreversible.")) {
-      setResetting(true);
-      try {
-        const updated = players.map(p => ({
-          ...p,
-          rankingPoints: 0,
-          matchesPlayed: 0,
-          matchesWon: 0,
-          matchesLost: 0,
-          setsWon: 0,
-          setsLost: 0,
-          gamesWon: 0,
-          gamesLost: 0
-        }));
-        
-        // Execute saves in parallel to prevent network lag frozen UI
-        await Promise.all(updated.map(p => repository.savePlayer(p)));
-        
-        await repository.addNotification("Reinicio de Ranking", "El administrador ha reiniciado todos los puntajes anuales de la temporada.", "warning");
-        await loadRankings();
-      } catch (err) {
-        console.error("Error resetting points", err);
-      } finally {
-        setResetting(false);
-      }
+  const handleResetPoints = () => {
+    setShowResetAllModal(true);
+  };
+
+  const handleDeleteAllPlayers = () => {
+    setShowDeleteAllPlayersModal(true);
+  };
+
+  const executeDeleteAllPlayers = async () => {
+    setShowDeleteAllPlayersModal(false);
+    setDeletingPlayers(true);
+    try {
+      await Promise.all(players.map(p => repository.deletePlayer(p.id)));
+      await repository.addNotification(
+        "Limpieza de Jugadores", 
+        "Se han eliminado todos los jugadores cargados hasta el momento.", 
+        "warning"
+      );
+      setSelectedPlayer(null);
+      await loadRankings();
+    } catch (err) {
+      console.error("Error deleting players:", err);
+    } finally {
+      setDeletingPlayers(false);
     }
   };
 
-  const handleResetIndividualPlayerPoints = async (player: Player) => {
-    if (confirm(`⚠️ ¿Estás seguro de que deseas reiniciar todos los puntos y estadísticas del jugador ${player.firstName} ${player.lastName} a 0? Esta acción es irreversible.`)) {
-      try {
-        const updated: Player = {
-          ...player,
-          rankingPoints: 0,
-          matchesPlayed: 0,
-          matchesWon: 0,
-          matchesLost: 0,
-          setsWon: 0,
-          setsLost: 0,
-          gamesWon: 0,
-          gamesLost: 0
-        };
-        await repository.savePlayer(updated);
-        await repository.addNotification(
-          "Jugador Reiniciado",
-          `El administrador ha reiniciado los puntos y estadísticas de ${player.firstName} ${player.lastName}.`,
-          "warning"
-        );
-        setSelectedPlayer(updated);
-        await loadRankings();
-      } catch (err) {
-        console.error("Error resetting individual player points:", err);
-      }
+  const executeResetAllPoints = async () => {
+    setShowResetAllModal(false);
+    setResetting(true);
+    try {
+      const updated = players.map(p => ({
+        ...p,
+        rankingPoints: 0,
+        matchesPlayed: 0,
+        matchesWon: 0,
+        matchesLost: 0,
+        setsWon: 0,
+        setsLost: 0,
+        gamesWon: 0,
+        gamesLost: 0
+      }));
+      
+      // Execute saves in parallel to prevent network lag frozen UI
+      await Promise.all(updated.map(p => repository.savePlayer(p)));
+      
+      await repository.addNotification("Reinicio de Ranking", "El administrador ha reiniciado todos los puntajes anuales de la temporada.", "warning");
+      await loadRankings();
+    } catch (err) {
+      console.error("Error resetting points", err);
+    } finally {
+      setResetting(false);
+    }
+  };
+
+  const handleResetIndividualPlayerPoints = (player: Player) => {
+    setShowResetIndividualModal(player);
+  };
+
+  const executeResetIndividualPoints = async () => {
+    if (!showResetIndividualModal) return;
+    const player = showResetIndividualModal;
+    setShowResetIndividualModal(null);
+    try {
+      const updated: Player = {
+        ...player,
+        rankingPoints: 0,
+        matchesPlayed: 0,
+        matchesWon: 0,
+        matchesLost: 0,
+        setsWon: 0,
+        setsLost: 0,
+        gamesWon: 0,
+        gamesLost: 0
+      };
+      await repository.savePlayer(updated);
+      await repository.addNotification(
+        "Jugador Reiniciado",
+        `El administrador ha reiniciado los puntos y estadísticas de ${player.firstName} ${player.lastName}.`,
+        "warning"
+      );
+      setSelectedPlayer(updated);
+      await loadRankings();
+    } catch (err) {
+      console.error("Error resetting individual player points:", err);
     }
   };
 
@@ -176,6 +212,18 @@ export const RankingManager: React.FC<RankingManagerProps> = ({ userRole }) => {
             <RotateCcw className={`w-3.5 h-3.5 text-red-500 ${resetting ? 'animate-spin' : ''}`} /> 
             <span>{resetting ? 'Reiniciando...' : 'Reiniciar Puntos'}</span>
           </button>
+
+          {userRole === "admin" && (
+            <button
+              onClick={handleDeleteAllPlayers}
+              disabled={deletingPlayers}
+              className="bg-red-900/20 hover:bg-red-1000/40 border border-red-800/50 text-red-300 text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50 animate-fade-in"
+              title="Eliminar todos los jugadores cargados"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-red-400" />
+              <span>{deletingPlayers ? 'Eliminando...' : 'Eliminar Jugadores'}</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -599,6 +647,114 @@ export const RankingManager: React.FC<RankingManagerProps> = ({ userRole }) => {
                 </button>
               </div>
 
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* RESET ALL POINTS CONFIRMATION MODAL */}
+      {showResetAllModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+          <div className="bg-[#0f172a] border border-slate-900 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl p-6 space-y-6">
+            <div className="text-center space-y-2">
+              <div className="mx-auto w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center text-red-500">
+                <RotateCcw className="w-6 h-6" />
+              </div>
+              <h3 className="font-extrabold text-white text-base">
+                ¿Reiniciar Todo el Ranking?
+              </h3>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                ¿Estás seguro de que deseas reiniciar todos los puntos del ranking a <strong className="text-white">0</strong> para el inicio del nuevo año deportivo? Esta acción es irreversible y afectará a todos los jugadores.
+              </p>
+            </div>
+            
+            <div className="flex gap-3 justify-center">
+              <button
+                type="button"
+                onClick={() => setShowResetAllModal(false)}
+                className="flex-1 bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-bold px-4 py-2.5 rounded-lg border border-slate-800 transition cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={executeResetAllPoints}
+                className="flex-1 bg-red-600 hover:bg-red-500 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition cursor-pointer"
+              >
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* RESET INDIVIDUAL POINTS CONFIRMATION MODAL */}
+      {showResetIndividualModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+          <div className="bg-[#0f172a] border border-slate-900 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl p-6 space-y-6">
+            <div className="text-center space-y-2">
+              <div className="mx-auto w-12 h-12 bg-[#ef4444]/10 rounded-full flex items-center justify-center text-red-500">
+                <RotateCcw className="w-6 h-6" />
+              </div>
+              <h3 className="font-extrabold text-white text-base">
+                ¿Reiniciar Jugador?
+              </h3>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                ¿Estás seguro de que deseas reiniciar todos los puntos y estadísticas del jugador <span className="text-white font-semibold">{showResetIndividualModal.firstName} {showResetIndividualModal.lastName}</span> a 0? Esta acción es irreversible.
+              </p>
+            </div>
+            
+            <div className="flex gap-3 justify-center">
+              <button
+                type="button"
+                onClick={() => setShowResetIndividualModal(null)}
+                className="flex-1 bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-bold px-4 py-2.5 rounded-lg border border-slate-800 transition cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={executeResetIndividualPoints}
+                className="flex-1 bg-red-650 hover:bg-red-650 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition cursor-pointer"
+              >
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* DELETE ALL PLAYERS CONFIRMATION MODAL */}
+      {showDeleteAllPlayersModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+          <div className="bg-[#0f172a] border border-slate-900 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl p-6 space-y-6">
+            <div className="text-center space-y-2">
+              <div className="mx-auto w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center text-red-500">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <h3 className="font-extrabold text-white text-base">
+                ¿Eliminar Todos los Jugadores?
+              </h3>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                ¿Estás seguro de que deseas eliminar <strong className="text-white">TODOS</strong> los jugadores registrados hasta el momento? Esta acción borrará permanentemente sus perfiles y registros del ranking. No se puede deshacer.
+              </p>
+            </div>
+            
+            <div className="flex gap-3 justify-center">
+              <button
+                type="button"
+                onClick={() => setShowDeleteAllPlayersModal(false)}
+                className="flex-1 bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-bold px-4 py-2.5 rounded-lg border border-slate-800 transition cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={executeDeleteAllPlayers}
+                className="flex-1 bg-red-650 hover:bg-red-500 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition cursor-pointer"
+              >
+                Eliminar Todo
+              </button>
             </div>
           </div>
         </div>

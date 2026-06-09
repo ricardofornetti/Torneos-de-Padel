@@ -836,6 +836,20 @@ export function calculateDosVidasStandings(
     s.gamesDiff = s.gamesWon - s.gamesLost;
   });
 
+  // Strict SRTC rules: losers of Ronda 2 matches are immediately eliminated (0 lives remaining)
+  const completedR2Matches = matches.filter(
+    m => m.status !== "pending" && 
+    (m.stageName.toLowerCase().includes("ronda 2") || m.id.includes("_r2_m"))
+  );
+  completedR2Matches.forEach(m => {
+    const loserId = m.winnerPairId === m.pair1Id ? m.pair2Id : m.pair1Id;
+    const loserStats = statsList.find(s => s.pairId === loserId);
+    if (loserStats) {
+      loserStats.lives = 0;
+      loserStats.eliminated = true;
+    }
+  });
+
   // Criterios de ordenación:
   // 1. No eliminados primero (más vidas primero)
   // 2. Más victorias (PG desc)
