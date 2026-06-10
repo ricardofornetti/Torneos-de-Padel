@@ -732,14 +732,16 @@ class PadelRepository {
 
     if (isRealFirebase) {
       const docRef = doc(db, "tournaments", t.id);
-      setDoc(docRef, t).catch((err) => {
+      try {
+        await setDoc(docRef, t);
+      } catch (err) {
         handleFirestoreError(err, OperationType.WRITE, `tournaments/${t.id}`);
         this.addNotification(
           "Guardado en Sandbox Local",
           "El torneo '" + t.name + "' se guardó en el navegador. Vincula tu cuenta de Google organizador para sincronizar en la nube.",
           "warning"
         );
-      });
+      }
     }
   }
 
@@ -1130,6 +1132,69 @@ class PadelRepository {
         handleFirestoreError(err, OperationType.DELETE, `galleryMedia/${id}`);
       }
     }
+  }
+
+  async purgeAllSimulatedAndMockData(): Promise<{ playersCount: number; pairsCount: number; matchesCount: number; tournamentsUpdatedCount: number }> {
+    // 1. Get all players
+    const playersList = await this.getPlayers();
+    const mockPlayers = playersList.filter(p => 
+      p.id.includes("player_mock_qa_") || 
+      p.id.includes("tp_srtc") || 
+      p.email?.includes("@example.com") || 
+      p.email?.includes("@demo-padel.com")
+    );
+
+    // 2. Delete mock players
+    for (const p of mockPlayers) {
+      await this.deletePlayer(p.id);
+    }
+
+    // 3. Get all pairs
+    const pairsList = await this.getPairs();
+    const mockPairs = pairsList.filter(pr => 
+      pr.id.includes("_qa_") || 
+      pr.id.includes("_srtc") || 
+      mockPlayers.some(mp => mp.id === pr.player1Id || mp.id === pr.player2Id)
+    );
+
+    // 4. Delete mock pairs
+    for (const pr of mockPairs) {
+      await this.deletePair(pr.id);
+    }
+
+    // 5. Get all matches
+    const matchesList = await this.getMatches();
+    const mockMatches = matchesList.filter(m => 
+      m.id.includes("_qa_") || 
+      m.id.includes("_srtc") ||
+      mockPairs.some(mp => mp.id === m.pair1Id || mp.id === m.pair2Id)
+    );
+
+    // 6. Delete matches
+    for (const m of mockMatches) {
+      await this.deleteMatch(m.id);
+    }
+
+    // 7. Reset any tournaments if they have no matches left
+    const tList = await this.getTournaments();
+    let resetTournamentsCount = 0;
+    for (const t of tList) {
+      const remainingMatches = await this.getMatches(t.id);
+      if (remainingMatches.length === 0 && t.status !== "registration") {
+        await this.saveTournament({
+          ...t,
+          status: "registration"
+        });
+        resetTournamentsCount++;
+      }
+    }
+
+    return {
+      playersCount: mockPlayers.length,
+      pairsCount: mockPairs.length,
+      matchesCount: mockMatches.length,
+      tournamentsUpdatedCount: resetTournamentsCount
+    };
   }
 }
 

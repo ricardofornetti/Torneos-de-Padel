@@ -94,6 +94,36 @@
         "active": { "type": "boolean", "description": "Availability status" }
       },
       "required": ["id", "name", "club"]
+    },
+    "GalleryMedia": {
+      "title": "GalleryMedia",
+      "description": "Represents an image or a video from tournaments uploaded to the gallery.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "tournamentId": { "type": "string" },
+        "matchId": { "type": "string" },
+        "url": { "type": "string" },
+        "type": { "type": "string", "enum": ["photo", "video"] },
+        "title": { "type": "string" },
+        "caption": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "url", "type", "createdAt"]
+    },
+    "AppNotification": {
+      "title": "AppNotification",
+      "description": "Represents a local or global notification sent to users.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "body": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "type": { "type": "string", "enum": ["info", "success", "warning"] },
+        "read": { "type": "boolean" }
+      },
+      "required": ["id", "title", "body", "timestamp", "type", "read"]
     }
   },
   "firestore": {
@@ -116,6 +146,14 @@
     "/courts/{courtId}": {
       "schema": "Court",
       "description": "Global collection of active courts available to assign matches."
+    },
+    "/galleryMedia/{mediaId}": {
+      "schema": "GalleryMedia",
+      "description": "Photos and videos uploaded from the various tournaments."
+    },
+    "/notifications/{notifId}": {
+      "schema": "AppNotification",
+      "description": "Notifications delivered inside the application."
     }
   }
 }

@@ -282,6 +282,478 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole }) => {
     loadPlayers();
   };
 
+  const handleImportFIPPlayers = async () => {
+    setLoading(true);
+    try {
+      const fipPlayers: Player[] = [
+        {
+          id: "fip_01_arturo_coello",
+          firstName: "Arturo",
+          lastName: "Coello",
+          dni: "01498123A",
+          phone: "+34 611 111 201",
+          email: "arturo.coello@padelfip.com",
+          city: "Valladolid, España",
+          birthDate: "2002-03-08",
+          category: "7ma Masculina",
+          rankingPoints: 12400,
+          photoUrl: "https://api.dicebear.com/7.x/adventurer/svg?seed=Arturo_Coello",
+          matchesPlayed: 62, matchesWon: 55, matchesLost: 7, setsWon: 112, setsLost: 22, gamesWon: 780, gamesLost: 410
+        },
+        {
+          id: "fip_02_agustin_tapia",
+          firstName: "Agustín",
+          lastName: "Tapia",
+          dni: "02498123A",
+          phone: "+34 611 111 202",
+          email: "agustin.tapia@padelfip.com",
+          city: "Catamarca, Argentina",
+          birthDate: "1999-07-24",
+          category: "7ma Masculina",
+          rankingPoints: 12100,
+          photoUrl: "https://api.dicebear.com/7.x/adventurer/svg?seed=Agustin_Tapia",
+          matchesPlayed: 62, matchesWon: 54, matchesLost: 8, setsWon: 110, setsLost: 24, gamesWon: 770, gamesLost: 430
+        },
+        {
+          id: "fip_03_alejandro_galan",
+          firstName: "Alejandro",
+          lastName: "Galán",
+          dni: "03498123A",
+          phone: "+34 611 111 203",
+          email: "alejandro.galan@padelfip.com",
+          city: "Madrid, España",
+          birthDate: "1996-05-15",
+          category: "7ma Masculina",
+          rankingPoints: 11800,
+          photoUrl: "https://api.dicebear.com/7.x/adventurer/svg?seed=Alejandro_Galan",
+          matchesPlayed: 60, matchesWon: 50, matchesLost: 10, setsWon: 102, setsLost: 30, gamesWon: 740, gamesLost: 450
+        },
+        {
+          id: "fip_04_juan_lebron",
+          firstName: "Juan",
+          lastName: "Lebrón",
+          dni: "04498123A",
+          phone: "+34 611 111 204",
+          email: "juan.lebron@padelfip.com",
+          city: "Cádiz, España",
+          birthDate: "1995-01-30",
+          category: "7ma Masculina",
+          rankingPoints: 10400,
+          photoUrl: "https://api.dicebear.com/7.x/adventurer/svg?seed=Juan_Lebron",
+          matchesPlayed: 58, matchesWon: 46, matchesLost: 12, setsWon: 95, setsLost: 34, gamesWon: 690, gamesLost: 480
+        },
+        {
+          id: "fip_05_federico_chingotto",
+          firstName: "Federico",
+          lastName: "Chingotto",
+          dni: "05498123A",
+          phone: "+34 611 111 205",
+          email: "federico.chingotto@padelfip.com",
+          city: "Olavarría, Argentina",
+          birthDate: "1997-04-13",
+          category: "7ma Masculina",
+          rankingPoints: 9700,
+          photoUrl: "https://api.dicebear.com/7.x/adventurer/svg?seed=Federico_Chingotto",
+          matchesPlayed: 58, matchesWon: 45, matchesLost: 13, setsWon: 94, setsLost: 36, gamesWon: 680, gamesLost: 490
+        },
+        {
+          id: "fip_06_martin_di_nenno",
+          firstName: "Martín",
+          lastName: "Di Nenno",
+          dni: "06498123A",
+          phone: "+34 611 111 206",
+          email: "martin.dinenno@padelfip.com",
+          city: "Ezeiza, Argentina",
+          birthDate: "1997-03-18",
+          category: "7ma Masculina",
+          rankingPoints: 9100,
+          photoUrl: "https://api.dicebear.com/7.x/adventurer/svg?seed=Martin_Di_Nenno",
+          matchesPlayed: 56, matchesWon: 42, matchesLost: 14, setsWon: 88, setsLost: 38, gamesWon: 650, gamesLost: 480
+        },
+        {
+          id: "fip_07_franco_stupaczuk",
+          firstName: "Franco",
+          lastName: "Stupaczuk",
+          dni: "07498123A",
+          phone: "+34 611 111 207",
+          email: "franco.stupaczuk@padelfip.com",
+          city: "Chaco, Argentina",
+          birthDate: "1996-03-25",
+          category: "7ma Masculina",
+          rankingPoints: 8600,
+          photoUrl: "https://api.dicebear.com/7.x/adventurer/svg?seed=Franco_Stupaczuk",
+          matchesPlayed: 56, matchesWon: 41, matchesLost: 15, setsWon: 87, setsLost: 40, gamesWon: 640, gamesLost: 490
+        },
+        {
+          id: "fip_08_paquito_navarro",
+          firstName: "Francisco (Paquito)",
+          lastName: "Navarro",
+          dni: "08498123A",
+          phone: "+34 611 111 208",
+          email: "paquito.navarro@padelfip.com",
+          city: "Sevilla, España",
+          birthDate: "1989-02-10",
+          category: "7ma Masculina",
+          rankingPoints: 7800,
+          photoUrl: "https://api.dicebear.com/7.x/adventurer/svg?seed=Paquito_Navarro",
+          matchesPlayed: 54, matchesWon: 38, matchesLost: 16, setsWon: 82, setsLost: 42, gamesWon: 610, gamesLost: 490
+        },
+        {
+          id: "fip_09_fernando_belasteguin",
+          firstName: "Fernando",
+          lastName: "Belasteguín",
+          dni: "09498123A",
+          phone: "+34 611 111 209",
+          email: "fernando.belasteguin@padelfip.com",
+          city: "Pehuajó, Argentina",
+          birthDate: "1979-05-19",
+          category: "7ma Masculina",
+          rankingPoints: 6900,
+          photoUrl: "https://api.dicebear.com/7.x/adventurer/svg?seed=Fernando_Belasteguin",
+          matchesPlayed: 50, matchesWon: 33, matchesLost: 17, setsWon: 72, setsLost: 44, gamesWon: 550, gamesLost: 460
+        },
+        {
+          id: "fip_10_juan_tello",
+          firstName: "Juan",
+          lastName: "Tello",
+          dni: "10498123A",
+          phone: "+34 611 111 210",
+          email: "juan.tello@padelfip.com",
+          city: "Córdoba, Argentina",
+          birthDate: "1995-02-01",
+          category: "7ma Masculina",
+          rankingPoints: 6300,
+          photoUrl: "https://api.dicebear.com/7.x/adventurer/svg?seed=Juan_Tello",
+          matchesPlayed: 48, matchesWon: 30, matchesLost: 18, setsWon: 68, setsLost: 45, gamesWon: 520, gamesLost: 450
+        },
+        {
+          id: "fip_11_javier_garrido",
+          firstName: "Javier",
+          lastName: "Garrido",
+          dni: "11498123A",
+          phone: "+34 611 111 211",
+          email: "javier.garrido@padelfip.com",
+          city: "Córdoba, España",
+          birthDate: "2000-10-26",
+          category: "7ma Masculina",
+          rankingPoints: 5900,
+          photoUrl: "https://api.dicebear.com/7.x/adventurer/svg?seed=Javier_Garrido",
+          matchesPlayed: 48, matchesWon: 29, matchesLost: 19, setsWon: 66, setsLost: 46, gamesWon: 510, gamesLost: 465
+        },
+        {
+          id: "fip_12_miguel_yanguas",
+          firstName: "Miguel",
+          lastName: "Yanguas",
+          dni: "12498123A",
+          phone: "+34 611 111 212",
+          email: "miguel.yanguas@padelfip.com",
+          city: "Málaga, España",
+          birthDate: "2002-03-18",
+          category: "7ma Masculina",
+          rankingPoints: 5700,
+          photoUrl: "https://api.dicebear.com/7.x/adventurer/svg?seed=Miguel_Yanguas",
+          matchesPlayed: 46, matchesWon: 28, matchesLost: 18, setsWon: 64, setsLost: 44, gamesWon: 495, gamesLost: 440
+        },
+        {
+          id: "fip_13_jeronimo_gonzalez",
+          firstName: "Jerónimo (Momo)",
+          lastName: "González",
+          dni: "13498123A",
+          phone: "+34 611 111 213",
+          email: "momo.gonzalez@padelfip.com",
+          city: "Antequera, España",
+          birthDate: "1997-02-21",
+          category: "7ma Masculina",
+          rankingPoints: 5500,
+          photoUrl: "https://api.dicebear.com/7.x/adventurer/svg?seed=Momo_Gonzalez",
+          matchesPlayed: 46, matchesWon: 27, matchesLost: 19, setsWon: 62, setsLost: 46, gamesWon: 490, gamesLost: 445
+        },
+        {
+          id: "fip_14_alejandro_ruiz",
+          firstName: "Alejandro (Alex)",
+          lastName: "Ruiz",
+          dni: "14498123A",
+          phone: "+34 611 111 214",
+          email: "alex.ruiz@padelfip.com",
+          city: "Málaga, España",
+          birthDate: "1994-06-12",
+          category: "7ma Masculina",
+          rankingPoints: 5300,
+          photoUrl: "https://api.dicebear.com/7.x/adventurer/svg?seed=Alex_Ruiz",
+          matchesPlayed: 44, matchesWon: 25, matchesLost: 19, setsWon: 58, setsLost: 47, gamesWon: 470, gamesLost: 450
+        },
+        {
+          id: "fip_15_coki_nieto",
+          firstName: "Jorge (Coki)",
+          lastName: "Nieto",
+          dni: "15498123A",
+          phone: "+34 611 111 215",
+          email: "coki.nieto@padelfip.com",
+          city: "Madrid, España",
+          birthDate: "1998-12-18",
+          category: "7ma Masculina",
+          rankingPoints: 5120,
+          photoUrl: "https://api.dicebear.com/7.x/adventurer/svg?seed=Jorge_Nieto",
+          matchesPlayed: 45, matchesWon: 30, matchesLost: 15, setsWon: 68, setsLost: 35, gamesWon: 520, gamesLost: 410
+        },
+        {
+          id: "fip_16_jon_sanz",
+          firstName: "Jon",
+          lastName: "Sanz",
+          dni: "16498123A",
+          phone: "+34 611 111 216",
+          email: "jon.sanz@padelfip.com",
+          city: "Pamplona, España",
+          birthDate: "2000-09-25",
+          category: "7ma Masculina",
+          rankingPoints: 4980,
+          photoUrl: "https://api.dicebear.com/7.x/adventurer/svg?seed=Jon_Sanz",
+          matchesPlayed: 42, matchesWon: 28, matchesLost: 14, setsWon: 62, setsLost: 33, gamesWon: 490, gamesLost: 390
+        },
+        {
+          id: "fip_17_luciano_capra",
+          firstName: "Luciano (Lucho)",
+          lastName: "Capra",
+          dni: "17498123C",
+          phone: "+34 611 111 217",
+          email: "lucho.capra@padelfip.com",
+          city: "Quilmes, Argentina",
+          birthDate: "1993-09-16",
+          category: "7ma Masculina",
+          rankingPoints: 3820,
+          photoUrl: "https://api.dicebear.com/7.x/adventurer/svg?seed=Luciano_Capra",
+          matchesPlayed: 38, matchesWon: 23, matchesLost: 15, setsWon: 52, setsLost: 38, gamesWon: 410, gamesLost: 370
+        },
+        {
+          id: "fip_18_lucas_campagnolo",
+          firstName: "Lucas",
+          lastName: "Campagnolo",
+          dni: "18498123D",
+          phone: "+34 611 111 218",
+          email: "lucas.campagnolo@padelfip.com",
+          city: "Alegrete, Brasil",
+          birthDate: "1995-06-13",
+          category: "7ma Masculina",
+          rankingPoints: 3450,
+          photoUrl: "https://api.dicebear.com/7.x/adventurer/svg?seed=Lucas_Campagnolo",
+          matchesPlayed: 35, matchesWon: 21, matchesLost: 14, setsWon: 48, setsLost: 34, gamesWon: 390, gamesLost: 340
+        },
+        {
+          id: "fip_19_maxi_sanchez",
+          firstName: "Maximiliano (Maxi)",
+          lastName: "Sánchez",
+          dni: "19498123E",
+          phone: "+34 611 111 219",
+          email: "maxi.sanchez@padelfip.com",
+          city: "Villa Mercedes, Argentina",
+          birthDate: "1986-12-15",
+          category: "7ma Masculina",
+          rankingPoints: 3100,
+          photoUrl: "https://api.dicebear.com/7.x/adventurer/svg?seed=Maximiliano_Sanchez",
+          matchesPlayed: 52, matchesWon: 34, matchesLost: 18, setsWon: 74, setsLost: 45, gamesWon: 580, gamesLost: 490
+        },
+        {
+          id: "fip_20_gonzalo_rubio",
+          firstName: "Gonzalo",
+          lastName: "Rubio",
+          dni: "20498123F",
+          phone: "+34 611 111 220",
+          email: "gonzalo.rubio@padelfip.com",
+          city: "Sevilla, España",
+          birthDate: "1991-01-28",
+          category: "7ma Masculina",
+          rankingPoints: 2950,
+          photoUrl: "https://api.dicebear.com/7.x/adventurer/svg?seed=Gonzalo_Rubio",
+          matchesPlayed: 32, matchesWon: 18, matchesLost: 14, setsWon: 41, setsLost: 34, gamesWon: 310, gamesLost: 290
+        },
+        {
+          id: "fip_21_alex_arroyo",
+          firstName: "Álex",
+          lastName: "Arroyo",
+          dni: "21498123G",
+          phone: "+34 611 111 221",
+          email: "alex.arroyo@padelfip.com",
+          city: "Valencia, España",
+          birthDate: "2001-10-01",
+          category: "7ma Masculina",
+          rankingPoints: 2800,
+          photoUrl: "https://api.dicebear.com/7.x/adventurer/svg?seed=Alex_Arroyo",
+          matchesPlayed: 30, matchesWon: 17, matchesLost: 13, setsWon: 39, setsLost: 31, gamesWon: 295, gamesLost: 275
+        },
+        {
+          id: "fip_22_edu_alonso",
+          firstName: "Eduardo (Edu)",
+          lastName: "Alonso",
+          dni: "22498123H",
+          phone: "+34 611 111 222",
+          email: "edu.alonso@padelfip.com",
+          city: "Valencia, España",
+          birthDate: "2001-01-15",
+          category: "7ma Masculina",
+          rankingPoints: 2750,
+          photoUrl: "https://api.dicebear.com/7.x/adventurer/svg?seed=Edu_Alonso",
+          matchesPlayed: 28, matchesWon: 16, matchesLost: 12, setsWon: 36, setsLost: 29, gamesWon: 280, gamesLost: 250
+        },
+        {
+          id: "fip_23_jose_diestro",
+          firstName: "José Antonio",
+          lastName: "García Diestro",
+          dni: "23498123I",
+          phone: "+34 611 111 223",
+          email: "jose.diestro@padelfip.com",
+          city: "Badajoz, España",
+          birthDate: "1990-05-14",
+          category: "7ma Masculina",
+          rankingPoints: 2600,
+          photoUrl: "https://api.dicebear.com/7.x/adventurer/svg?seed=Jose_Diestro",
+          matchesPlayed: 34, matchesWon: 20, matchesLost: 14, setsWon: 45, setsLost: 33, gamesWon: 340, gamesLost: 310
+        },
+        {
+          id: "fip_24_javi_leal",
+          firstName: "Javier (Javi)",
+          lastName: "Leal",
+          dni: "24498123J",
+          phone: "+34 611 111 224",
+          email: "javi.leal@padelfip.com",
+          city: "Cádiz, España",
+          birthDate: "2003-08-25",
+          category: "7ma Masculina",
+          rankingPoints: 2550,
+          photoUrl: "https://api.dicebear.com/7.x/adventurer/svg?seed=Javier_Leal",
+          matchesPlayed: 31, matchesWon: 18, matchesLost: 13, setsWon: 40, setsLost: 32, gamesWon: 310, gamesLost: 285
+        },
+        {
+          id: "fip_25_javi_rico",
+          firstName: "Javier (Javi)",
+          lastName: "Rico",
+          dni: "25498123K",
+          phone: "+34 611 111 225",
+          email: "javi.rico@padelfip.com",
+          city: "Valencia, España",
+          birthDate: "1998-06-16",
+          category: "7ma Masculina",
+          rankingPoints: 2340,
+          photoUrl: "https://api.dicebear.com/7.x/adventurer/svg?seed=Javier_Rico",
+          matchesPlayed: 29, matchesWon: 15, matchesLost: 14, setsWon: 35, setsLost: 32, gamesWon: 280, gamesLost: 270
+        },
+        {
+          id: "fip_26_teo_zapata",
+          firstName: "Teodoro (Teo)",
+          lastName: "Zapata",
+          dni: "26498123L",
+          phone: "+34 611 111 226",
+          email: "teo.zapata@padelfip.com",
+          city: "Badajoz, España",
+          birthDate: "1995-03-04",
+          category: "7ma Masculina",
+          rankingPoints: 2200,
+          photoUrl: "https://api.dicebear.com/7.x/adventurer/svg?seed=Teodoro_Zapata",
+          matchesPlayed: 25, matchesWon: 13, matchesLost: 12, setsWon: 30, setsLost: 28, gamesWon: 250, gamesLost: 240
+        },
+        {
+          id: "fip_27_fran_guerrero",
+          firstName: "Francisco (Fran)",
+          lastName: "Guerrero",
+          dni: "27498123M",
+          phone: "+34 611 111 227",
+          email: "fran.guerrero@padelfip.com",
+          city: "Málaga, España",
+          birthDate: "2003-08-04",
+          category: "7ma Masculina",
+          rankingPoints: 2100,
+          photoUrl: "https://api.dicebear.com/7.x/adventurer/svg?seed=Francisco_Guerrero",
+          matchesPlayed: 26, matchesWon: 14, matchesLost: 12, setsWon: 32, setsLost: 27, gamesWon: 245, gamesLost: 235
+        },
+        {
+          id: "fip_28_ramiro_moyano",
+          firstName: "Ramiro",
+          lastName: "Moyano",
+          dni: "28498123N",
+          phone: "+34 611 111 228",
+          email: "ramiro.moyano@padelfip.com",
+          city: "La Plata, Argentina",
+          birthDate: "1989-10-23",
+          category: "7ma Masculina",
+          rankingPoints: 2050,
+          photoUrl: "https://api.dicebear.com/7.x/adventurer/svg?seed=Ramiro_Moyano",
+          matchesPlayed: 48, matchesWon: 29, matchesLost: 19, setsWon: 65, setsLost: 48, gamesWon: 530, gamesLost: 470
+        },
+        {
+          id: "fip_29_juan_belluati",
+          firstName: "Juan Cruz",
+          lastName: "Belluati",
+          dni: "29498123O",
+          phone: "+34 611 111 229",
+          email: "juan.belluati@padelfip.com",
+          city: "Buenos Aires, Argentina",
+          birthDate: "1993-10-20",
+          category: "7ma Masculina",
+          rankingPoints: 1980,
+          photoUrl: "https://api.dicebear.com/7.x/adventurer/svg?seed=Juan_Belluati",
+          matchesPlayed: 40, matchesWon: 22, matchesLost: 18, setsWon: 50, setsLost: 43, gamesWon: 420, gamesLost: 390
+        },
+        {
+          id: "fip_30_pincho_fernandez",
+          firstName: "Antonio (Pincho)",
+          lastName: "Fernández",
+          dni: "30498123P",
+          phone: "+34 611 111 230",
+          email: "pincho.fernandez@padelfip.com",
+          city: "Badajoz, España",
+          birthDate: "1993-12-04",
+          category: "7ma Masculina",
+          rankingPoints: 1900,
+          photoUrl: "https://api.dicebear.com/7.x/adventurer/svg?seed=Antonio_Fernandez",
+          matchesPlayed: 33, matchesWon: 17, matchesLost: 16, setsWon: 40, setsLost: 38, gamesWon: 350, gamesLost: 340
+        },
+        {
+          id: "fip_31_lucas_bergamini",
+          firstName: "Lucas",
+          lastName: "Bergamini",
+          dni: "31498123Q",
+          phone: "+34 611 111 231",
+          email: "lucas.bergamini@padelfip.com",
+          city: "Bento Gonçalves, Brasil",
+          birthDate: "1997-08-15",
+          category: "7ma Masculina",
+          rankingPoints: 1850,
+          photoUrl: "https://api.dicebear.com/7.x/adventurer/svg?seed=Lucas_Bergamini",
+          matchesPlayed: 36, matchesWon: 19, matchesLost: 17, setsWon: 42, setsLost: 39, gamesWon: 365, gamesLost: 350
+        },
+        {
+          id: "fip_32_pablo_cardona",
+          firstName: "Pablo",
+          lastName: "Cardona",
+          dni: "32498123R",
+          phone: "+34 611 111 232",
+          email: "pablo.cardona@padelfip.com",
+          city: "Mérida, España",
+          birthDate: "2004-11-03",
+          category: "7ma Masculina",
+          rankingPoints: 1800,
+          photoUrl: "https://api.dicebear.com/7.x/adventurer/svg?seed=Pablo_Cardona",
+          matchesPlayed: 30, matchesWon: 16, matchesLost: 14, setsWon: 36, setsLost: 31, gamesWon: 290, gamesLost: 270
+        }
+      ];
+
+      for (const p of fipPlayers) {
+        await repository.savePlayer(p);
+      }
+
+      await repository.addNotification(
+        "Importación FIP Exitosa",
+        "Se han cargado los 32 jugadores profesionales (posiciones FIP 1-32) en la categoría '7ma Masculina'.",
+        "success"
+      );
+      loadPlayers();
+    } catch (error) {
+      console.error("Error importing FIP players", error);
+      alert("Error al cargar jugadores.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Delete confirmation state
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string } | null>(null);
 
@@ -339,6 +811,15 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole }) => {
         </div>
         
         <div className="flex flex-wrap gap-2">
+          {userRole === "admin" && (
+            <button
+              onClick={handleImportFIPPlayers}
+              className="bg-indigo-950 hover:bg-indigo-900 text-indigo-300 hover:text-white border border-indigo-800 text-[11px] font-black px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition cursor-pointer uppercase tracking-wider text-center"
+              title="Cargar automáticamente los 32 mejores jugadores de la FIP (posiciones 1 a 32) para la categoría 7ma Masculina"
+            >
+              <span>🎾 Cargar 32 Jugadores FIP (7ma)</span>
+            </button>
+          )}
           <button
             onClick={handleOpenCreateForm}
             className="bg-[#d4fc34] hover:bg-[#c5f015] text-slate-950 text-xs font-black px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition cursor-pointer uppercase tracking-wider text-center"

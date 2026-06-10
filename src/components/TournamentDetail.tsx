@@ -24,9 +24,7 @@ import {
   Clock,
   ArrowLeft,
   CheckCircle,
-  AlertCircle,
-  FlaskConical,
-  UserCheck
+  AlertCircle
 } from 'lucide-react';
 import { repository } from '../lib/repository';
 import { Tournament, Player, Pair, Match, Court, StandingsRow } from '../types';
@@ -187,7 +185,8 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
   const [fixtureFilter, setFixtureFilter] = useState<"all" | "group" | "16avos" | "8avos" | "4tos" | "semifinal" | "final" | "r1" | "r2">("all");
 
   // Selected Category
-  const [selectedCategory, setSelectedCategory] = useState<string>("Libre Masculina");
+  const categoryInitialized = React.useRef(false);
+  const [selectedCategory, setSelectedCategory] = useState<string>("5ta Masculina");
   const [classificationRule, setClassificationRule] = useState<"top1" | "top2" | "top2_thirds" | "all">("top2");
 
   // Loaders
@@ -230,6 +229,9 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
   const loadAllData = async () => {
     setLoading(true);
     try {
+      // Silently purge any leftover simulated/mock data to keep database clean
+      await repository.purgeAllSimulatedAndMockData();
+
       const [ts, prs, mtchs, plys, crts] = await Promise.all([
         repository.getTournaments(),
         repository.getPairs(tournamentId),
@@ -247,8 +249,37 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
         setPlayers(plys);
         setCourts(crts);
 
+        // Auto-select the first category that has pairs or matches on initial load
+        let initialCat = selectedCategory;
+        if (!categoryInitialized.current) {
+          const catsWithPairs = prs.map(p => p.category).filter(Boolean);
+          const catsWithMatches = mtchs.map(m => m.category).filter(Boolean);
+          
+          if (catsWithPairs.length > 0) {
+            const found = ALL_PADEL_CATEGORIES.find(c => catsWithPairs.includes(c));
+            if (found) {
+              initialCat = found;
+            } else {
+              initialCat = catsWithPairs[0];
+            }
+          } else if (catsWithMatches.length > 0) {
+            const found = ALL_PADEL_CATEGORIES.find(c => catsWithMatches.includes(c));
+            if (found) {
+              initialCat = found;
+            } else {
+              initialCat = catsWithMatches[0];
+            }
+          } else if (currentT.category && currentT.category !== "Multicategoría") {
+            initialCat = currentT.category;
+          } else {
+            initialCat = "5ta Masculina";
+          }
+          setSelectedCategory(initialCat);
+          categoryInitialized.current = true;
+        }
+
         // Reconstruct groups if matches exist
-        reconstructGroups(prs, mtchs, selectedCategory);
+        reconstructGroups(prs, mtchs, initialCat);
       }
     } catch (err) {
       console.error("TournamentDetail load data error", err);
@@ -399,246 +430,78 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
     loadAllData();
   };
 
-  // ---------------------------------------------------------------------------
-  // QA SIMULATOR ACTIONS FOR DEVELOPER / TESTING
-  // ---------------------------------------------------------------------------
-  const handleQAAutoFill16Pairs = async () => {
-    const spanishLastNames = ["Galán", "Lebrón", "Tapia", "Coello", "Stupaczuk", "Di Nenno", "Navarro", "Chingotto", "Belasteguín", "Tello", "Garrido", "Yanguas", "González", "Ruiz", "Sanz", "Nieto", "Campagnolo", "Capra", "Bergamini", "Cardona", "Zapata", "Guerrero", "Bautista", "Muñoz", "Goenaga", "Esbri", "Rico", "Méndez", "Castillo", "Vilariño", "Ortega", "Triay"];
-    const spanishFirstNames = ["Alejandro", "Juan", "Agustín", "Arturo", "Franco", "Martín", "Paquito", "Federico", "Fernando", "Juan Cruz", "Javi", "Miguel", "Gerónimo", "Álex", "Jon", "Coki", "Lucas", "Lucho", "Víctor", "Pablo", "Teo", "Francisco", "Jairo", "Rafael", "Enrique", "Edu", "Josete", "Adrián", "Mario", "Ignacio", "Seba", "Gaby"];
+  // Automatically pair up remaining players of selectedCategory
+  const handleAutoPairRemaining = async () => {
+    if (!tournament) return;
 
-    const mockPlayers: Player[] = [];
-    const now = Date.now();
-    for (let i = 0; i < 32; i++) {
-      const id = `player_mock_qa_${now}_${i}`;
-      const first = spanishFirstNames[i % spanishFirstNames.length];
-      const last = spanishLastNames[i % spanishLastNames.length] + (i >= spanishLastNames.length ? " Jr." : "");
-      mockPlayers.push({
-        id,
-        firstName: first,
-        lastName: last,
-        dni: `${Math.floor(10000000 + Math.random() * 90000000)}X`,
-        phone: `+34 600 ${Math.floor(100000 + Math.random() * 900000)}`,
-        email: `${first.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")}.${last.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s/g, "")}@example.com`,
-        city: "Madrid",
-        birthDate: "1996-03-12",
-        category: selectedCategory,
-        rankingPoints: Math.floor(100 + Math.random() * 2000),
-        photoUrl: `https://api.dicebear.com/7.x/adventurer/svg?seed=${first}_${last}`,
-        matchesPlayed: 0,
-        matchesWon: 0,
-        matchesLost: 0,
-        setsWon: 0,
-        setsLost: 0,
-        gamesWon: 0,
-        gamesLost: 0
-      });
-    }
+    // Filter registered players in this tournament
+    const currentRegisteredIds = new Set(pairs.flatMap(p => [p.player1Id, p.player2Id]));
 
-    // Save all mock players
-    for (const p of mockPlayers) {
-      await repository.savePlayer(p);
-    }
+    // All available players in selectedCategory
+    const categoryPlayers = players.filter(p => p.category === selectedCategory);
+    const unregistered = categoryPlayers.filter(p => !currentRegisteredIds.has(p.id));
 
-    // Remove existing pairs in this category
-    const currentCategoryPairs = pairs.filter(p => p.tournamentId === tournamentId && p.category === selectedCategory);
-    for (const pr of currentCategoryPairs) {
-      await repository.deletePair(pr.id);
-    }
-
-    // Form 16 pairs
-    for (let i = 0; i < 16; i++) {
-      const p1 = mockPlayers[i * 2];
-      const p2 = mockPlayers[i * 2 + 1];
-      const combined = p1.rankingPoints + p2.rankingPoints;
-
-      const newPair: Pair = {
-        id: `pair_${tournamentId}_qa_${now}_${i}`,
-        tournamentId,
-        player1Id: p1.id,
-        player2Id: p2.id,
-        category: selectedCategory,
-        combinedRanking: combined,
-        status: "confirmed"
-      };
-      await repository.savePair(newPair);
-    }
-
-    await repository.addNotification(
-      "Simulación de Inscripciones",
-      `Se crearon 32 jugadores y 16 parejas de prueba listas para participar en '${selectedCategory}'.`,
-      "success"
-    );
-
-    loadAllData();
-  };
-
-  const handleQASimulateCurrentStage = async () => {
-    const categoryMatches = matches.filter(m => m.category === selectedCategory);
-    const pendingMatches = categoryMatches.filter(
-      m => m.status === "pending" && m.pair1Id && m.pair2Id && m.pair1Id !== "BYE" && m.pair2Id !== "BYE"
-    );
-
-    if (pendingMatches.length === 0) {
-      alert("No hay partidos de fase de grupos o eliminatorias con parejas definidas listos para simular.");
+    if (unregistered.length < 2) {
+      await repository.addNotification(
+        "Jugadores Insuficientes",
+        `No hay suficientes jugadores libres en la categoría '${selectedCategory}' para auto-emparejar (se necesitan al menos 2).`,
+        "warning"
+      );
       return;
     }
 
-    let completedCount = 0;
-    for (const m of pendingMatches) {
-      const coinFlip = Math.random() > 0.5;
-      const winnerId = coinFlip ? m.pair1Id : m.pair2Id;
+    // Sort players by ranking descendiente
+    const sorted = [...unregistered].sort((a, b) => b.rankingPoints - a.rankingPoints);
 
-      const scoreStyle = Math.floor(Math.random() * 4);
-      let scoreStr = "";
-      if (scoreStyle === 0) {
-        scoreStr = coinFlip ? "6-4 6-3" : "4-6 3-6";
-      } else if (scoreStyle === 1) {
-        scoreStr = coinFlip ? "6-2 7-5" : "2-6 5-7";
-      } else if (scoreStyle === 2) {
-        scoreStr = coinFlip ? "6-3 3-6 11-9" : "3-6 6-3 9-11";
-      } else {
-        scoreStr = coinFlip ? "7-6 6-4" : "6-7 4-6";
+    let pairsCreatedCount = 0;
+    try {
+      for (let i = 0; i < sorted.length - 1; i += 2) {
+        const p1 = sorted[i];
+        const p2 = sorted[i + 1];
+
+        const combined = p1.rankingPoints + p2.rankingPoints;
+        const status: Pair["status"] = "confirmed";
+
+        const newPair: Pair = {
+          id: `pair_${tournamentId}_${p1.id}_${p2.id}`,
+          tournamentId,
+          player1Id: p1.id,
+          player2Id: p2.id,
+          category: selectedCategory,
+          combinedRanking: combined,
+          status
+        };
+
+        await repository.savePair(newPair);
+        pairsCreatedCount++;
       }
 
-      const updated: Match = {
-        ...m,
-        status: "completed",
-        scoreSummary: scoreStr,
-        winnerPairId: winnerId,
-        settledAt: new Date().toISOString()
-      };
+      await repository.addNotification(
+        "Parejas Auto-generadas",
+        `Se han emparejado e inscrito ${pairsCreatedCount} parejas de la categoría '${selectedCategory}' exitosamente.`,
+        "success"
+      );
 
-      await repository.saveMatch(updated);
-      await updatePlayerStatsFromMatch(m, updated);
-
-      const isSRTC16Matches = pairs.filter(p => p.category === selectedCategory).length === 16;
-      const isSRTC32Matches = pairs.filter(p => p.category === selectedCategory).length === 32;
-      if (isSRTC16Matches) {
-        await handleSRTC16Progression(updated, winnerId);
-      } else if (isSRTC32Matches) {
-        await handleSRTC32Progression(updated, winnerId);
-      } else {
-        if (m.phase === "playoff") {
-          await handlePlayoffProgression(updated, winnerId);
-        }
-      }
-
-      completedCount++;
+      loadAllData();
+    } catch (error) {
+      console.error("Error auto-pairing remaining players:", error);
+      await repository.addNotification(
+        "Error al Registrar",
+        "Ocurrió un inconveniente al generar las parejas automáticas.",
+        "warning"
+      );
     }
-
-    // Check group matches finished
-    const updatedMatchesList = await repository.getMatches();
-    const catMatchesPost = updatedMatchesList.filter(x => x.category === selectedCategory && x.tournamentId === tournamentId);
-    const hasGroup = catMatchesPost.some(x => x.phase === "group");
-    const remainingGroups = catMatchesPost.filter(x => x.phase === "group" && x.status === "pending");
-
-    const isSRTC16 = pairs.filter(p => p.category === selectedCategory).length === 16;
-
-    if (!isSRTC16 && hasGroup && remainingGroups.length === 0) {
-      const activePairs = pairs.filter(p => p.category === selectedCategory);
-      const stands = calculateDosVidasStandings(activePairs, catMatchesPost.filter(m => m.phase === "group"), getPairName);
-      const totalPairsCount = activePairs.length;
-
-      let bracketSize = 8;
-      let stageLabel = "Cuartos de Final";
-      if (totalPairsCount <= 4) {
-        bracketSize = 2;
-        stageLabel = "Final";
-      } else if (totalPairsCount <= 9) {
-        bracketSize = 4;
-        stageLabel = "Semifinales";
-      } else if (totalPairsCount <= 16) {
-        bracketSize = 8;
-        stageLabel = "Cuartos de Final";
-      } else {
-        bracketSize = 16;
-        stageLabel = "Octavos de Final";
-      }
-
-      const qualifiedIds = stands.slice(0, bracketSize).map(s => s.pairId);
-      if (qualifiedIds.length >= 2) {
-        let playoffMatches = catMatchesPost.filter(m => m.phase === "playoff");
-        if (playoffMatches.length === 0) {
-          playoffMatches = preGeneratePlayoffsHelper(tournamentId, selectedCategory);
-        }
-
-        const resetMatches = playoffMatches.map(m => ({
-          ...m,
-          pair1Id: m.pair1Id || "",
-          pair2Id: m.pair2Id || "",
-          winnerPairId: m.winnerPairId || "",
-          status: m.status,
-          scoreSummary: m.scoreSummary
-        }));
-
-        const seeds8 = [[0, 15], [7, 8], [4, 11], [3, 12], [2, 13], [5, 10], [6, 9], [1, 14]];
-        const seeds4 = [[0, 7], [3, 4], [2, 5], [1, 6]];
-        const updatedPlayoffs = [...resetMatches];
-
-        if (bracketSize === 16) {
-          for (let idx = 0; idx < 8; idx++) {
-            const mObj = updatedPlayoffs.find(m => m.stageName === `Octavos de Final ${idx + 1}`);
-            if (mObj) {
-              const [s1, s2] = seeds8[idx];
-              mObj.pair1Id = qualifiedIds[s1] || "";
-              mObj.pair2Id = qualifiedIds[s2] || "";
-            }
-          }
-        } else if (bracketSize === 8) {
-          for (let idx = 0; idx < 4; idx++) {
-            const mObj = updatedPlayoffs.find(m => m.stageName === `Cuartos de Final ${idx + 1}` || m.stageName === `Cuartos ${idx + 1}`);
-            if (mObj) {
-              const [s1, s2] = seeds4[idx];
-              mObj.pair1Id = qualifiedIds[s1] || "";
-              mObj.pair2Id = qualifiedIds[s2] || "";
-            }
-          }
-        } else if (bracketSize === 4) {
-          const sf1 = updatedPlayoffs.find(m => m.stageName === "Semifinal 1");
-          const sf2 = updatedPlayoffs.find(m => m.stageName === "Semifinal 2");
-          if (sf1) {
-            sf1.pair1Id = qualifiedIds[0] || "";
-            sf1.pair2Id = qualifiedIds[3] || "";
-          }
-          if (sf2) {
-            sf2.pair1Id = qualifiedIds[1] || "";
-            sf2.pair2Id = qualifiedIds[2] || "";
-          }
-        } else if (bracketSize === 2) {
-          const f = updatedPlayoffs.find(m => m.stageName === "Final");
-          if (f) {
-            f.pair1Id = qualifiedIds[0] || "";
-            f.pair2Id = qualifiedIds[1] || "";
-          }
-        }
-
-        for (const pm of updatedPlayoffs) {
-          await repository.saveMatch(pm);
-        }
-
-        await repository.addNotification(
-          "Fase de Clasificación Completada",
-          `Se han finalizado las rondas de grupo automáticamente. Las parejas clasificaron al cuadro (${stageLabel}) para '${selectedCategory}'.`,
-          "success"
-        );
-      }
-    }
-
-    await repository.addNotification(
-      "Simulación de Partidos",
-      `Se simularon ${completedCount} partidos exitosamente con resultados aleatorios y coherentes.`,
-      "success"
-    );
-
-    loadAllData();
   };
+
 
   const handleResetCategory = async () => {
     if (confirm(`¿Estás seguro de que deseas reiniciar todos los partidos y sorteos de la categoría '${selectedCategory}'? Se eliminarán los marcadores y fixture.`)) {
       const priorMatches = matches.filter(m => m.tournamentId === tournamentId && m.category === selectedCategory);
       await Promise.all(priorMatches.map(oldMatch => repository.deleteMatch(oldMatch.id)));
 
-      if (tournament && tournament.status !== "registration") {
+      // Only set status to "registration" if no other categories have matches
+      const otherMatches = matches.filter(m => m.tournamentId === tournamentId && m.category !== selectedCategory);
+      if (tournament && otherMatches.length === 0 && tournament.status !== "registration") {
         const updatedTournament: Tournament = {
           ...tournament,
           status: "registration"
@@ -2102,8 +1965,13 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
 
   // Filter registered players so they don't show up for pairing registration
   const registeredPlayerIds = new Set(pairs.flatMap(p => [p.player1Id, p.player2Id]));
-  const availablePlayersP1 = players.filter(p => !registeredPlayerIds.has(p.id));
-  const availablePlayersP2 = players.filter(p => !registeredPlayerIds.has(p.id) && p.id !== p1Select);
+  const availablePlayersP1 = players.filter(p => !registeredPlayerIds.has(p.id) && p.category === selectedCategory);
+  const availablePlayersP2 = players.filter(p => !registeredPlayerIds.has(p.id) && p.id !== p1Select && p.category === selectedCategory);
+  const categoryPlayers = players.filter(p => p.category === selectedCategory);
+  const unregisteredCategoryPlayers = categoryPlayers.filter(p => !registeredPlayerIds.has(p.id));
+
+  const hasMatchesForCategory = matches.some(m => m.category === selectedCategory);
+  const isTournamentCompleted = tournament?.status === "completed";
 
   if (!tournament) return null;
 
@@ -2206,63 +2074,6 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
         </div>
       </div>
 
-      {/* QA SIMULATION TOOLBAR */}
-      {userRole === "admin" && (
-        <div className="bg-gradient-to-r from-purple-950/20 to-indigo-950/20 border border-purple-500/30 p-5 rounded-2xl space-y-4 shadow-lg">
-          <div className="flex items-start gap-2.5">
-            <div className="bg-purple-500/10 text-purple-400 border border-purple-500/20 p-2 rounded-xl shrink-0 mt-0.5">
-              <FlaskConical className="w-5 h-5 text-purple-400 animate-pulse" />
-            </div>
-            <div>
-              <h4 className="font-extrabold text-sm text-white uppercase tracking-wider font-mono">Modo Desarrollador: Simulador de Torneo</h4>
-              <p className="text-xs text-slate-450 mt-0.5 leading-relaxed">
-                Herramienta interactiva para verificar la progresión íntegra del torneo desde fase de grupos hasta la eliminatoria final de manera automática.
-              </p>
-            </div>
-          </div>
-          
-          <div className="flex flex-wrap gap-2 pt-1">
-            <button
-              type="button"
-              onClick={handleQAAutoFill16Pairs}
-              className="bg-purple-900/30 hover:bg-purple-900/50 text-purple-300 hover:text-white border border-purple-800/40 text-[11px] font-bold px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 cursor-pointer leading-none"
-              title="Crea y registra de forma automática 16 parejas reales listas para sortear."
-            >
-              <UserCheck className="w-4 h-4 text-purple-400" />
-              <span>👥 Inscribir 16 Parejas Ficticias</span>
-            </button>
-
-            {pairs.filter(p => p.category === selectedCategory).length >= 2 && matches.filter(m => m.category === selectedCategory).length === 0 && (
-              <div className="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-3.5 py-2 rounded-xl text-[11px] font-semibold animate-pulse flex items-center">
-                ⚠️ ¡Ve a la pestaña "Parejas Inscritas", baja al fondo y haz clic en "Lanzar Sorteo de Zona"!
-              </div>
-            )}
-
-            {matches.filter(m => m.category === selectedCategory && m.status === "pending").length > 0 && (
-              <button
-                type="button"
-                onClick={handleQASimulateCurrentStage}
-                className="bg-indigo-950 hover:bg-indigo-900 text-[#d4fc34] border border-[#d4fc34]/20 text-[11px] font-bold px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 cursor-pointer leading-none shadow-sm shadow-[#d4fc34]/5"
-                title="Completa con marcadores aleatorios los partidos pendientes de la ronda actual"
-              >
-                <Play className="w-3.5 h-3.5 text-[#d4fc34]" />
-                <span>🎾 Simular Partidos de Fase Actual</span>
-              </button>
-            )}
-
-            {matches.filter(m => m.category === selectedCategory).length > 0 && (
-              <button
-                type="button"
-                onClick={handleResetCategory}
-                className="bg-red-950/20 hover:bg-red-950/40 text-red-400 border border-red-900/40 text-[11px] font-bold px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 cursor-pointer leading-none"
-              >
-                <Trash2 className="w-3.5 h-3.5 text-red-550" />
-                <span>🔄 Vaciar Fixture de la Categoría</span>
-              </button>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* TAB MENU */}
       <div className="flex border-b border-slate-800 gap-1 overflow-x-auto">
@@ -2330,8 +2141,19 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
               </div>
 
               {pairs.filter(p => p.category === selectedCategory).length === 0 ? (
-                <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-12 text-center text-slate-500 text-xs text-balance">
-                  Aún no hay parejas registradas para la categoría '{selectedCategory}' en este torneo. Agrega una pareja a la derecha.
+                <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-12 text-center text-slate-500 text-xs text-balance flex flex-col items-center justify-center gap-4">
+                  <span>Aún no hay parejas registradas para la categoría '{selectedCategory}' en este torneo. Agrega una pareja a la derecha.</span>
+                  {userRole === "admin" && !isTournamentCompleted && unregisteredCategoryPlayers.length >= 2 && (
+                    <div className="pt-2">
+                      <button
+                        type="button"
+                        onClick={handleAutoPairRemaining}
+                        className="bg-gradient-to-r from-[#d4fc34] to-[#b8df11] hover:shadow-lg hover:shadow-[#d4fc34]/20 text-slate-950 text-xs font-black px-5 py-3 rounded-xl transition-all flex items-center gap-2 cursor-pointer uppercase tracking-wider shadow-sm"
+                      >
+                        <Sparkles className="w-4 h-4 text-slate-950" /> ⚡ Auto-Emparejar e Inscribir Jugadores Libres ({unregisteredCategoryPlayers.length})
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -2350,7 +2172,7 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
                           </span>
                         </div>
 
-                        {userRole === "admin" && tournament.status === "registration" && (
+                        {userRole === "admin" && !hasMatchesForCategory && !isTournamentCompleted && (
                           <button
                             onClick={() => handleDeletePair(pr.id, name)}
                             className="bg-slate-950 hover:bg-red-950/40 p-2 text-slate-500 hover:text-red-400 rounded-lg transition"
@@ -2363,9 +2185,9 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
                   })}
                 </div>
               )}
-
+ 
               {/* DRAW ACTION FOR ADMIN */}
-              {userRole === "admin" && tournament.status === "registration" && pairs.filter(p => p.category === selectedCategory).length >= 3 && (
+              {userRole === "admin" && !hasMatchesForCategory && !isTournamentCompleted && pairs.filter(p => p.category === selectedCategory).length >= 2 && (
                 <div className="bg-blue-950/20 border border-blue-500/20 p-5 rounded-2xl space-y-4 shadow-sm mt-8">
                   <div className="flex gap-2">
                     <Sparkles className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
@@ -2376,7 +2198,7 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
                       </p>
                     </div>
                   </div>
-
+ 
                   <div className="flex flex-col sm:flex-row gap-3 pt-2">
                     <button
                       onClick={() => handleExecuteDraw("random")}
@@ -2394,13 +2216,17 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
                 </div>
               )}
             </div>
-
+ 
             {/* Right Col: form to register players */}
             <div className="lg:col-span-1">
-              {tournament.status !== "registration" ? (
+              {isTournamentCompleted || hasMatchesForCategory ? (
                 <div className="bg-slate-900/40 border border-slate-850 rounded-xl p-4 text-xs text-slate-500 flex gap-2">
                   <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                  <span>Inscripciones cerradas. El torneo se encuentra en progreso o finalizado.</span>
+                  <span>
+                    {isTournamentCompleted 
+                      ? "Inscripciones cerradas. El torneo se encuentra finalizado." 
+                      : "Inscripciones cerradas para esta categoría ya que el cronograma/fixture ha sido sorteado."}
+                  </span>
                 </div>
               ) : (
                 <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4">
@@ -2448,6 +2274,24 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
                       Confirmar Inscripción Pareja
                     </button>
                   </form>
+
+                  {userRole === "admin" && unregisteredCategoryPlayers.length >= 2 && (
+                    <div className="pt-4 border-t border-slate-800 space-y-2">
+                      <span className="text-[11px] font-bold text-slate-400 block uppercase tracking-wider flex items-center gap-1">
+                        <Sparkles className="w-3.5 h-3.5 text-blue-400" /> Registro Rápido
+                      </span>
+                      <p className="text-[10px] text-slate-400 leading-relaxed">
+                        Hay <strong>{unregisteredCategoryPlayers.length}</strong> jugadores libres en '{selectedCategory}' listos para ser emparejados automáticamente.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={handleAutoPairRemaining}
+                        className="w-full bg-[#d4fc34]/10 hover:bg-[#d4fc34]/20 text-[#d4fc34] border border-[#d4fc34]/30 text-xs font-bold py-2 rounded-xl transition flex items-center justify-center gap-1 cursor-pointer uppercase tracking-wider"
+                      >
+                        ⚡ Auto-Emparejar e Inscribir
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -3795,7 +3639,7 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
               <button
                 type="button"
                 onClick={() => setPairToDelete(null)}
-                className="flex-1 bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-bold px-4 py-2.5 rounded-lg border border-slate-800 transition cursor-pointer"
+                className="flex-1 bg-slate-900 hover:bg-slate-800 text-slate-350 text-xs font-bold px-4 py-2.5 rounded-lg border border-slate-800 transition cursor-pointer"
               >
                 Cancelar
               </button>
@@ -3806,6 +3650,86 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
               >
                 De-inscribir
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* FINALIZAR TORNEO MODAL */}
+      {showFinishModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4 animate-in fade-in duration-150">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+            <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950">
+              <span className="font-extrabold text-sm text-white flex items-center gap-1.5 font-display uppercase tracking-wider">
+                {finishModalTitle || "🏆 Finalizar Torneo"}
+              </span>
+              <button 
+                onClick={() => setShowFinishModal(false)} 
+                className="text-slate-400 hover:text-white cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4 bg-slate-900">
+              {finishModalError ? (
+                <div className="text-xs text-red-500 bg-red-950/20 border border-red-900/30 p-3 rounded-lg leading-relaxed">
+                  {finishModalError}
+                </div>
+              ) : (
+                <>
+                  <p className="text-xs text-slate-300 leading-relaxed font-sans">
+                    Al finalizar el torneo, su estado cambiará permanentemente a <span className="text-[#d4fc34] font-bold">Finalizado / Cerrado</span>. Además, se calcularán y otorgarán los puntos de clasificación a los jugadores del ranking en base a los resultados de las finales concluidas.
+                  </p>
+
+                  {finishModalWarning && (
+                    <div className="text-xs text-amber-400 bg-amber-950/20 border border-amber-900/30 p-3 rounded-lg leading-relaxed">
+                      {finishModalWarning}
+                    </div>
+                  )}
+
+                  {finishModalPayload && finishModalPayload.completedCategories.length > 0 && (
+                    <div className="space-y-2">
+                      <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 font-mono">
+                        Categorías Concluidas que sumarán puntos
+                      </span>
+                      <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1">
+                        {finishModalPayload.completedCategories.map(cat => (
+                          <div key={cat} className="flex justify-between items-center text-xs text-slate-200">
+                            <span className="text-[#d4fc34] font-semibold">• {cat}</span>
+                            <span className="text-slate-400 text-[10px] font-mono">+100 Campeón / +75 Sub / +50 SF / +25 QF</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {finishModalPayload && finishModalPayload.completedCategories.length === 0 && (
+                    <p className="text-xs text-amber-400 font-mono bg-amber-950/15 border border-amber-900/20 p-3 rounded-lg">
+                      ⚠️ Ninguna categoría tiene su Final concluida, por lo que no se otorgarán puntos de ranking para ningún jugador.
+                    </p>
+                  )}
+                </>
+              )}
+
+              <div className="pt-2 flex gap-3 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setShowFinishModal(false)}
+                  className="flex-1 bg-slate-800 text-slate-300 py-2.5 rounded-lg font-bold cursor-pointer transition hover:bg-slate-750"
+                >
+                  Cancelar
+                </button>
+                {!finishModalError && (
+                  <button
+                    type="button"
+                    onClick={executeFinishTournament}
+                    className="flex-1 bg-[#d4fc34] hover:bg-[#c5f015] text-slate-950 py-2.5 rounded-xl font-black uppercase tracking-wider cursor-pointer font-sans"
+                  >
+                    Confirmar y Finalizar
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>

@@ -39,8 +39,8 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isSizeSelectorOpen, setIsSizeSelectorOpen] = useState(false);
-  const [prefillDemo16, setPrefillDemo16] = useState(true);
-  const [prefillDemo32, setPrefillDemo32] = useState(true);
+  const [prefillDemo16, setPrefillDemo16] = useState(false);
+  const [prefillDemo32, setPrefillDemo32] = useState(false);
   const [newT, setNewT] = useState({
     name: "",
     club: "",
@@ -1067,24 +1067,6 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
                       </p>
                     </div>
                   </div>
-
-                  {/* PREFILL CHECKS */}
-                  <div className="bg-slate-950/80 p-3.5 rounded-xl border border-slate-800 flex items-start gap-3">
-                    <label className="flex items-start gap-3 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        checked={prefillDemo32}
-                        onChange={(e) => setPrefillDemo32(e.target.checked)}
-                        className="w-4 h-4 accent-[#d4fc34] cursor-pointer mt-0.5 shrink-0 rounded"
-                      />
-                      <div className="text-left">
-                        <span className="text-xs text-white font-extrabold block">Confeccionar Fixture Automático SRTC 32</span>
-                        <span className="text-[10px] text-slate-400 block mt-0.5 leading-normal">
-                          Generar de forma inmediata 64 jugadores (32 parejas de demostración) y confeccionar su fixture completo en la categoría '5ta Masculina'. ¡Listo para jugar!
-                        </span>
-                      </div>
-                    </label>
-                  </div>
                 </div>
               ) : newT.maxPairs === 16 ? (
                 <div className="bg-indigo-950/20 border border-indigo-500/20 rounded-2xl p-4 space-y-4 shadow-sm">
@@ -1096,24 +1078,6 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
                         Sistema de cuadro reglamentario de 16 parejas coordinado con un fixture pre-armado y progresión sincronizada. Cada pareja jugará partidos de alto rendimiento y progresión conforme al modelo de doble eliminación.
                       </p>
                     </div>
-                  </div>
-
-                  {/* PREFILL CHECKS */}
-                  <div className="bg-slate-950/80 p-3.5 rounded-xl border border-slate-800 flex items-start gap-3">
-                    <label className="flex items-start gap-3 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        checked={prefillDemo16}
-                        onChange={(e) => setPrefillDemo16(e.target.checked)}
-                        className="w-4 h-4 accent-[#d4fc34] cursor-pointer mt-0.5 shrink-0 rounded"
-                      />
-                      <div className="text-left">
-                        <span className="text-xs text-white font-extrabold block">Confeccionar Fixture Automático</span>
-                        <span className="text-[10px] text-slate-400 block mt-0.5 leading-normal">
-                          Generar de forma inmediata 32 jugadores (16 parejas de demostración) y confeccionar su fixture completo en la categoría '5ta Masculina'. ¡Podrás jugar y registrar marcadores al instante!
-                        </span>
-                      </div>
-                    </label>
                   </div>
                 </div>
               ) : (
