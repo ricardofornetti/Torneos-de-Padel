@@ -351,6 +351,16 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             Complejo / Canchas
           </button>
+          <button
+            onClick={() => onNavigate("gallery")}
+            className={`px-3.5 py-1.5 rounded-lg text-xs tracking-wide transition-all uppercase whitespace-nowrap ${
+              activeView === "gallery"
+                ? "bg-[#d4fc34]/10 text-[#d4fc34] border border-[#d4fc34]/30 shadow-md shadow-[#d4fc34]/5 font-bold"
+                : "text-slate-400 hover:text-white hover:bg-slate-900/50"
+            }`}
+          >
+            Galería
+          </button>
 
         </div>
 

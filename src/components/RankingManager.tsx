@@ -198,13 +198,6 @@ export const RankingManager: React.FC<RankingManagerProps> = ({ userRole }) => {
 
         <div className="flex flex-wrap gap-2">
           <button
-            onClick={handleExportCSV}
-            className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold px-3 py-2 rounded-xl flex items-center gap-1.5 transition cursor-pointer"
-          >
-            <FileSpreadsheet className="w-4 h-4 text-emerald-500" /> Exportar Ranking (CSV)
-          </button>
-          
-          <button
             onClick={handleResetPoints}
             disabled={resetting}
             className="bg-red-950/30 hover:bg-red-950/60 border border-red-900/40 text-red-400 text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"

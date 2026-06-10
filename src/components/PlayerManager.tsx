@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Users, 
   Plus, 
@@ -14,7 +14,10 @@ import {
   X,
   Save,
   TrendingUp,
-  Image
+  Image,
+  Camera,
+  Video,
+  VideoOff
 } from 'lucide-react';
 import { repository } from '../lib/repository';
 import { Player } from '../types';
@@ -63,6 +66,75 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole }) => {
   // Form State
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
+
+  // Camera Integration States and Refs
+  const [isCameraActive, setIsCameraActive] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
+  // Start Camera Stream
+  const startCamera = async () => {
+    setCameraError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: 300, height: 300, facingMode: "user" }
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        // Native code handles play
+      }
+      setIsCameraActive(true);
+    } catch (err) {
+      console.error("Camera access error", err);
+      setCameraError("No se pudo acceder a la cámara. Permiso denegado o no disponible.");
+    }
+  };
+
+  // Play handler to catch asynchronously
+  useEffect(() => {
+    if (isCameraActive && videoRef.current && streamRef.current) {
+      videoRef.current.play().catch(e => console.error("Camera play failed", e));
+    }
+  }, [isCameraActive]);
+
+  // Stop Camera Stream
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    setIsCameraActive(false);
+  };
+
+  // Capture Base64 frame
+  const capturePhoto = () => {
+    if (!videoRef.current) return;
+    try {
+      const canvas = document.createElement("canvas");
+      canvas.width = 300;
+      canvas.height = 300;
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        ctx.drawImage(videoRef.current, 0, 0, 300, 300);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+        setNewPlayer(prev => ({ ...prev, photoUrl: dataUrl }));
+      }
+      stopCamera();
+    } catch (err) {
+      console.error("Capture photo error", err);
+      setCameraError("Error al capturar la imagen.");
+    }
+  };
+
+  const handleCloseForm = () => {
+    stopCamera();
+    setIsFormOpen(false);
+  };
   
   const [newPlayer, setNewPlayer] = useState({
     firstName: "",
@@ -206,7 +278,7 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole }) => {
       "success"
     );
 
-    setIsFormOpen(false);
+    handleCloseForm();
     loadPlayers();
   };
 
@@ -696,7 +768,7 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole }) => {
                 {editingPlayer ? "✏️ Editar Ficha Jugador" : "➕ Registrar Nuevo Jugador"}
               </span>
               <button
-                onClick={() => setIsFormOpen(false)}
+                onClick={handleCloseForm}
                 className="p-1 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-lg"
               >
                 <X className="w-4 h-4" />
@@ -817,23 +889,92 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole }) => {
                 </p>
               </div>
 
-              <div className="space-y-1">
-                <label className="block text-[10px] uppercase tracking-wider text-slate-400">Avatar URL Foto</label>
-                <div className="flex gap-2">
+              <div className="space-y-3 bg-slate-950 p-4 rounded-xl border border-slate-805">
+                <div className="flex items-center gap-4">
+                  {/* Avatar Circular Preview */}
+                  <div className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-[#d4fc34] flex-shrink-0 bg-slate-900 flex items-center justify-center">
+                    {newPlayer.photoUrl ? (
+                      <img 
+                        src={newPlayer.photoUrl} 
+                        alt="Avatar Preview" 
+                        referrerPolicy="no-referrer"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-xs text-slate-500">Sin Foto</span>
+                    )}
+                  </div>
+                  
+                  <div className="flex-1 space-y-1.5">
+                    <label className="block text-[10px] uppercase tracking-wider text-slate-400 font-bold font-mono">Avatar / Foto de Perfil</label>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={isCameraActive ? stopCamera : startCamera}
+                        className={`text-xs px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition whitespace-nowrap cursor-pointer ${isCameraActive ? 'bg-red-900/40 text-red-300 border border-red-800' : 'bg-slate-800 hover:bg-slate-700 text-slate-200'}`}
+                      >
+                        {isCameraActive ? (
+                          <>
+                            <VideoOff className="w-3.5 h-3.5" />
+                            <span>Apagar Cámara</span>
+                          </>
+                        ) : (
+                          <>
+                            <Camera className="w-3.5 h-3.5 text-[#d4fc34]" />
+                            <span>Sacarse Foto</span>
+                          </>
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setNewPlayer({...newPlayer, photoUrl: AVATARS[Math.floor(Math.random() * AVATARS.length)]})}
+                        className="bg-slate-800 hover:bg-slate-700 p-2 rounded-lg text-slate-300 hover:text-white text-xs font-bold flex items-center gap-1 cursor-pointer"
+                        title="Aleatorio"
+                      >
+                        <Image className="w-3.5 h-3.5 text-blue-400" />
+                        <span>Predefinida</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {cameraError && (
+                  <div className="text-[11px] text-red-400 bg-red-950/20 border border-red-900/30 p-2 rounded-lg leading-tight">
+                    {cameraError}
+                  </div>
+                )}
+
+                {/* Live Camera Feed */}
+                {isCameraActive && (
+                  <div className="space-y-2 border-t border-slate-900 pt-3 flex flex-col items-center">
+                    <div className="relative w-48 h-48 rounded-full overflow-hidden border-4 border-slate-800 bg-slate-900">
+                      <video 
+                        ref={videoRef} 
+                        playsInline
+                        muted
+                        className="w-full h-full object-cover scale-x-[-1]"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={capturePhoto}
+                      className="bg-[#d4fc34] hover:bg-[#c5f015] text-slate-950 text-xs font-black px-4 py-2 rounded-lg flex items-center gap-1.5 uppercase tracking-wide cursor-pointer"
+                    >
+                      <Camera className="w-4 h-4 text-slate-950" />
+                      Capturar Foto
+                    </button>
+                  </div>
+                )}
+
+                <div className="space-y-1 pt-2 border-t border-slate-900">
+                  <label className="block text-[9px] uppercase tracking-wider text-slate-500 font-semibold">O ingresa URL de Imagen para avatar</label>
                   <input
                     type="text"
+                    placeholder="https://ejemplo.com/foto.jpg"
                     value={newPlayer.photoUrl}
                     onChange={(e) => setNewPlayer({...newPlayer, photoUrl: e.target.value})}
-                    className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 outline-none focus:border-blue-500"
+                    className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 outline-none focus:border-blue-500"
                   />
-                  <button
-                    type="button"
-                    onClick={() => setNewPlayer({...newPlayer, photoUrl: AVATARS[Math.floor(Math.random() * AVATARS.length)]})}
-                    className="bg-slate-800 hover:bg-slate-705 p-2 rounded-lg text-slate-300 hover:text-white"
-                    title="Aleatorio"
-                  >
-                    <Image className="w-3.5 h-3.5" />
-                  </button>
                 </div>
               </div>
 
@@ -841,7 +982,7 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole }) => {
               <div className="pt-4 border-t border-slate-800 flex justify-end gap-3">
                 <button
                   type="button"
-                  onClick={() => setIsFormOpen(false)}
+                  onClick={handleCloseForm}
                   className="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold px-4 py-2 rounded-lg transition"
                 >
                   Cancelar

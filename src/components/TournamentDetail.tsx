@@ -2066,7 +2066,7 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
       await repository.addNotification(
         "Error al finalizar",
         "Ocurrió un error al intentar finalizar el torneo.",
-        "danger"
+        "warning"
       );
     } finally {
       setLoading(false);
