@@ -229,9 +229,6 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
   const loadAllData = async () => {
     setLoading(true);
     try {
-      // Silently purge any leftover simulated/mock data to keep database clean
-      await repository.purgeAllSimulatedAndMockData();
-
       const [ts, prs, mtchs, plys, crts] = await Promise.all([
         repository.getTournaments(),
         repository.getPairs(tournamentId),
@@ -534,6 +531,7 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
         `Necesitas al menos 2 parejas registradas en la categoría '${selectedCategory}' para poder iniciar el torneo.`,
         "warning"
       );
+      alert(`Necesitas al menos 2 parejas registradas en la categoría '${selectedCategory}' para poder iniciar el torneo.`);
       return;
     }
 
@@ -830,6 +828,179 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
         return;
       }
 
+      const isSRTC24 = sortedPairs.length === 24;
+      if (isSRTC24) {
+        const allGeneratedMatches: Match[] = [];
+        const dateString = tournament?.startDate || new Date().toISOString().split("T")[0];
+        const cleanCat = selectedCategory.replace(/[^a-zA-Z0-9]/g, "");
+        const maxCourts = Math.max(1, Number(tournament.numCourts || 3));
+
+        // 1. Fase de grupos: 8 grupos de 3 parejas (A-H)
+        const letters = ["A", "B", "C", "D", "E", "F", "G", "H"];
+        for (let gIdx = 0; gIdx < 8; gIdx++) {
+          const letter = letters[gIdx];
+          const gPairs = [
+            sortedPairs[gIdx * 3],
+            sortedPairs[gIdx * 3 + 1],
+            sortedPairs[gIdx * 3 + 2]
+          ];
+
+          // Partido 1: P1 vs P2
+          allGeneratedMatches.push({
+            id: `match_${tournamentId}_srtc24_${cleanCat}_g_${letter}_m1`,
+            tournamentId,
+            phase: "group",
+            roundNumber: 1,
+            stageName: `Grupo ${letter}`,
+            pair1Id: gPairs[0].id,
+            pair2Id: gPairs[1].id,
+            courtId: gIdx < maxCourts ? `court_${(gIdx % maxCourts) + 1}` : "court_1",
+            date: dateString,
+            time: `${16 + Math.floor(gIdx / 3)}:00`,
+            status: "pending",
+            scoreSummary: "Por jugar",
+            winnerPairId: "",
+            category: selectedCategory
+          });
+
+          // Partido 2: P1 vs P3
+          allGeneratedMatches.push({
+            id: `match_${tournamentId}_srtc24_${cleanCat}_g_${letter}_m2`,
+            tournamentId,
+            phase: "group",
+            roundNumber: 2,
+            stageName: `Grupo ${letter}`,
+            pair1Id: gPairs[0].id,
+            pair2Id: gPairs[2].id,
+            courtId: gIdx < maxCourts ? `court_${((gIdx + 1) % maxCourts) + 1}` : "court_1",
+            date: dateString,
+            time: `${17 + Math.floor(gIdx / 3)}:00`,
+            status: "pending",
+            scoreSummary: "Por jugar",
+            winnerPairId: "",
+            category: selectedCategory
+          });
+
+          // Partido 3: P2 vs P3
+          allGeneratedMatches.push({
+            id: `match_${tournamentId}_srtc24_${cleanCat}_g_${letter}_m3`,
+            tournamentId,
+            phase: "group",
+            roundNumber: 3,
+            stageName: `Grupo ${letter}`,
+            pair1Id: gPairs[1].id,
+            pair2Id: gPairs[2].id,
+            courtId: gIdx < maxCourts ? `court_${((gIdx + 2) % maxCourts) + 1}` : "court_1",
+            date: dateString,
+            time: `${18 + Math.floor(gIdx / 3)}:00`,
+            status: "pending",
+            scoreSummary: "Por jugar",
+            winnerPairId: "",
+            category: selectedCategory
+          });
+        }
+
+        // 2. Ronda Clasificatoria (cruces automáticos, Partidos 25 a 32)
+        for (let pNum = 25; pNum <= 32; pNum++) {
+          allGeneratedMatches.push({
+            id: `match_${tournamentId}_srtc24_${cleanCat}_rc_p${pNum}`,
+            tournamentId,
+            phase: "playoff",
+            roundNumber: 4,
+            stageName: `Ronda Clasificatoria - P${pNum}`,
+            pair1Id: "",
+            pair2Id: "",
+            courtId: "",
+            date: dateString,
+            time: "19:00",
+            status: "pending",
+            scoreSummary: "Por jugar",
+            winnerPairId: "",
+            category: selectedCategory
+          });
+        }
+
+        // 3. Cuartos de final (4 partidos, Partidos 33 a 36)
+        for (let i = 1; i <= 4; i++) {
+          allGeneratedMatches.push({
+            id: `match_${tournamentId}_srtc24_${cleanCat}_q_m${i}`,
+            tournamentId,
+            phase: "playoff",
+            roundNumber: 5,
+            stageName: `Cuartos de Final ${i}`,
+            pair1Id: "",
+            pair2Id: "",
+            courtId: "",
+            date: dateString,
+            time: "20:00",
+            status: "pending",
+            scoreSummary: "Por jugar",
+            winnerPairId: "",
+            category: selectedCategory
+          });
+        }
+
+        // 4. Semifinales (2 partidos, Partidos 37 y 38)
+        for (let i = 1; i <= 2; i++) {
+          allGeneratedMatches.push({
+            id: `match_${tournamentId}_srtc24_${cleanCat}_sf_m${i}`,
+            tournamentId,
+            phase: "playoff",
+            roundNumber: 6,
+            stageName: `Semifinal ${i}`,
+            pair1Id: "",
+            pair2Id: "",
+            courtId: "",
+            date: dateString,
+            time: "20:30",
+            status: "pending",
+            scoreSummary: "Por jugar",
+            winnerPairId: "",
+            category: selectedCategory
+          });
+        }
+
+        // 5. Final (1 partido, Partido 39)
+        allGeneratedMatches.push({
+          id: `match_${tournamentId}_srtc24_${cleanCat}_final`,
+          tournamentId,
+          phase: "playoff",
+          roundNumber: 7,
+          stageName: "Final",
+          pair1Id: "",
+          pair2Id: "",
+          courtId: "",
+          date: dateString,
+          time: "21:30",
+          status: "pending",
+          scoreSummary: "Por jugar",
+          winnerPairId: "",
+          category: selectedCategory
+        });
+
+        for (const m of allGeneratedMatches) {
+          await repository.saveMatch(m);
+        }
+
+        if (tournament.status === "registration") {
+          const updatedTournament: Tournament = {
+            ...tournament,
+            status: "in_progress"
+          };
+          await repository.saveTournament(updatedTournament);
+        }
+
+        await repository.addNotification(
+          "Torneo Iniciado - SRTC 24", 
+          `El Torneo SRTC 24 para la categoría '${selectedCategory}' se ha iniciado con éxito. Se generaron las 8 zonas de 3 y todos los placeholders de playoff.`,
+          "success"
+        );
+
+        loadAllData();
+        setActiveTab("matches");
+        return;
+      }
+
       // Standard Dos Vidas Generation (Fallback for other counts)
       const allGeneratedMatches = generateNextDosVidasRound(sortedPairs, [], tournamentId, selectedCategory, tournament.startDate);
 
@@ -863,6 +1034,7 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
       setActiveTab("matches");
     } catch (err: any) {
       console.error("Error executing draw:", err);
+      alert("Ocurrió un error en el sorteo: " + (err?.message || String(err)));
       await repository.addNotification(
         "Error en Sorteo",
         "Ocurrió un error al procesar o guardar el sorteo. Intenta nuevamente.",
@@ -1337,11 +1509,14 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
     // Handle progressions based on tournament configuration
     const isSRTC16 = pairs.filter(p => p.category === selectedCategory).length === 16;
     const isSRTC32 = pairs.filter(p => p.category === selectedCategory).length === 32;
+    const isSRTC24 = pairs.filter(p => p.category === selectedCategory).length === 24;
 
     if (isSRTC16) {
       await handleSRTC16Progression(updatedMatch, winnerId);
     } else if (isSRTC32) {
       await handleSRTC32Progression(updatedMatch, winnerId);
+    } else if (isSRTC24) {
+      await handleSRTC24Progression(updatedMatch, winnerId);
     } else {
       // Handle Playoff progressions automatically if in bracket
       if (activeScoreMatch.phase === "playoff") {
@@ -1586,6 +1761,156 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
           await repository.saveMatch({ ...targetOct, pair1Id: winnerId });
         } else {
           await repository.saveMatch({ ...targetOct, pair2Id: winnerId });
+        }
+      }
+    }
+  };
+
+  // SRTC 24 progression logic
+  const handleSRTC24Progression = async (m: Match, winnerId: string) => {
+    const allMatches = await repository.getMatches();
+    const catMatches = allMatches.filter(x => x.tournamentId === m.tournamentId && x.category === m.category);
+
+    const categoryPairs = pairs.filter(p => p.category === m.category);
+
+    // 1. Fase de Grupos
+    if (m.phase === "group") {
+      // Verificamos si todos los de fase de grupo ya jugaron
+      const groupMatches = catMatches.filter(x => x.phase === "group");
+      const remainingGroup = groupMatches.filter(x => x.status === "pending" && x.id !== m.id);
+
+      if (remainingGroup.length === 0) {
+        // ¡La fase de grupos finalizó! Sincronizamos clasificados de cada grupo A-H
+        const letters = ["A", "B", "C", "D", "E", "F", "G", "H"];
+        const groupLeaders: { [letter: string]: { first: string; second: string } } = {};
+
+        letters.forEach(letter => {
+          const gMatches = groupMatches.filter(x => x.stageName === `Grupo ${letter}` || x.id === m.id && m.stageName === `Grupo ${letter}`);
+          // Si el partido actual es del grupo actual, lo actualizamos en la lista de partidos a evaluar
+          const finalGMatches = gMatches.map(gm => gm.id === m.id ? { ...gm, status: m.status, winnerPairId: m.winnerPairId, scoreSummary: m.scoreSummary } : gm);
+          
+          // Conseguir parejas del grupo
+          const groupPairIds = new Set<string>();
+          finalGMatches.forEach(gm => {
+            if (gm.pair1Id) groupPairIds.add(gm.pair1Id);
+            if (gm.pair2Id) groupPairIds.add(gm.pair2Id);
+          });
+          const groupPairs = categoryPairs.filter(p => groupPairIds.has(p.id));
+
+          // Calcular tabla de posiciones de este grupo en base a los criterios oficiales (PG*2, PP*1, WO=0, etc.)
+          const stands = calculateGroupStandings(groupPairs, finalGMatches, getPairName, true);
+          
+          groupLeaders[letter] = {
+            first: stands[0]?.pairId || "",
+            second: stands[1]?.pairId || ""
+          };
+        });
+
+        // Ahora cruzamos los clasificados en la Ronda Clasificatoria (Partidos 25 a 32)
+        // P25: 1ºA vs 2ºB
+        const rc25 = catMatches.find(x => x.stageName.includes("P25") || x.id.endsWith("_rc_p25"));
+        if (rc25) await repository.saveMatch({ ...rc25, pair1Id: groupLeaders["A"].first, pair2Id: groupLeaders["B"].second });
+
+        // P26: 1ºB vs 2ºA
+        const rc26 = catMatches.find(x => x.stageName.includes("P26") || x.id.endsWith("_rc_p26"));
+        if (rc26) await repository.saveMatch({ ...rc26, pair1Id: groupLeaders["B"].first, pair2Id: groupLeaders["A"].second });
+
+        // P27: 1ºC vs 2ºD
+        const rc27 = catMatches.find(x => x.stageName.includes("P27") || x.id.endsWith("_rc_p27"));
+        if (rc27) await repository.saveMatch({ ...rc27, pair1Id: groupLeaders["C"].first, pair2Id: groupLeaders["D"].second });
+
+        // P28: 1ºD vs 2ºC
+        const rc28 = catMatches.find(x => x.stageName.includes("P28") || x.id.endsWith("_rc_p28"));
+        if (rc28) await repository.saveMatch({ ...rc28, pair1Id: groupLeaders["D"].first, pair2Id: groupLeaders["C"].second });
+
+        // P29: 1ºE vs 2ºF
+        const rc29 = catMatches.find(x => x.stageName.includes("P29") || x.id.endsWith("_rc_p29"));
+        if (rc29) await repository.saveMatch({ ...rc29, pair1Id: groupLeaders["E"].first, pair2Id: groupLeaders["F"].second });
+
+        // P30: 1ºF vs 2ºE
+        const rc30 = catMatches.find(x => x.stageName.includes("P30") || x.id.endsWith("_rc_p30"));
+        if (rc30) await repository.saveMatch({ ...rc30, pair1Id: groupLeaders["F"].first, pair2Id: groupLeaders["E"].second });
+
+        // P31: 1ºG vs 2ºH
+        const rc31 = catMatches.find(x => x.stageName.includes("P31") || x.id.endsWith("_rc_p31"));
+        if (rc31) await repository.saveMatch({ ...rc31, pair1Id: groupLeaders["G"].first, pair2Id: groupLeaders["H"].second });
+
+        // P32: 1ºH vs 2ºG
+        const rc32 = catMatches.find(x => x.stageName.includes("P32") || x.id.endsWith("_rc_p32"));
+        if (rc32) await repository.saveMatch({ ...rc32, pair1Id: groupLeaders["H"].first, pair2Id: groupLeaders["G"].second });
+
+        await repository.addNotification(
+          "Playoffs Armados",
+          "La fase de grupos de 24 parejas ha concluido. El fixture ha clasificado automáticamente a los dos mejores de cada grupo y ha estructurado la Ronda Clasificatoria.",
+          "info"
+        );
+      }
+    }
+
+    // 2. Ronda Clasificatoria (Partidos 25 al 32)
+    if (m.phase === "playoff" && m.stageName.includes("Ronda Clasificatoria")) {
+      const matchNum = Number(m.stageName.match(/P(\d+)/)?.[1]);
+      if (matchNum) {
+        // Determinar destino en Cuartos (Partidos 33 a 36)
+        if (matchNum === 25) {
+          const q1 = catMatches.find(x => x.stageName.includes("Cuartos de Final 1") || x.id.endsWith("_q_m1"));
+          if (q1) await repository.saveMatch({ ...q1, pair1Id: winnerId });
+        } else if (matchNum === 27) {
+          const q1 = catMatches.find(x => x.stageName.includes("Cuartos de Final 1") || x.id.endsWith("_q_m1"));
+          if (q1) await repository.saveMatch({ ...q1, pair2Id: winnerId });
+        } else if (matchNum === 26) {
+          const q2 = catMatches.find(x => x.stageName.includes("Cuartos de Final 2") || x.id.endsWith("_q_m2"));
+          if (q2) await repository.saveMatch({ ...q2, pair1Id: winnerId });
+        } else if (matchNum === 28) {
+          const q2 = catMatches.find(x => x.stageName.includes("Cuartos de Final 2") || x.id.endsWith("_q_m2"));
+          if (q2) await repository.saveMatch({ ...q2, pair2Id: winnerId });
+        } else if (matchNum === 29) {
+          const q3 = catMatches.find(x => x.stageName.includes("Cuartos de Final 3") || x.id.endsWith("_q_m3"));
+          if (q3) await repository.saveMatch({ ...q3, pair1Id: winnerId });
+        } else if (matchNum === 31) {
+          const q3 = catMatches.find(x => x.stageName.includes("Cuartos de Final 3") || x.id.endsWith("_q_m3"));
+          if (q3) await repository.saveMatch({ ...q3, pair2Id: winnerId });
+        } else if (matchNum === 30) {
+          const q4 = catMatches.find(x => x.stageName.includes("Cuartos de Final 4") || x.id.endsWith("_q_m4"));
+          if (q4) await repository.saveMatch({ ...q4, pair1Id: winnerId });
+        } else if (matchNum === 32) {
+          const q4 = catMatches.find(x => x.stageName.includes("Cuartos de Final 4") || x.id.endsWith("_q_m4"));
+          if (q4) await repository.saveMatch({ ...q4, pair2Id: winnerId });
+        }
+      }
+    }
+
+    // 3. Cuartos de final
+    if (m.phase === "playoff" && m.stageName.includes("Cuartos de Final")) {
+      const qNum = Number(m.stageName.match(/Cuartos de Final (\d+)/)?.[1]);
+      if (qNum) {
+        if (qNum === 1) {
+          const sf1 = catMatches.find(x => x.stageName.includes("Semifinal 1") || x.id.endsWith("_sf_m1"));
+          if (sf1) await repository.saveMatch({ ...sf1, pair1Id: winnerId });
+        } else if (qNum === 3) {
+          const sf1 = catMatches.find(x => x.stageName.includes("Semifinal 1") || x.id.endsWith("_sf_m1"));
+          if (sf1) await repository.saveMatch({ ...sf1, pair2Id: winnerId });
+        } else if (qNum === 2) {
+          const sf2 = catMatches.find(x => x.stageName.includes("Semifinal 2") || x.id.endsWith("_sf_m2"));
+          if (sf2) await repository.saveMatch({ ...sf2, pair1Id: winnerId });
+        } else if (qNum === 4) {
+          const sf2 = catMatches.find(x => x.stageName.includes("Semifinal 2") || x.id.endsWith("_sf_m2"));
+          if (sf2) await repository.saveMatch({ ...sf2, pair2Id: winnerId });
+        }
+      }
+    }
+
+    // 4. Semifinales
+    if (m.phase === "playoff" && m.stageName.includes("Semifinal")) {
+      const sfNum = Number(m.stageName.match(/Semifinal (\d+)/)?.[1]);
+      if (sfNum) {
+        const finalMatch = catMatches.find(x => x.stageName === "Final" || x.id.endsWith("_final"));
+        if (finalMatch) {
+          if (sfNum === 1) {
+            await repository.saveMatch({ ...finalMatch, pair1Id: winnerId });
+          } else {
+            await repository.saveMatch({ ...finalMatch, pair2Id: winnerId });
+          }
         }
       }
     }
@@ -2185,40 +2510,10 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
                   })}
                 </div>
               )}
- 
-              {/* DRAW ACTION FOR ADMIN */}
-              {userRole === "admin" && !hasMatchesForCategory && !isTournamentCompleted && pairs.filter(p => p.category === selectedCategory).length >= 2 && (
-                <div className="bg-blue-950/20 border border-blue-500/20 p-5 rounded-2xl space-y-4 shadow-sm mt-8">
-                  <div className="flex gap-2">
-                    <Sparkles className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
-                    <div>
-                      <h4 className="font-extrabold text-sm text-white">Lanzar Sorteo de Zona • {selectedCategory}</h4>
-                      <p className="text-xs text-slate-400 leading-relaxed mt-1">
-                        Utiliza nuestro procesador de sorteos para dividir las parejas en zonas y fabricar dinámicamente el fixture de partidos (Round Robin) para la categoría de competencia seleccionada.
-                      </p>
-                    </div>
-                  </div>
- 
-                  <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                    <button
-                      onClick={() => handleExecuteDraw("random")}
-                      className="flex-1 bg-[#d4fc34] hover:bg-[#c5f015] text-slate-950 text-xs font-black py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer uppercase tracking-wider"
-                    >
-                      <Shuffle className="w-4 h-4 text-slate-950" /> Sorteo Aleatorio
-                    </button>
-                    <button
-                      onClick={() => handleExecuteDraw("ranking")}
-                      className="flex-1 bg-[#d4fc34] hover:bg-[#c5f015] text-slate-950 text-xs font-black py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer uppercase tracking-wider"
-                    >
-                      <Trophy className="w-4 h-4 text-slate-950" /> Sorteo equilibrado por Ranking
-                    </button>
-                  </div>
-                </div>
-              )}
             </div>
  
             {/* Right Col: form to register players */}
-            <div className="lg:col-span-1">
+            <div className="lg:col-span-1 space-y-6">
               {isTournamentCompleted || hasMatchesForCategory ? (
                 <div className="bg-slate-900/40 border border-slate-850 rounded-xl p-4 text-xs text-slate-500 flex gap-2">
                   <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
@@ -2294,6 +2589,36 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
                   )}
                 </div>
               )}
+
+              {/* DRAW ACTION FOR ADMIN - RENDERED UNDER THE INSCRIPTION FORM CARD */}
+              {userRole === "admin" && !hasMatchesForCategory && !isTournamentCompleted && pairs.filter(p => p.category === selectedCategory).length >= 2 && (
+                <div className="bg-blue-950/20 border border-blue-500/20 p-5 rounded-2xl space-y-4 shadow-sm">
+                  <div className="flex gap-2">
+                    <Sparkles className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="font-extrabold text-sm text-white">Lanzar Sorteo de Zona • {selectedCategory}</h4>
+                      <p className="text-xs text-slate-400 leading-relaxed mt-1">
+                        Utiliza nuestro procesador de sorteos para dividir las parejas en zonas y fabricar dinámicamente el fixture de partidos (Round Robin) para la categoría de competencia seleccionada.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-3 pt-2">
+                    <button
+                      onClick={() => handleExecuteDraw("random")}
+                      className="w-full bg-[#d4fc34] hover:bg-[#c5f015] text-slate-950 text-xs font-black py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer uppercase tracking-wider"
+                    >
+                      <Shuffle className="w-4 h-4 text-slate-950" /> Sorteo Aleatorio
+                    </button>
+                    <button
+                      onClick={() => handleExecuteDraw("ranking")}
+                      className="w-full bg-[#d4fc34] hover:bg-[#c5f015] text-slate-950 text-xs font-black py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer uppercase tracking-wider"
+                    >
+                      <Trophy className="w-4 h-4 text-slate-950" /> Sorteo equilibrado por Ranking
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -2332,6 +2657,12 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
                     className="bg-[#d4fc34] hover:bg-[#c5f015] text-slate-950 text-xs font-bold px-4 py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer uppercase tracking-wider font-black font-sans"
                   >
                     <Sparkles className="w-4 h-4 text-slate-950" /> Asignar Canchas Rápidamente
+                  </button>
+                  <button
+                    onClick={handleResetCategory}
+                    className="bg-red-950/40 hover:bg-red-900/45 border border-red-500/20 text-red-400 text-xs font-bold px-4 py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer uppercase tracking-wider font-extrabold font-sans"
+                  >
+                    <Trash2 className="w-4 h-4 text-red-400" /> Reiniciar Categoría
                   </button>
                 </div>
               </div>
@@ -2836,14 +3167,116 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
               const categoryPairs = pairs.filter(p => p.category === selectedCategory);
               const categoryGroupMatches = matches.filter(m => m.category === selectedCategory && m.phase === "group");
               
+              const isSRTC24 = categoryPairs.length === 24;
+
               if (categoryGroupMatches.length === 0) {
                 return (
                   <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-12 text-center max-w-xl mx-auto space-y-4">
                     <Trophy className="w-12 h-12 text-amber-500/40 mx-auto" />
                     <h3 className="font-bold text-slate-200">Torneo no Iniciado</h3>
                     <p className="text-xs text-slate-400 leading-relaxed">
-                      La fase Dos Vidas para la categoría <strong className="text-[#d4fc34]">{selectedCategory}</strong> aún no cuenta con partidos generados. Ve a la pestaña <span className="underline">Inscritos</span> para realizar el Sorteo de la Ronda 1.
+                      La fase inicial para la categoría <strong className="text-[#d4fc34]">{selectedCategory}</strong> aún no cuenta con partidos generados. Ve a la pestaña <span className="underline">Inscritos</span> para realizar el Sorteo.
                     </p>
+                  </div>
+                );
+              }
+
+              if (isSRTC24) {
+                const letters = ["A", "B", "C", "D", "E", "F", "G", "H"];
+                return (
+                  <div className="space-y-6">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-sm">
+                      <div>
+                        <h3 className="font-extrabold text-white text-md flex items-center gap-2 font-display">
+                          🥇 Tablas por Zonas: <span className="text-[#d4fc34]">Formato Oficial SRTC 24</span>
+                        </h3>
+                        <p className="text-xs text-slate-400 mt-1">
+                          Cada zona cuenta con 3 parejas disputando el formato todos contra todos. Avanzan los 2 mejores de cada zona.
+                        </p>
+                      </div>
+                      <div className="flex gap-3 text-xs bg-slate-950 px-3.5 py-2 rounded-xl border border-slate-850 font-mono text-slate-400">
+                        <span>Zonas Totales: <strong className="text-white">8</strong></span>
+                        <span className="text-slate-700">|</span>
+                        <span>Parejas Inscritas: <strong className="text-[#d4fc34]">24</strong></span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {letters.map(letter => {
+                        const groupMatches = matches.filter(m => m.category === selectedCategory && m.stageName === `Grupo ${letter}`);
+                        const groupPairIds = new Set<string>();
+                        groupMatches.forEach(gm => {
+                          if (gm.pair1Id) groupPairIds.add(gm.pair1Id);
+                          if (gm.pair2Id) groupPairIds.add(gm.pair2Id);
+                        });
+                        const groupPairs = categoryPairs.filter(p => groupPairIds.has(p.id));
+                        const stands = calculateGroupStandings(groupPairs, groupMatches, getPairName, true);
+
+                        return (
+                          <div key={letter} className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl animate-fade-in">
+                            <div className="bg-slate-950 px-4 py-3 border-b border-slate-800/80 flex items-center justify-between">
+                              <span className="font-extrabold text-[#d4fc34] text-xs font-mono uppercase tracking-widest flex items-center gap-1.5 leading-none">
+                                🎾 ZONA GRUPO {letter}
+                              </span>
+                              <span className="text-[10px] text-slate-550 font-mono font-bold uppercase leading-none">Oficial</span>
+                            </div>
+                            
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-left border-collapse text-xs">
+                                <thead className="bg-[#0b0f19] text-slate-450 border-b border-slate-800/60 font-mono text-[8px] uppercase tracking-wider">
+                                  <tr>
+                                    <th className="py-2.5 px-3 text-center w-8">Pos</th>
+                                    <th className="py-2.5 px-3">Pareja</th>
+                                    <th className="py-2.5 px-2 text-center">PJ</th>
+                                    <th className="py-2.5 px-2 text-center">PG</th>
+                                    <th className="py-2.5 px-2 text-center font-mono">Sets (W/L)</th>
+                                    <th className="py-2.5 px-2 text-center">DS</th>
+                                    <th className="py-2.5 px-2 text-center font-mono">Games (W/L)</th>
+                                    <th className="py-2.5 px-2 text-center">DG</th>
+                                    <th className="py-2.5 px-4 text-right pr-5">PTS</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-800/40 font-medium text-slate-300">
+                                  {stands.map((row, idx) => {
+                                    const isQualified = idx < 2;
+                                    return (
+                                      <tr key={row.pairId} className={`hover:bg-slate-950/20 transition-colors ${isQualified ? "text-slate-100" : "text-slate-500 opacity-60"}`}>
+                                        <td className="py-3 px-3 text-center font-bold font-mono text-slate-400">
+                                          {idx + 1}
+                                        </td>
+                                        <td className="py-3 px-3 font-bold truncate max-w-[120px]">
+                                          <div className="flex items-center gap-1">
+                                            <span className="truncate">{row.pairName}</span>
+                                            {isQualified && <span className="text-[#d4fc34] text-[9.5px]" title="Clasifica">✔</span>}
+                                          </div>
+                                        </td>
+                                        <td className="py-3 px-2 text-center font-mono">{row.pj}</td>
+                                        <td className="py-3 px-2 text-center font-mono text-green-400">{row.pg}</td>
+                                        <td className="py-3 px-2 text-center font-mono text-slate-500">
+                                          {row.setsWon}-{row.setsLost}
+                                        </td>
+                                        <td className={`py-3 px-2 text-center font-mono font-extrabold ${row.setsDiff >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                          {row.setsDiff > 0 ? `+${row.setsDiff}` : row.setsDiff}
+                                        </td>
+                                        <td className="py-3 px-2 text-center font-mono text-slate-500">
+                                          {row.gamesWon}-{row.gamesLost}
+                                        </td>
+                                        <td className={`py-3 px-2 text-center font-mono ${row.gamesDiff >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                          {row.gamesDiff > 0 ? `+${row.gamesDiff}` : row.gamesDiff}
+                                        </td>
+                                        <td className="py-3 px-4 text-right pr-5 font-black text-amber-400 font-mono text-sm">
+                                          {row.points}
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 );
               }
@@ -2921,7 +3354,7 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
                                 <td className="py-3.5 px-4 text-center font-mono">{row.pj}</td>
                                 <td className="py-3.5 px-4 text-center font-mono text-green-400">{row.pg}</td>
                                 <td className="py-3.5 px-4 text-center font-mono text-rose-500">{row.pp}</td>
-                                <td className="py-3.5 px-4 text-center font-mono text-slate-500">
+                                <td className="py-3.5 px-4 text-center font-mono text-slate-500 font-mono">
                                   {row.setsWon} - {row.setsLost}
                                 </td>
                                 <td className={`py-3.5 px-4 text-center font-mono font-bold ${row.setsDiff >= 0 ? 'text-green-400' : 'text-red-400'}`}>
@@ -3044,6 +3477,7 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
               {matches.filter(m => m.category === selectedCategory && m.phase === "playoff").length > 0 && (() => {
                 const playoffMatches = matches.filter(m => m.category === selectedCategory && m.phase === "playoff");
                 const has16 = playoffMatches.some(m => m.stageName.startsWith("16avos de Final") || m.stageName.startsWith("Dieciseisavos"));
+                const hasRc = playoffMatches.some(m => m.stageName.includes("Ronda Clasificatoria"));
                 const has8 = playoffMatches.some(m => m.stageName.startsWith("Octavos de Final") || m.stageName.startsWith("8avos de Final"));
                 const has4 = playoffMatches.some(m => m.stageName.startsWith("Cuartos") || m.stageName.startsWith("Cuartos de Final") || m.stageName.startsWith("4tos"));
                 const hasSf = playoffMatches.some(m => m.stageName.startsWith("Semifinal"));
@@ -3074,6 +3508,18 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
                         16avos
                       </button>
                     )}
+                    {hasRc && (
+                      <button
+                        onClick={() => setPlayoffFilter("rc")}
+                        className={`px-2 py-1 rounded text-[10px] font-mono font-bold leading-none cursor-pointer transition-all ${
+                          playoffFilter === "rc"
+                            ? "bg-indigo-600 text-white shadow"
+                            : "bg-slate-800/40 text-slate-400 hover:text-white"
+                        }`}
+                      >
+                        Clasificatoria
+                      </button>
+                    )}
                     {(has8 || has16) && (
                       <button
                         onClick={() => setPlayoffFilter("8avos")}
@@ -3086,7 +3532,7 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
                         8avos
                       </button>
                     )}
-                    {(has4 || has8 || has16) && (
+                    {(has4 || has8 || has16 || hasRc) && (
                       <button
                         onClick={() => setPlayoffFilter("4tos")}
                         className={`px-2 py-1 rounded text-[10px] font-mono font-bold leading-none cursor-pointer transition-all ${
@@ -3134,6 +3580,7 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
             ) : (() => {
               const playoffMatches = matches.filter(m => m.category === selectedCategory && m.phase === "playoff");
               const matches_16avos = playoffMatches.filter(m => m.stageName.startsWith("16avos de Final") || m.stageName.startsWith("Dieciseisavos"));
+              const matches_rc = playoffMatches.filter(m => m.stageName.includes("Ronda Clasificatoria"));
               const matches_8avos = playoffMatches.filter(m => m.stageName.startsWith("Octavos de Final") || m.stageName.startsWith("8avos de Final"));
               const matches_4tos = playoffMatches.filter(m => m.stageName.startsWith("Cuartos") || m.stageName.startsWith("Cuartos de Final") || m.stageName.startsWith("4tos"));
               const matches_sf = playoffMatches.filter(m => m.stageName.startsWith("Semifinal"));
@@ -3211,8 +3658,23 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
                       <div className="hidden md:flex self-center text-slate-700 font-extrabold shrink-0 text-sm">➔</div>
                     )}
 
+                    {/* Ronda Clasificatoria Column (SRTC-24) */}
+                    {matches_rc.length > 0 && (playoffFilter === "all" || playoffFilter === "rc") && (
+                      <div className="space-y-6 w-[230px] shrink-0">
+                        <span className="block text-[10px] text-slate-550 uppercase tracking-widest font-mono text-center font-extrabold bg-slate-900/30 py-1 rounded">Ronda Clasificatoria</span>
+                        <div className="space-y-4">
+                          {matches_rc.map(m => renderPlayoffMatchCard(m))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Arrow Spacer */}
+                    {matches_rc.length > 0 && playoffFilter === "all" && (
+                      <div className="hidden md:flex self-center text-slate-700 font-extrabold shrink-0 text-sm">➔</div>
+                    )}
+
                     {/* 8avos Column */}
-                    {(matches_8avos.length > 0 || matches_16avos.length > 0) && (playoffFilter === "all" || playoffFilter === "8avos") && (
+                    {(matches_8avos.length > 0 || matches_16avos.length > 0 || matches_rc.length > 0) && (playoffFilter === "all" || playoffFilter === "8avos") && (
                       <div className="space-y-6 w-[230px] shrink-0">
                         <span className="block text-[10px] text-slate-500 uppercase tracking-widest font-mono text-center font-extrabold bg-slate-900/30 py-1 rounded">8avos de Final</span>
                         <div className="space-y-4">
@@ -3226,12 +3688,12 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
                     )}
 
                     {/* Arrow Spacer */}
-                    {(matches_8avos.length > 0 || matches_16avos.length > 0) && playoffFilter === "all" && (
+                    {(matches_8avos.length > 0 || matches_16avos.length > 0 || matches_rc.length > 0) && playoffFilter === "all" && (
                       <div className="hidden md:flex self-center text-slate-700 font-extrabold shrink-0 text-sm">➔</div>
                     )}
 
                     {/* Cuartos Column */}
-                    {(matches_4tos.length > 0 || matches_8avos.length > 0 || matches_16avos.length > 0) && (playoffFilter === "all" || playoffFilter === "4tos") && (
+                    {(matches_4tos.length > 0 || matches_8avos.length > 0 || matches_16avos.length > 0 || matches_rc.length > 0) && (playoffFilter === "all" || playoffFilter === "4tos") && (
                       <div className="space-y-6 w-[230px] shrink-0">
                         <span className="block text-[10px] text-slate-500 uppercase tracking-widest font-mono text-center font-extrabold bg-slate-900/30 py-1 rounded">Cuartos de Final</span>
                         <div className="space-y-4">

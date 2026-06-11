@@ -132,7 +132,8 @@ export function parseScoreSummary(score: string, pair1Id: string, pair2Id: strin
 export function calculateGroupStandings(
   pairs: Pair[],
   matches: Match[],
-  getPairNames: (id: string) => string
+  getPairNames: (id: string) => string,
+  isSRTC24: boolean = false
 ): StandingsRow[] {
   const standingsMap: { [pairId: string]: StandingsRow } = {};
 
@@ -167,10 +168,10 @@ export function calculateGroupStandings(
     row2.pj += 1;
 
     if (match.status === "wo") {
-      // Walkover: winner takes all
+      // Walkover: winner takes all. Win = 2pts for SRTC24, otherwise 3pts. Loser = 0pts for WO
       if (match.winnerPairId === match.pair1Id) {
         row1.pg += 1;
-        row1.points += 3;
+        row1.points += isSRTC24 ? 2 : 3;
         row1.setsWon += 2;
         row1.gamesWon += 12;
 
@@ -183,7 +184,7 @@ export function calculateGroupStandings(
         row2.headToHeadResult[match.pair1Id] = "lost";
       } else {
         row2.pg += 1;
-        row2.points += 3;
+        row2.points += isSRTC24 ? 2 : 3;
         row2.setsWon += 2;
         row2.gamesWon += 12;
 
@@ -211,15 +212,15 @@ export function calculateGroupStandings(
 
       if (match.winnerPairId === match.pair1Id) {
         row1.pg += 1;
-        row1.points += 3; // Win = 3 points
+        row1.points += isSRTC24 ? 2 : 3; // Win (2 pts in SRTC24, 3 otherwise)
         row2.pp += 1;
-        row2.points += 1; // Loss = 1 point
+        row2.points += 1; // Loss (1pt)
 
         row1.headToHeadResult[match.pair2Id] = "won";
         row2.headToHeadResult[match.pair1Id] = "lost";
       } else {
         row2.pg += 1;
-        row2.points += 3;
+        row2.points += isSRTC24 ? 2 : 3;
         row1.pp += 1;
         row1.points += 1;
 
@@ -902,7 +903,7 @@ export function generateNextDosVidasRound(
   if (activeStats.length < 2) return []; // El torneo concluyó o debe pasar a playoffs
 
   const newMatches: Match[] = [];
-  const dateObj = new Date(baseDate);
+  const dateObj = new Date(baseDate || new Date().toISOString().split("T")[0]);
   dateObj.setDate(dateObj.getDate() + (nextRoundNumber - 1) * 2); // 2 días de separación de ronda
   const dateString = dateObj.toISOString().split("T")[0];
 
@@ -920,7 +921,7 @@ export function generateNextDosVidasRound(
       // El de mayor ranking obtiene el BYE y avanza con un triunfo automático
       const byePair = pairList.shift()!; // Saca el primero
       newMatches.push({
-        id: `match_${tournamentId}_dv_r${nextRoundNumber}_bye`,
+        id: `match_${tournamentId}_dv_${category.replace(/[^a-zA-Z0-9]/g, "")}_r${nextRoundNumber}_bye`,
         tournamentId,
         phase: "group",
         roundNumber: nextRoundNumber,
@@ -942,7 +943,7 @@ export function generateNextDosVidasRound(
       const p1 = pairList[i];
       const p2 = pairList[i + 1];
       newMatches.push({
-        id: `match_${tournamentId}_dv_r${nextRoundNumber}_m${matchCounter}`,
+        id: `match_${tournamentId}_dv_${category.replace(/[^a-zA-Z0-9]/g, "")}_r${nextRoundNumber}_m${matchCounter}`,
         tournamentId,
         phase: "group",
         roundNumber: nextRoundNumber,
@@ -997,7 +998,7 @@ export function generateNextDosVidasRound(
       // Si queda un único elemento al final por ser impar la cantidad de partidos
       if (i === winList.length - 1) {
         newMatches.push({
-          id: `match_${tournamentId}_dv_r${nextRoundNumber}_m${matchCounter}`,
+          id: `match_${tournamentId}_dv_${category.replace(/[^a-zA-Z0-9]/g, "")}_r${nextRoundNumber}_m${matchCounter}`,
           tournamentId,
           phase: "group",
           roundNumber: nextRoundNumber,
@@ -1022,7 +1023,7 @@ export function generateNextDosVidasRound(
 
       // G1 vs L2
       newMatches.push({
-        id: `match_${tournamentId}_dv_r${nextRoundNumber}_m${matchCounter}`,
+        id: `match_${tournamentId}_dv_${category.replace(/[^a-zA-Z0-9]/g, "")}_r${nextRoundNumber}_m${matchCounter}`,
         tournamentId,
         phase: "group",
         roundNumber: nextRoundNumber,
@@ -1041,7 +1042,7 @@ export function generateNextDosVidasRound(
 
       // G2 vs L1
       newMatches.push({
-        id: `match_${tournamentId}_dv_r${nextRoundNumber}_m${matchCounter + 1}`,
+        id: `match_${tournamentId}_dv_${category.replace(/[^a-zA-Z0-9]/g, "")}_r${nextRoundNumber}_m${matchCounter + 1}`,
         tournamentId,
         phase: "group",
         roundNumber: nextRoundNumber,
@@ -1088,7 +1089,7 @@ function runSwissMatchmaking(
     const [byePair] = list.splice(byeIdx, 1);
 
     newMatches.push({
-      id: `match_${tournamentId}_dv_r${round}_bye`,
+      id: `match_${tournamentId}_dv_${category.replace(/[^a-zA-Z0-9]/g, "")}_r${round}_bye`,
       tournamentId,
       phase: "group",
       roundNumber: round,
@@ -1152,7 +1153,7 @@ function runSwissMatchmaking(
   let matchCounter = 1;
   matchesPaired.forEach(([id1, id2]) => {
     newMatches.push({
-      id: `match_${tournamentId}_dv_r${round}_m${matchCounter}`,
+      id: `match_${tournamentId}_dv_${category.replace(/[^a-zA-Z0-9]/g, "")}_r${round}_m${matchCounter}`,
       tournamentId,
       phase: "group",
       roundNumber: round,

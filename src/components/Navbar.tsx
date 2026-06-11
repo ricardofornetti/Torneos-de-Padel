@@ -422,67 +422,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           </div>
 
-          {/* Mini-Notification center */}
-          <div className="relative">
-            <button
-              onClick={() => setShowNotifications(!showNotifications)}
-              className="p-2 text-slate-400 hover:text-white bg-slate-900 hover:bg-slate-800 rounded-lg border border-slate-800 transition-all relative"
-            >
-              <Bell className="w-4 h-4" />
-              {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-cyan-500 text-slate-950 font-black text-[9px] w-4.5 h-4.5 rounded-full flex items-center justify-center border border-slate-950">
-                  {unreadCount}
-                </span>
-              )}
-            </button>
 
-            {/* Notification drop */}
-            {showNotifications && (
-              <div className="absolute right-0 mt-2 w-80 bg-slate-900 border border-slate-800 shadow-2xl rounded-xl z-50 overflow-hidden text-slate-200">
-                <div className="p-3 border-b border-slate-800 flex items-center justify-between">
-                  <span className="font-bold text-sm text-white">Notificaciones</span>
-                  <div className="flex gap-2">
-                    <button 
-                      onClick={handleMarkAllRead} 
-                      className="text-[10px] text-cyan-400 hover:underline font-semibold"
-                    >
-                      Leídas
-                    </button>
-                    <button 
-                      onClick={clearAllNotifications} 
-                      className="text-[10px] text-red-400 hover:underline font-semibold"
-                    >
-                      Limpiar
-                    </button>
-                  </div>
-                </div>
-                <div className="max-h-72 overflow-y-auto divide-y divide-slate-800">
-                  {notifications.length === 0 ? (
-                    <div className="p-4 text-center text-xs text-slate-500">
-                      Sin alertas nuevas
-                    </div>
-                  ) : (
-                    notifications.map(notif => (
-                      <div 
-                        key={notif.id} 
-                        className={`p-3 text-xs transition-colors ${notif.read ? 'bg-slate-900/40 text-slate-400' : 'bg-slate-950 text-slate-100'}`}
-                      >
-                        <div className="flex items-start justify-between gap-1 mb-1">
-                          <span className={`font-semibold ${notif.type === 'success' ? 'text-green-400' : notif.type === 'warning' ? 'text-amber-400' : 'text-cyan-400'}`}>
-                            {notif.title}
-                          </span>
-                          <span className="text-[9px] text-slate-500 font-mono whitespace-nowrap">
-                            {new Date(notif.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </span>
-                        </div>
-                        <p className="line-clamp-2">{notif.body}</p>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
         </div>
       </div>
 

@@ -41,6 +41,7 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
   const [isSizeSelectorOpen, setIsSizeSelectorOpen] = useState(false);
   const [prefillDemo16, setPrefillDemo16] = useState(false);
   const [prefillDemo32, setPrefillDemo32] = useState(false);
+  const [prefillDemo24, setPrefillDemo24] = useState(false);
   const [newT, setNewT] = useState({
     name: "",
     club: "",
@@ -92,6 +93,8 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
       numCourts: activeCourtsCount > 0 ? Math.min(3, activeCourtsCount) : 3
     });
     setPrefillDemo16(true);
+    setPrefillDemo32(true);
+    setPrefillDemo24(true);
     setIsSizeSelectorOpen(true);
   };
 
@@ -145,6 +148,7 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
       const tId = `tournament_${Date.now()}`;
       const is16Prefill = Number(newT.maxPairs) === 16 && prefillDemo16;
       const is32Prefill = Number(newT.maxPairs) === 32 && prefillDemo32;
+      const is24Prefill = Number(newT.maxPairs) === 24 && prefillDemo24;
 
       const tObj: Tournament = {
         id: tId,
@@ -155,9 +159,9 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
         tournamentType: "Grupos + Eliminatorias",
         startDate: newT.startDate,
         endDate: newT.endDate,
-        status: (is16Prefill || is32Prefill) ? "in_progress" : "registration",
+        status: (is16Prefill || is32Prefill || is24Prefill) ? "in_progress" : "registration",
         maxPairs: Number(newT.maxPairs) || 8,
-        numGroups: Number(newT.numGroups) || 2,
+        numGroups: Number(newT.maxPairs) === 24 ? 8 : (Number(newT.numGroups) || 2),
         numCourts: Number(newT.numCourts) || 3
       };
 
@@ -611,6 +615,262 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
           "success"
         );
       }
+
+      if (is24Prefill) {
+        // Create 48 famous players
+        const playersList24 = [
+          { firstName: "Arturo", lastName: "Coello", pts: 1200 },
+          { firstName: "Agustín", lastName: "Tapia", pts: 1180 },
+          { firstName: "Alejandro", lastName: "Galán", pts: 1120 },
+          { firstName: "Juan", lastName: "Lebrón", pts: 1100 },
+          { firstName: "Paquito", lastName: "Navarro", pts: 950 },
+          { firstName: "Martín", lastName: "Di Nenno", pts: 940 },
+          { firstName: "Fernando", lastName: "Belasteguín", pts: 890 },
+          { firstName: "Sanyo", lastName: "Gutiérrez", pts: 870 },
+          { firstName: "Franco", lastName: "Stupaczuk", pts: 920 },
+          { firstName: "Federico", lastName: "Chingotto", pts: 910 },
+          { firstName: "Momo", lastName: "González", pts: 810 },
+          { firstName: "Mike", lastName: "Yanguas", pts: 820 },
+          { firstName: "Jon", lastName: "Sanz", pts: 800 },
+          { firstName: "Coki", lastName: "Nieto", pts: 790 },
+          { firstName: "Javi", lastName: "Garrido", pts: 780 },
+          { firstName: "Edu", lastName: "Alonso", pts: 760 },
+          { firstName: "Álex", lastName: "Ruiz", pts: 750 },
+          { firstName: "Juan", lastName: "Tello", pts: 730 },
+          { firstName: "Lucas", lastName: "Campagnolo", pts: 700 },
+          { firstName: "Javi", lastName: "Leal", pts: 650 },
+          { firstName: "Maxi", lastName: "Sánchez", pts: 670 },
+          { firstName: "Lucho", lastName: "Capra", pts: 620 },
+          { firstName: "Gonzalo", lastName: "Rubio", pts: 610 },
+          { firstName: "Javier", lastName: "Ruiz", pts: 610 },
+          { firstName: "Pincho", lastName: "Fernández", pts: 580 },
+          { firstName: "José", lastName: "G. Diestro", pts: 560 },
+          { firstName: "Ramiro", lastName: "Moyano", pts: 550 },
+          { firstName: "Xisco", lastName: "Gil", pts: 540 },
+          { firstName: "Agustín", lastName: "Gutiérrez", pts: 510 },
+          { firstName: "José", lastName: "Rico", pts: 500 },
+          { firstName: "Teo", lastName: "Zapata", pts: 480 },
+          { firstName: "Enrique", lastName: "Goenaga", pts: 440 },
+          { firstName: "Javi", lastName: "Rico", pts: 455 },
+          { firstName: "Miguel", lastName: "Lamperti", pts: 462 },
+          { firstName: "Álvaro", lastName: "Cepero", pts: 434 },
+          { firstName: "Arnau", lastName: "Ayats", pts: 421 },
+          { firstName: "Denis", lastName: "Perino", pts: 412 },
+          { firstName: "Facundo", lastName: "Domínguez", pts: 403 },
+          { firstName: "Aris", lastName: "Patiniotis", pts: 395 },
+          { firstName: "Ignacio", lastName: "Vilariño", pts: 382 },
+          { firstName: "Mario", lastName: "Del Castillo", pts: 371 },
+          { firstName: "Iván", lastName: "Ramírez", pts: 366 },
+          { firstName: "José", lastName: "Solano", pts: 352 },
+          { firstName: "Jaime", lastName: "Muñoz", pts: 341 },
+          { firstName: "Jairo", lastName: "Bautista", pts: 332 },
+          { firstName: "Martín", lastName: "S. Piñeiro", pts: 322 },
+          { firstName: "Rafa", lastName: "Méndez", pts: 312 },
+          { firstName: "Salva", lastName: "Oria", pts: 302 }
+        ];
+
+        const savedPlayerIds: string[] = [];
+        for (let idx = 0; idx < playersList24.length; idx++) {
+          const item = playersList24[idx];
+          const pId = `tp_srtc24_${idx + 1}_${Date.now()}`;
+          await repository.savePlayer({
+            id: pId,
+            firstName: item.firstName,
+            lastName: item.lastName,
+            dni: `${30020000 + idx}C`,
+            phone: `+34 600 024 ${String(idx).padStart(3, "0")}`,
+            email: `${item.firstName.toLowerCase()}.${item.lastName.toLowerCase().replace(/[^a-zA-Z]/g, "")}@demo-padel.com`,
+            city: newT.city || "Madrid",
+            birthDate: "1998-05-15",
+            category: "5ta Masculina",
+            rankingPoints: item.pts,
+            photoUrl: "https://images.unsplash.com/photo-1594381898411-846e7d193883?auto=format&fit=crop&q=80&w=200",
+            matchesPlayed: 10,
+            matchesWon: 5,
+            matchesLost: 5,
+            setsWon: 10,
+            setsLost: 10,
+            gamesWon: 100,
+            gamesLost: 100
+          });
+          savedPlayerIds.push(pId);
+        }
+
+        const createdPairs: Pair[] = [];
+        for (let i = 0; i < 24; i++) {
+          const p1Id = savedPlayerIds[i * 2];
+          const p2Id = savedPlayerIds[i * 2 + 1];
+          const prObj: Pair = {
+            id: `pair_${tId}_srtc24_${i + 1}`,
+            tournamentId: tId,
+            player1Id: p1Id,
+            player2Id: p2Id,
+            category: "5ta Masculina",
+            combinedRanking: playersList24[i * 2].pts + playersList24[i * 2 + 1].pts,
+            status: "confirmed"
+          };
+          await repository.savePair(prObj);
+          createdPairs.push(prObj);
+        }
+
+        const allGeneratedMatches: Match[] = [];
+        const dateString = newT.startDate || new Date().toISOString().split("T")[0];
+
+        // 1. Fase de grupos: 8 grupos de 3 parejas (A-H)
+        // Grupo A (0,1,2), Grupo B (3,4,5), etc. 
+        const letters = ["A", "B", "C", "D", "E", "F", "G", "H"];
+        for (let gIdx = 0; gIdx < 8; gIdx++) {
+          const letter = letters[gIdx];
+          const gPairs = [
+            createdPairs[gIdx * 3],
+            createdPairs[gIdx * 3 + 1],
+            createdPairs[gIdx * 3 + 2]
+          ];
+
+          // Partido 1: P1 vs P2
+          allGeneratedMatches.push({
+            id: `match_${tId}_srtc24_5taMasculina_g_${letter}_m1`,
+            tournamentId: tId,
+            phase: "group",
+            roundNumber: 1,
+            stageName: `Grupo ${letter}`,
+            pair1Id: gPairs[0].id,
+            pair2Id: gPairs[1].id,
+            courtId: gIdx < Number(newT.numCourts) ? `court_${(gIdx % Number(newT.numCourts)) + 1}` : "court_1",
+            date: dateString,
+            time: `${16 + Math.floor(gIdx / 3)}:00`,
+            status: "pending",
+            scoreSummary: "Por jugar",
+            winnerPairId: "",
+            category: "5ta Masculina"
+          });
+
+          // Partido 2: P1 vs P3
+          allGeneratedMatches.push({
+            id: `match_${tId}_srtc24_5taMasculina_g_${letter}_m2`,
+            tournamentId: tId,
+            phase: "group",
+            roundNumber: 2,
+            stageName: `Grupo ${letter}`,
+            pair1Id: gPairs[0].id,
+            pair2Id: gPairs[2].id,
+            courtId: gIdx < Number(newT.numCourts) ? `court_${((gIdx + 1) % Number(newT.numCourts)) + 1}` : "court_1",
+            date: dateString,
+            time: `${17 + Math.floor(gIdx / 3)}:00`,
+            status: "pending",
+            scoreSummary: "Por jugar",
+            winnerPairId: "",
+            category: "5ta Masculina"
+          });
+
+          // Partido 3: P2 vs P3
+          allGeneratedMatches.push({
+            id: `match_${tId}_srtc24_5taMasculina_g_${letter}_m3`,
+            tournamentId: tId,
+            phase: "group",
+            roundNumber: 3,
+            stageName: `Grupo ${letter}`,
+            pair1Id: gPairs[1].id,
+            pair2Id: gPairs[2].id,
+            courtId: gIdx < Number(newT.numCourts) ? `court_${((gIdx + 2) % Number(newT.numCourts)) + 1}` : "court_1",
+            date: dateString,
+            time: `${18 + Math.floor(gIdx / 3)}:00`,
+            status: "pending",
+            scoreSummary: "Por jugar",
+            winnerPairId: "",
+            category: "5ta Masculina"
+          });
+        }
+
+        // 2. Ronda Clasificatoria (cruces automáticos, Partidos 25 a 32)
+        // Pre-generamos vacíos
+        for (let pNum = 25; pNum <= 32; pNum++) {
+          allGeneratedMatches.push({
+            id: `match_${tId}_srtc24_5taMasculina_rc_p${pNum}`,
+            tournamentId: tId,
+            phase: "playoff",
+            roundNumber: 4,
+            stageName: `Ronda Clasificatoria - P${pNum}`,
+            pair1Id: "",
+            pair2Id: "",
+            courtId: "",
+            date: dateString,
+            time: "19:00",
+            status: "pending",
+            scoreSummary: "Por jugar",
+            winnerPairId: "",
+            category: "5ta Masculina"
+          });
+        }
+
+        // 3. Cuartos de final (4 partidos, Partidos 33 a 36)
+        for (let i = 1; i <= 4; i++) {
+          allGeneratedMatches.push({
+            id: `match_${tId}_srtc24_5taMasculina_q_m${i}`,
+            tournamentId: tId,
+            phase: "playoff",
+            roundNumber: 5,
+            stageName: `Cuartos de Final ${i}`,
+            pair1Id: "",
+            pair2Id: "",
+            courtId: "",
+            date: dateString,
+            time: "20:00",
+            status: "pending",
+            scoreSummary: "Por jugar",
+            winnerPairId: "",
+            category: "5ta Masculina"
+          });
+        }
+
+        // 4. Semifinales (2 partidos, Partidos 37 y 38)
+        for (let i = 1; i <= 2; i++) {
+          allGeneratedMatches.push({
+            id: `match_${tId}_srtc24_5taMasculina_sf_m${i}`,
+            tournamentId: tId,
+            phase: "playoff",
+            roundNumber: 6,
+            stageName: `Semifinal ${i}`,
+            pair1Id: "",
+            pair2Id: "",
+            courtId: "",
+            date: dateString,
+            time: "20:30",
+            status: "pending",
+            scoreSummary: "Por jugar",
+            winnerPairId: "",
+            category: "5ta Masculina"
+          });
+        }
+
+        // 5. Final (1 partido, Partido 39)
+        allGeneratedMatches.push({
+          id: `match_${tId}_srtc24_5taMasculina_final`,
+          tournamentId: tId,
+          phase: "playoff",
+          roundNumber: 7,
+          stageName: "Final",
+          pair1Id: "",
+          pair2Id: "",
+          courtId: "",
+          date: dateString,
+          time: "21:30",
+          status: "pending",
+          scoreSummary: "Por jugar",
+          winnerPairId: "",
+          category: "5ta Masculina"
+        });
+
+        for (const m of allGeneratedMatches) {
+          await repository.saveMatch(m);
+        }
+
+        await repository.addNotification(
+          "Fixture Confeccionado",
+          `Se han creado 24 parejas de ejemplo y el fixture oficial SRTC 24 de 39 partidos para la categoría '5ta Masculina' en el torneo '${newT.name}'.`,
+          "success"
+        );
+      }
     }
 
     setIsFormOpen(false);
@@ -1006,9 +1266,9 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
               </div>
 
               {/* Grid of couples options */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {[4, 6, 8, 12, 16, 24, 32].map((size) => {
-                  const is16 = size === 16 || size === 32;
+              <div className="grid grid-cols-3 gap-3">
+                {[16, 24, 32].map((size) => {
+                  const isOfficial = size === 16 || size === 24 || size === 32;
                   const isSelected = newT.maxPairs === size;
                   return (
                     <button
@@ -1016,12 +1276,8 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
                       type="button"
                       onClick={() => {
                         let estGroups = 2;
-                        if (size <= 5) estGroups = 1;
-                        else if (size <= 9) estGroups = 2;
-                        else if (size <= 14) estGroups = 3;
-                        else if (size <= 18) estGroups = 4;
-                        else if (size <= 24) estGroups = 6;
-                        else estGroups = 8;
+                        if (size === 24) estGroups = 8;
+                        else estGroups = 8; // Default for others
 
                         setNewT({
                           ...newT, 
@@ -1031,13 +1287,11 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
                       }}
                       className={`relative border p-4 rounded-xl flex flex-col items-center justify-center text-center transition gap-1.5 cursor-pointer ${
                         isSelected
-                          ? is16
-                            ? "bg-indigo-950/40 border-indigo-500 ring-2 ring-indigo-500/10 text-white"
-                            : "bg-blue-950/40 border-blue-500 ring-2 ring-blue-500/10 text-white"
+                          ? "bg-indigo-950/40 border-indigo-500 ring-2 ring-indigo-500/10 text-white"
                           : "bg-slate-950 border-slate-800 hover:border-slate-750 text-slate-400 hover:text-slate-200"
                       }`}
                     >
-                      {is16 && (
+                      {isOfficial && (
                         <span className="absolute -top-2.5 bg-indigo-500 text-slate-950 font-mono text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full shadow-sm">
                           OFICIAL SRTC
                         </span>
@@ -1048,7 +1302,7 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
                       <span className="text-[10px] font-bold">Parejas</span>
                       
                       <span className="text-[8px] opacity-70 font-mono">
-                        {size <= 5 ? "1 Zona" : `${Math.ceil(size / 4)} Zonas`}
+                        {size === 24 ? "8 Grupos de 3" : "Doble Eliminación"}
                       </span>
                     </button>
                   );
@@ -1061,31 +1315,36 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
                   <div className="flex gap-2">
                     <Sparkles className="w-5 h-5 text-indigo-400 shrink-0 mt-0.5" />
                     <div>
-                      <h4 className="font-extrabold text-[#d4fc34] text-xs">Formato Directo Oficial SRTC 32</h4>
+                      <h4 className="font-extrabold text-[#d4fc34] text-xs font-display">Formato Directo Oficial SRTC 32</h4>
                       <p className="text-[11px] text-slate-300 mt-1 leading-relaxed">
                         Sistema oficial de 32 parejas con **Dos Partidos Garantizados**. Los perdedores de Ronda 1 disputan ronda de repechaje en Ronda 2, clasificando únicamente los ganadores de Ronda 2 a Octavos de Final.
                       </p>
                     </div>
                   </div>
                 </div>
-              ) : newT.maxPairs === 16 ? (
+              ) : newT.maxPairs === 24 ? (
                 <div className="bg-indigo-950/20 border border-indigo-500/20 rounded-2xl p-4 space-y-4 shadow-sm">
                   <div className="flex gap-2">
                     <Sparkles className="w-5 h-5 text-indigo-400 shrink-0 mt-0.5" />
                     <div>
-                      <h4 className="font-extrabold text-[#d4fc34] text-xs">Formato Directo Oficial SRTC 16</h4>
+                      <h4 className="font-extrabold text-[#d4fc34] text-xs font-display">Formato Directo Oficial SRTC 24</h4>
                       <p className="text-[11px] text-slate-300 mt-1 leading-relaxed">
-                        Sistema de cuadro reglamentario de 16 parejas coordinado con un fixture pre-armado y progresión sincronizada. Cada pareja jugará partidos de alto rendimiento y progresión conforme al modelo de doble eliminación.
+                        Sistema oficial de 24 parejas: **Fase de grupos** de 8 zonas de 3 parejas (todos contra todos, PG*2, PP*1, WO=0). Clasifican los 2 mejores de cada grupo a la **Ronda Clasificatoria** (16 parejas en cruces directos). Los 8 ganadores pasan a Cuartos de final. 
                       </p>
                     </div>
                   </div>
                 </div>
               ) : (
-                <div className="bg-slate-950 p-4 rounded-xl border border-slate-850 flex gap-2">
-                  <Activity className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                  <p className="text-[11px] text-slate-400 leading-normal">
-                    Este torneo funcionará con inscripción regular bajo el sistema de <strong>Dos Vidas</strong>. Una vez completado el registro de parejas, podrás ejecutar el sorteo en el panel interno.
-                  </p>
+                <div className="bg-indigo-950/20 border border-indigo-500/20 rounded-2xl p-4 space-y-4 shadow-sm">
+                  <div className="flex gap-2">
+                    <Sparkles className="w-5 h-5 text-indigo-400 shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="font-extrabold text-[#d4fc34] text-xs font-display">Formato Directo Oficial SRTC 16</h4>
+                      <p className="text-[11px] text-slate-300 mt-1 leading-relaxed">
+                        Sistema de cuadro reglamentario de 16 parejas coordinado con un fixture pre-armado y progresión sincronizada de dos vidas garantizadas para competiciones de alto rendimiento.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               )}
 
