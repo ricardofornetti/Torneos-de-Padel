@@ -428,7 +428,7 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
   };
 
   // Automatically pair up remaining players of selectedCategory
-  const handleAutoPairRemaining = async () => {
+  const handleAutoPairRemaining = async (limitCount?: number) => {
     if (!tournament) return;
 
     // Filter registered players in this tournament
@@ -438,10 +438,40 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
     const categoryPlayers = players.filter(p => p.category === selectedCategory);
     const unregistered = categoryPlayers.filter(p => !currentRegisteredIds.has(p.id));
 
-    if (unregistered.length < 2) {
+    // Existing pairs in this category
+    const existingPairsInCategory = pairs.filter(p => p.category === selectedCategory);
+
+    let targetPairsToCreate = 0;
+    if (limitCount) {
+      targetPairsToCreate = Math.max(0, limitCount - existingPairsInCategory.length);
+    } else {
+      targetPairsToCreate = Math.floor(unregistered.length / 2);
+    }
+
+    if (limitCount && existingPairsInCategory.length >= limitCount) {
+      await repository.addNotification(
+        "Límite Alcanzado",
+        `Esta categoría ya tiene ${existingPairsInCategory.length} parejas registradas, que alcanza o supera el objetivo de ${limitCount}.`,
+        "info"
+      );
+      return;
+    }
+
+    const playersNeeded = targetPairsToCreate * 2;
+    if (unregistered.length < playersNeeded) {
+      const maxPossible = Math.floor(unregistered.length / 2);
       await repository.addNotification(
         "Jugadores Insuficientes",
-        `No hay suficientes jugadores libres en la categoría '${selectedCategory}' para auto-emparejar (se necesitan al menos 2).`,
+        `No hay suficientes jugadores libres en '${selectedCategory}' para crear ${targetPairsToCreate} parejas adicionales. Se generarán las ${maxPossible} parejas posibles con los libres disponibles.`,
+        "warning"
+      );
+      targetPairsToCreate = maxPossible;
+    }
+
+    if (targetPairsToCreate <= 0) {
+      await repository.addNotification(
+        "Registro No Necesario",
+        "No hay jugadores libres suficientes para crear nuevas parejas.",
         "warning"
       );
       return;
@@ -452,7 +482,8 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
 
     let pairsCreatedCount = 0;
     try {
-      for (let i = 0; i < sorted.length - 1; i += 2) {
+      for (let i = 0; i < targetPairsToCreate * 2; i += 2) {
+        if (i >= sorted.length - 1) break;
         const p1 = sorted[i];
         const p2 = sorted[i + 1];
 
@@ -475,7 +506,7 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
 
       await repository.addNotification(
         "Parejas Auto-generadas",
-        `Se han emparejado e inscrito ${pairsCreatedCount} parejas de la categoría '${selectedCategory}' exitosamente.`,
+        `Se han emparejado e inscrito ${pairsCreatedCount} parejas de la categoría '${selectedCategory}' exitosamente (Total: ${existingPairsInCategory.length + pairsCreatedCount} parejas).`,
         "success"
       );
 
@@ -2561,20 +2592,48 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
                   </form>
 
                   {userRole === "admin" && unregisteredCategoryPlayers.length >= 2 && (
-                    <div className="pt-4 border-t border-slate-800 space-y-2">
+                    <div className="pt-4 border-t border-slate-800 space-y-3">
                       <span className="text-[11px] font-bold text-slate-400 block uppercase tracking-wider flex items-center gap-1">
-                        <Sparkles className="w-3.5 h-3.5 text-blue-400" /> Registro Rápido
+                        <Sparkles className="w-3.5 h-3.5 text-blue-400" /> Registro Rápido Simulado
                       </span>
                       <p className="text-[10px] text-slate-400 leading-relaxed">
-                        Hay <strong>{unregisteredCategoryPlayers.length}</strong> jugadores libres en '{selectedCategory}' listos para ser emparejados automáticamente.
+                        Completa rápidamente la cantidad de parejas necesarias para simular formatos específicos usando jugadores libres de la categoría ({unregisteredCategoryPlayers.length} libres):
                       </p>
-                      <button
-                        type="button"
-                        onClick={handleAutoPairRemaining}
-                        className="w-full bg-[#d4fc34]/10 hover:bg-[#d4fc34]/20 text-[#d4fc34] border border-[#d4fc34]/30 text-xs font-bold py-2 rounded-xl transition flex items-center justify-center gap-1 cursor-pointer uppercase tracking-wider"
-                      >
-                        ⚡ Auto-Emparejar e Inscribir
-                      </button>
+                      
+                      <div className="grid grid-cols-2 gap-1.5 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => handleAutoPairRemaining(16)}
+                          className="bg-slate-950 hover:bg-slate-850 hover:text-white text-[10px] text-slate-350 font-bold py-2 px-1 rounded-lg transition border border-slate-800 text-center cursor-pointer"
+                          title="Auto-Empareja hasta tener 16 parejas en total"
+                        >
+                          🎯 Pre-llenar 16
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleAutoPairRemaining(24)}
+                          className="bg-slate-950 hover:bg-slate-850 hover:text-white text-[10px] text-slate-350 font-bold py-2 px-1 rounded-lg transition border border-slate-800 text-center cursor-pointer"
+                          title="Auto-Empareja hasta tener 24 parejas en total"
+                        >
+                          🧬 Pre-llenar 24
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleAutoPairRemaining(32)}
+                          className="bg-slate-950 hover:bg-slate-850 hover:text-white text-[10px] text-slate-350 font-bold py-2 px-1 rounded-lg transition border border-slate-800 text-center cursor-pointer"
+                          title="Auto-Empareja hasta tener 32 parejas en total"
+                        >
+                          🏆 Pre-llenar 32
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleAutoPairRemaining()}
+                          className="bg-[#d4fc34]/10 hover:bg-[#d4fc34]/20 text-[#d4fc34] hover:text-slate-100 text-[10px] font-black py-2 px-1 rounded-lg transition border border-[#d4fc34]/20 text-center cursor-pointer"
+                          title="Inscribe a todos los jugadores libres disponibles"
+                        >
+                          ⚡ Llenar Todos
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>

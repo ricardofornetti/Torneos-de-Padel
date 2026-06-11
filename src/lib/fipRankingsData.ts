@@ -87,12 +87,14 @@ const REAL_FEMALES = [
   { first: "Teresa", last: "Navarro", city: "Las Palmas, España", points: 1120, country: "España" }
 ];
 
-// Seed lists to dynamically expand up to 100 players cleanly
+// Lists to dynamically expand cleanly
 const FIRST_NAMES_MASC = [
   "Gonzalo", "Álvaro", "Pablo", "Diego", "Lucas", "Nicolás", "Valentín", "Mateo", "Enzo", "Maximiliano",
   "Rodrigo", "Tomás", "Santiago", "Manuel", "Julián", "Bautista", "Joaquín", "Felipe", "Gaspar", "Esteban",
   "Ramiro", "Agustín", "Facundo", "Leandro", "Marcos", "Ignacio", "Hernán", "Federico", "Dardo", "Lisandro",
-  "Guillermo", "Emilio", "Ángel", "Raúl", "Andrés", "Bruno", "Félix", "Matías", "Ignacio", "Ezequiel"
+  "Guillermo", "Emilio", "Ángel", "Raúl", "Andrés", "Bruno", "Félix", "Matías", "Ignacio", "Ezequiel",
+  "Sebastián", "Andrés", "Santiago", "Ignacio", "Gastón", "Lionel", "Mariano", "Gabriel", "Esteban", "Balthazar",
+  "Luciano", "Christian", "Patricio", "Mauricio", "Guido", "Aldo", "Claudio", "Hugo", "Marcelo", "Jorge"
 ];
 
 const LAST_NAMES = [
@@ -100,14 +102,16 @@ const LAST_NAMES = [
   "Alvarez", "Gutiérrez", "Chaves", "Molina", "Castro", "Ortiz", "Silva", "Delgado", "Mendez", "Torres",
   "Rios", "Vega", "Suarez", "Guerrero", "Rojas", "Cardozo", "Navarro", "Acosta", "Peralta", "Domínguez",
   "Galarza", "Benítez", "Sosa", "Herrera", "Medina", "Luna", "Romero", "Zapata", "Rubio", "Díaz",
-  "Campos", "Flores", "Cabrera", "Ortega", "Vargas", "Ramos", "Castillo", "Mano", "Franco", "Quiroga"
+  "Campos", "Flores", "Cabrera", "Ortega", "Vargas", "Ramos", "Castillo", "Mano", "Franco", "Quiroga",
+  "Salinas", "Pinto", "Giménez", "Ibarra", "Pizarro", "Montoya", "Valencia", "Aranda", "Cáceres", "Esquivel"
 ];
 
 const FIRST_NAMES_FEM = [
   "Paula", "Marta", "Clara", "Lucía", "Sofía", "Martina", "Daniela", "Elena", "Inés", "Natalia",
   "Carmen", "Victoria", "Beatriz", "Julia", "Camila", "Valentina", "Antonia", "Isabella", "Emma", "Agustina",
   "Florencia", "Catalina", "Delfina", "Lorena", "Virginia", "Estela", "Juliana", "Guadalupe", "Sol", "Milagros",
-  "Catalina", "Amparo", "Rocío", "Gabriela", "Mariana", "Luisa", "Cecilia", "Bárbara", "Belén", "Jimena"
+  "Catalina", "Amparo", "Rocío", "Gabriela", "Mariana", "Luisa", "Cecilia", "Bárbara", "Belén", "Jimena",
+  "Irene", "Blanca", "Adela", "Sara", "Oliva", "Silvia", "Alicia", "Rocio", "Margarita", "Mercedes"
 ];
 
 const LAT_AM_CITIES = [
@@ -146,7 +150,7 @@ const SPAIN_CITIES = [
   { city: "Granada, España" }
 ];
 
-// Helper to generate unique photourls with dicebear or stable beautiful unspash profiles
+// Helper to generate unique profile avatar photos
 const getUnsplashAvatarUrlByGender = (gender: "m" | "f", idx: number): string => {
   const maleSeeds = [
     "https://images.unsplash.com/photo-1594381898411-846e7d193883?auto=format&fit=crop&q=80&w=200",
@@ -178,91 +182,98 @@ const getUnsplashAvatarUrlByGender = (gender: "m" | "f", idx: number): string =>
   return seeds[idx % seeds.length];
 };
 
-export const getFIPTop100Males = (): Player[] => {
+// Generates 100 top unique players for a specific category
+export const getFIPPlayersForCategory = (category: string): Player[] => {
   const result: Player[] = [];
   const totalSlots = 100;
+  
+  const isFemale = category.toLowerCase().includes("femenina") || category.toLowerCase().includes("femenino");
+  const genderKey = isFemale ? "f" : "m";
+  
+  // Choose name pool
+  const firstNames = isFemale ? FIRST_NAMES_FEM : FIRST_NAMES_MASC;
+  const realStarSeeds = isFemale ? REAL_FEMALES : REAL_MALES;
+  
+  // Set points baseline depending on category level to make it realistic
+  // e.g. Libre: 15k to 1.5k, 4ta: 8k to 800, 5ta: 6k to 600, etc.
+  let startPoints = 14500;
+  let pointStep = 120;
+  if (category.includes("4ta")) { startPoints = 8500; pointStep = 75; }
+  else if (category.includes("5ta")) { startPoints = 6500; pointStep = 55; }
+  else if (category.includes("6ta")) { startPoints = 4800; pointStep = 40; }
+  else if (category.includes("7ma") || category.includes("Séptima")) { startPoints = 3200; pointStep = 28; }
 
-  // Add the real ones first
-  for (let i = 0; i < REAL_MALES.length && i < totalSlots; i++) {
-    const rm = REAL_MALES[i];
-    const rank = i + 1;
+  // Use the name seed shift factor to make every single player name 100% unique per category!
+  // We use a simple hash of the category name
+  const catHash = category.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+
+  for (let rank = 1; rank <= totalSlots; rank++) {
+    const points = Math.max(100, Math.round(startPoints - (rank - 1) * pointStep - (rank % 5) * 5));
     
-    // Distribute perfectly among the 5 masculine categories: Libre, 4ta, 5ta, 6ta, 7ma
-    // Libre Masculina: Rank 1-20
-    // 4ta Masculina: Rank 21-40
-    // 5ta Masculina: Rank 41-60
-    // 6ta Masculina: Rank 61-80
-    // 7ma Masculina: Rank 81-100
-    let category = "Libre Masculina";
-    if (rank > 20 && rank <= 40) category = "4ta Masculina";
-    else if (rank > 40 && rank <= 60) category = "5ta Masculina";
-    else if (rank > 60 && rank <= 80) category = "6ta Masculina";
-    else if (rank > 80) category = "7ma Masculina";
+    let firstName = "";
+    let lastName = "";
+    let city = "";
+    
+    // For rank 1-25 in Libre categories, utilize real FIP names for awesome realism!
+    // For other categories, we mix or permute so we don't duplicate real players across categories.
+    if (category === "Libre Masculina" && rank <= REAL_MALES.length) {
+      const rm = REAL_MALES[rank - 1];
+      firstName = rm.first;
+      lastName = rm.last;
+      city = rm.city;
+    } else if (category === "6ta Femenina" && rank <= REAL_FEMALES.length) {
+      const rf = REAL_FEMALES[rank - 1];
+      firstName = rf.first;
+      lastName = rf.last;
+      city = rf.city;
+    } else {
+      // Procedurally generate highly realistic padel player name
+      // Use category hash index shifts so they are unique across all categories
+      const fnIdx = (rank * 17 + catHash) % firstNames.length;
+      const ln1Idx = (rank * 29 + catHash * 3) % LAST_NAMES.length;
+      const ln2Idx = (rank * 43 + catHash * 7 + 13) % LAST_NAMES.length;
+      
+      firstName = firstNames[fnIdx];
+      // Avoid duplicate last names in the same full name
+      const ln1 = LAST_NAMES[ln1Idx];
+      let ln2 = LAST_NAMES[ln2Idx];
+      if (ln1 === ln2) {
+        ln2 = LAST_NAMES[(ln2Idx + 5) % LAST_NAMES.length];
+      }
+      lastName = `${ln1} ${ln2}`;
 
-    const matchesPlayed = 40 + Math.floor(Math.random() * 30);
-    // Highest ranked have higher winrates (e.g. 80-92% vs 45-60%)
-    const winRate = rank <= 10 ? 0.85 + (Math.random() * 0.08) : rank <= 30 ? 0.70 + (Math.random() * 0.15) : 0.45 + (Math.random() * 0.25);
+      // Pick location
+      const locList = rank % 2 === 0 ? SPAIN_CITIES : LAT_AM_CITIES;
+      city = locList[(rank + catHash) % locList.length].city;
+    }
+
+    // Build statistics
+    const matchesPlayed = 20 + Math.floor(Math.random() * 40);
+    // Higher rank = higher win proportions
+    const winRate = rank <= 12 ? 0.82 + (Math.random() * 0.12) : rank <= 35 ? 0.65 + (Math.random() * 0.18) : 0.40 + (Math.random() * 0.25);
     const matchesWon = Math.round(matchesPlayed * winRate);
     const matchesLost = matchesPlayed - matchesWon;
 
-    result.push({
-      id: `fip_male_${rank}_${rm.first.toLowerCase().replace(/\s+/g, '_')}_${rm.last.toLowerCase().replace(/\s+/g, '_')}`,
-      firstName: rm.first,
-      lastName: rm.last,
-      dni: `${30000000 + rank * 82743}M`,
-      phone: `+34 699 100 ${String(rank).padStart(3, '0')}`,
-      email: `${rm.first.toLowerCase().split(' ')[0]}.${rm.last.toLowerCase().replace(/\s+/g, '')}@padelfip.com`,
-      city: rm.city,
-      birthDate: `${1980 + (rank % 25)}-${String(1 + (rank % 11)).padStart(2, '0')}-${String(1 + (rank % 27)).padStart(2, '0')}`,
-      category,
-      rankingPoints: rm.points,
-      photoUrl: getUnsplashAvatarUrlByGender("m", i),
-      matchesPlayed,
-      matchesWon,
-      matchesLost,
-      setsWon: matchesWon * 2 + Math.floor(Math.random() * matchesLost),
-      setsLost: matchesLost * 2 + Math.floor(Math.random() * matchesWon),
-      gamesWon: matchesWon * 12 + Math.floor(Math.random() * matchesLost * 4),
-      gamesLost: matchesLost * 12 + Math.floor(Math.random() * matchesWon * 4)
-    });
-  }
-
-  // Expand dynamically up to 100
-  let currentPoints = REAL_MALES[REAL_MALES.length - 1].points;
-  for (let rank = REAL_MALES.length + 1; rank <= totalSlots; rank++) {
-    currentPoints -= 15 + Math.floor(Math.random() * 10);
-    if (currentPoints < 400) currentPoints = 400;
-
-    const fn = FIRST_NAMES_MASC[(rank * 3) % FIRST_NAMES_MASC.length];
-    const ln = LAST_NAMES[(rank * 7) % LAST_NAMES.length];
-    const ln2 = LAST_NAMES[(rank * 13) % LAST_NAMES.length];
-    const location = rank % 2 === 0 
-      ? SPAIN_CITIES[rank % SPAIN_CITIES.length] 
-      : LAT_AM_CITIES[rank % LAT_AM_CITIES.length];
-
-    let category = "Libre Masculina";
-    if (rank > 20 && rank <= 40) category = "4ta Masculina";
-    else if (rank > 40 && rank <= 60) category = "5ta Masculina";
-    else if (rank > 60 && rank <= 80) category = "6ta Masculina";
-    else if (rank > 80) category = "7ma Masculina";
-
-    const matchesPlayed = 15 + Math.floor(Math.random() * 25);
-    const winRate = 0.40 + (Math.random() * 0.20);
-    const matchesWon = Math.round(matchesPlayed * winRate);
-    const matchesLost = matchesPlayed - matchesWon;
+    // Create unique properties
+    const catCode = category.substring(0, 3).toLowerCase().replace(/\s+/g, '');
+    const id = `fip_${catCode}_${rank}_${firstName.toLowerCase().replace(/[^a-z]/g, '')}_${lastName.toLowerCase().split(' ')[0]}`;
+    const dniLastLetter = "TRWAGMYFPDXBNJZSQVHLCKE"[ (rank + catHash) % 23 ];
+    const dni = `${30000000 + rank * 9271 + catHash * 73 % 9000000}${dniLastLetter}`;
+    const phone = `+34 6${String((catHash + rank) % 9).padEnd(2, '0')} ${String(100 + rank).padStart(3, '0')} ${String(200 + (catHash % 500)).padStart(3, '0')}`;
+    const email = `${firstName.toLowerCase().split(' ')[0]}.${lastName.replace(/\s+/g, '').toLowerCase()}${rank}@padelfip.org`;
 
     result.push({
-      id: `fip_male_${rank}_${fn.toLowerCase()}_${ln.toLowerCase()}`,
-      firstName: fn,
-      lastName: `${ln} ${ln2}`,
-      dni: `${31000000 + rank * 91283}X`,
-      phone: `+34 602 441 ${String(rank).padStart(3, '0')}`,
-      email: `${fn.toLowerCase()}.${ln.toLowerCase()}@padelfip.com`,
-      city: location.city,
-      birthDate: `${1983 + (rank % 22)}-${String(1 + (rank % 11)).padStart(2, '0')}-${String(1 + (rank % 27)).padStart(2, '0')}`,
+      id,
+      firstName,
+      lastName,
+      dni,
+      phone,
+      email,
+      city,
+      birthDate: `${1980 + ((rank + catHash) % 23)}-${String(1 + ((rank + catHash) % 11)).padStart(2, '0')}-${String(1 + (rank % 27)).padStart(2, '0')}`,
       category,
-      rankingPoints: currentPoints,
-      photoUrl: getUnsplashAvatarUrlByGender("m", rank),
+      rankingPoints: points,
+      photoUrl: getUnsplashAvatarUrlByGender(genderKey, rank + catHash),
       matchesPlayed,
       matchesWon,
       matchesLost,
@@ -276,91 +287,30 @@ export const getFIPTop100Males = (): Player[] => {
   return result;
 };
 
+// Legacy compatible exports: they automatically return the full collective arrays
+export const getFIPTop100Males = (): Player[] => {
+  const categories = [
+    "Libre Masculina",
+    "4ta Masculina",
+    "5ta Masculina",
+    "6ta Masculina",
+    "7ma Masculina"
+  ];
+  let allMales: Player[] = [];
+  for (const cat of categories) {
+    allMales = [...allMales, ...getFIPPlayersForCategory(cat)];
+  }
+  return allMales;
+};
+
 export const getFIPTop100Females = (): Player[] => {
-  const result: Player[] = [];
-  const totalSlots = 100;
-
-  // Add the real ones first
-  for (let i = 0; i < REAL_FEMALES.length && i < totalSlots; i++) {
-    const rf = REAL_FEMALES[i];
-    const rank = i + 1;
-    
-    // Distribute perfectly between the 2 feminine categories: 6ta Femenina, 7ma Femenina
-    // 6ta Femenina: Rank 1-50
-    // 7ma Femenina: Rank 51-100
-    let category = "6ta Femenina";
-    if (rank > 50) category = "7ma Femenina";
-
-    const matchesPlayed = 38 + Math.floor(Math.random() * 28);
-    // Highest ranked have higher winrates (e.g. 80-92% vs 45-60%)
-    const winRate = rank <= 10 ? 0.85 + (Math.random() * 0.08) : rank <= 30 ? 0.70 + (Math.random() * 0.15) : 0.45 + (Math.random() * 0.25);
-    const matchesWon = Math.round(matchesPlayed * winRate);
-    const matchesLost = matchesPlayed - matchesWon;
-
-    result.push({
-      id: `fip_female_${rank}_${rf.first.toLowerCase().replace(/\s+/g, '_')}_${rf.last.toLowerCase().replace(/\s+/g, '_')}`,
-      firstName: rf.first,
-      lastName: rf.last,
-      dni: `${40000000 + rank * 73921}F`,
-      phone: `+34 688 200 ${String(rank).padStart(3, '0')}`,
-      email: `${rf.first.toLowerCase().split(' ')[0]}.${rf.last.toLowerCase().replace(/\s+/g, '')}@padelfip.com`,
-      city: rf.city,
-      birthDate: `${1982 + (rank % 23)}-${String(1 + (rank % 11)).padStart(2, '0')}-${String(1 + (rank % 27)).padStart(2, '0')}`,
-      category,
-      rankingPoints: rf.points,
-      photoUrl: getUnsplashAvatarUrlByGender("f", i),
-      matchesPlayed,
-      matchesWon,
-      matchesLost,
-      setsWon: matchesWon * 2 + Math.floor(Math.random() * matchesLost),
-      setsLost: matchesLost * 2 + Math.floor(Math.random() * matchesWon),
-      gamesWon: matchesWon * 12 + Math.floor(Math.random() * matchesLost * 4),
-      gamesLost: matchesLost * 12 + Math.floor(Math.random() * matchesWon * 4)
-    });
+  const categories = [
+    "6ta Femenina",
+    "7ma Femenina"
+  ];
+  let allFemales: Player[] = [];
+  for (const cat of categories) {
+    allFemales = [...allFemales, ...getFIPPlayersForCategory(cat)];
   }
-
-  // Expand dynamically up to 100
-  let currentPoints = REAL_FEMALES[REAL_FEMALES.length - 1].points;
-  for (let rank = REAL_FEMALES.length + 1; rank <= totalSlots; rank++) {
-    currentPoints -= 15 + Math.floor(Math.random() * 10);
-    if (currentPoints < 350) currentPoints = 350;
-
-    const fn = FIRST_NAMES_FEM[(rank * 3) % FIRST_NAMES_FEM.length];
-    const ln = LAST_NAMES[(rank * 9) % LAST_NAMES.length];
-    const ln2 = LAST_NAMES[(rank * 11) % LAST_NAMES.length];
-    const location = rank % 2 === 0 
-      ? SPAIN_CITIES[rank % SPAIN_CITIES.length] 
-      : LAT_AM_CITIES[rank % LAT_AM_CITIES.length];
-
-    let category = "6ta Femenina";
-    if (rank > 50) category = "7ma Femenina";
-
-    const matchesPlayed = 12 + Math.floor(Math.random() * 22);
-    const winRate = 0.40 + (Math.random() * 0.20);
-    const matchesWon = Math.round(matchesPlayed * winRate);
-    const matchesLost = matchesPlayed - matchesWon;
-
-    result.push({
-      id: `fip_female_${rank}_${fn.toLowerCase()}_${ln.toLowerCase()}`,
-      firstName: fn,
-      lastName: `${ln} ${ln2}`,
-      dni: `${42000000 + rank * 81273}K`,
-      phone: `+34 602 552 ${String(rank).padStart(3, '0')}`,
-      email: `${fn.toLowerCase()}.${ln.toLowerCase()}@padelfip.com`,
-      city: location.city,
-      birthDate: `${1985 + (rank % 20)}-${String(1 + (rank % 11)).padStart(2, '0')}-${String(1 + (rank % 27)).padStart(2, '0')}`,
-      category,
-      rankingPoints: currentPoints,
-      photoUrl: getUnsplashAvatarUrlByGender("f", rank),
-      matchesPlayed,
-      matchesWon,
-      matchesLost,
-      setsWon: matchesWon * 2 + Math.floor(Math.random() * matchesLost),
-      setsLost: matchesLost * 2 + Math.floor(Math.random() * matchesWon),
-      gamesWon: matchesWon * 12 + Math.floor(Math.random() * matchesLost * 4),
-      gamesLost: matchesLost * 12 + Math.floor(Math.random() * matchesWon * 4)
-    });
-  }
-
-  return result;
+  return allFemales;
 };

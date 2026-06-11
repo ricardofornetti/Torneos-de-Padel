@@ -296,7 +296,7 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole }) => {
 
       await repository.addNotification(
         "Importación FIP Exitosa",
-        "Se han cargado los 100 mejores jugadores masculinos y 100 mejores femeninas de la FIP en sus respectivas categorías del ranking real.",
+        "Se han cargado 100 jugadores en cada una de las 7 categorías (700 jugadores en total: 500 masculinos y 200 femeninas) para simular torneos completos.",
         "success"
       );
       loadPlayers();
@@ -369,9 +369,9 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole }) => {
             <button
               onClick={handleImportFIPPlayers}
               className="bg-indigo-950 hover:bg-indigo-900 text-indigo-300 hover:text-white border border-indigo-800 text-[11px] font-black px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition cursor-pointer uppercase tracking-wider text-center"
-              title="Cargar automáticamente los 100 mejores masculinos y 100 femeninas del ranking oficial de la FIP"
+              title="Cargar automáticamente 100 jugadores premium por categoría (700 jugadores en total: 50% de origen FIP real)"
             >
-              <span>🎾 Cargar Ránking FIP (100 M/F)</span>
+              <span>🎾 Cargar Ránking FIP (100 x Categoría)</span>
             </button>
           )}
           <button
