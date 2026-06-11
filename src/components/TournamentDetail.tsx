@@ -655,9 +655,7 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
           category: selectedCategory
         });
 
-        for (const m of allGeneratedMatches) {
-          await repository.saveMatch(m);
-        }
+        await Promise.all(allGeneratedMatches.map(m => repository.saveMatch(m)));
 
         if (tournament.status === "registration") {
           const updatedTournament: Tournament = {
@@ -805,9 +803,7 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
           category: selectedCategory
         });
 
-        for (const m of allGeneratedMatches) {
-          await repository.saveMatch(m);
-        }
+        await Promise.all(allGeneratedMatches.map(m => repository.saveMatch(m)));
 
         if (tournament.status === "registration") {
           const updatedTournament: Tournament = {
@@ -978,9 +974,7 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
           category: selectedCategory
         });
 
-        for (const m of allGeneratedMatches) {
-          await repository.saveMatch(m);
-        }
+        await Promise.all(allGeneratedMatches.map(m => repository.saveMatch(m)));
 
         if (tournament.status === "registration") {
           const updatedTournament: Tournament = {
@@ -1005,15 +999,11 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
       const allGeneratedMatches = generateNextDosVidasRound(sortedPairs, [], tournamentId, selectedCategory, tournament.startDate);
 
       // Force save all matches to repository
-      for (const m of allGeneratedMatches) {
-        await repository.saveMatch(m);
-      }
+      await Promise.all(allGeneratedMatches.map(m => repository.saveMatch(m)));
 
       // Pre-generate all empty playoff phases (16avos, 8avos, 4tos, semis, final)
       const emptyPlayoffs = preGeneratePlayoffsHelper(tournamentId, selectedCategory);
-      for (const m of emptyPlayoffs) {
-        await repository.saveMatch(m);
-      }
+      await Promise.all(emptyPlayoffs.map(m => repository.saveMatch(m)));
 
       // Update tournament status to "in_progress" if it was registrations
       if (tournament.status === "registration") {

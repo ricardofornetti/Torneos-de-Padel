@@ -259,10 +259,10 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
             <div>
               <span className="font-extrabold text-xl tracking-tight text-white block font-display italic">
-                PADEL <span className="text-cyan-400 font-display">PRO</span>
+                SRTC <span className="text-cyan-400 font-display">PÁDEL</span>
               </span>
               <span className="text-[9px] text-[#22d3ee] font-mono tracking-widest block -mt-1 uppercase font-semibold">
-                Tournament Manager
+                Manager Automático
               </span>
             </div>
           </div>

@@ -126,7 +126,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <Trophy className="w-3.5 h-3.5 text-[#d4fc34]" /> EQUIPAMIENTO Y CANCHAS DE NIVEL PRO
           </span>
           <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-white mb-2 font-display italic uppercase">
-            PADEL PRO <span className="text-[#d4fc34] not-italic font-sans">|</span> CIRCUITO 2026
+            SRTC PÁDEL <span className="text-[#d4fc34] not-italic font-sans">|</span> CIRCUITO 2026
           </h1>
           <p className="text-slate-200 text-xs md:text-sm leading-relaxed font-sans">
             Plataforma automática para la distribución de grupos, fixtures Round Robin con control de canchas, carga de resultados, playoffs automáticos de eliminación directa y actualización de ránking anual.

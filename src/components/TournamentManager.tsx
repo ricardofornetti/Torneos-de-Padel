@@ -1161,60 +1161,35 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
               </div>
 
               {/* Tournament structure configs (groups / max couples) */}
-              <div className="grid grid-cols-3 gap-4 bg-slate-950 p-4 rounded-xl border border-slate-880">
-                
-                <div className="space-y-1">
-                  <label className="block text-[9px] text-slate-400 font-mono uppercase">Max Parejas</label>
-                  <select
-                    value={newT.maxPairs}
-                    onChange={(e) => setNewT({...newT, maxPairs: Number(e.target.value)})}
-                    className="w-full bg-slate-900 border border-slate-800 rounded p-1 text-slate-100 outline-none"
-                  >
-                    {[4, 6, 8, 12, 16, 24, 32].map(n => (
-                      <option key={n} value={n}>{n} Parejas</option>
-                    ))}
-                  </select>
+              <div className="bg-slate-950 p-4 rounded-xl border border-slate-800/80">
+                <div className="space-y-1 text-center">
+                  <label className="block text-[10px] text-[#d4fc34] font-mono uppercase tracking-wider font-bold">Capacidad del Torneo (Total Registros)</label>
+                  <div className="flex items-center justify-center gap-2 mt-2">
+                    <select
+                      value={newT.maxPairs}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        setNewT({
+                          ...newT, 
+                          maxPairs: val,
+                          numGroups: Math.max(2, Math.floor(val / 3)),
+                          numCourts: courts.filter(c => c.active).length || 3
+                        });
+                      }}
+                      className="bg-slate-900 border border-slate-800 rounded-lg px-4 py-2 text-[#d4fc34] outline-none text-center font-black text-sm tracking-wide focus:border-indigo-500 hover:border-slate-700 transition"
+                    >
+                      {[4, 6, 8, 12, 16, 18, 20, 22, 24, 26, 28, 30, 32, 40, 48, 64].map(n => (
+                        <option key={n} value={n} className="text-white font-sans">{n} Parejas Permitidas</option>
+                      ))}
+                      {![4, 6, 8, 12, 16, 18, 20, 22, 24, 26, 28, 30, 32, 40, 48, 64].includes(newT.maxPairs) && (
+                        <option value={newT.maxPairs} className="text-[#d4fc34]">{newT.maxPairs} Parejas (Especial)</option>
+                      )}
+                    </select>
+                  </div>
+                  <p className="text-[10px] text-slate-400 mt-2 font-mono">
+                    El motor automático calculará y sincronizará la cantidad de Zonas, Canchas y cruces de la fase eliminatoria basándose únicamente en el número de parejas inscriptas.
+                  </p>
                 </div>
-
-                <div className="space-y-1">
-                  <label className="block text-[9px] text-slate-400 font-mono uppercase">Cant Zonas (Grupos)</label>
-                  <select
-                    value={newT.numGroups}
-                    onChange={(e) => setNewT({...newT, numGroups: Number(e.target.value)})}
-                    className="w-full bg-slate-900 border border-slate-800 rounded p-1 text-slate-100 outline-none"
-                  >
-                    {(() => {
-                      const groupOptions = [1, 2, 3, 4, 6, 8];
-                      if (newT.maxPairs === 32) {
-                        groupOptions.push(18);
-                      }
-                      return groupOptions.map(n => (
-                        <option key={n} value={n}>{n} Grupos</option>
-                      ));
-                    })()}
-                  </select>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="block text-[9px] text-slate-400 font-mono uppercase">Pistas complejas</label>
-                  <select
-                    value={newT.numCourts}
-                    onChange={(e) => setNewT({...newT, numCourts: Number(e.target.value)})}
-                    className="w-full bg-slate-900 border border-slate-800 rounded p-1 text-slate-100 outline-none"
-                  >
-                    {(() => {
-                      const activeCourtsList = courts.filter(c => c.active);
-                      const maxSelectableCourts = activeCourtsList.length > 0 ? activeCourtsList.length : 8;
-                      const courtNumbers = Array.from({ length: maxSelectableCourts }, (_, i) => i + 1);
-                      return courtNumbers.map(n => (
-                        <option key={n} value={n}>
-                          {n} {n === 1 ? 'Cancha' : 'Canchas'} (Habilitadas: {activeCourtsList.length || 0})
-                        </option>
-                      ));
-                    })()}
-                  </select>
-                </div>
-
               </div>
 
               {/* Action Buttons */}
@@ -1309,6 +1284,60 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
                 })}
               </div>
 
+              {/* Opciones Adicionales / Cantidad Personalizada */}
+              <div className="bg-slate-950 p-4 border border-slate-800/80 rounded-xl space-y-3">
+                <span className="text-white font-extrabold text-[11px] uppercase tracking-wider block font-mono text-emerald-400">
+                  ¿Otra Cantidad de Parejas?
+                </span>
+                <p className="text-[10px] text-slate-400">
+                  Selecciona de entre las otras capacidades reglamentarias o ingresa manualmente cualquier número deseado de parejas:
+                </p>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[9px] text-slate-400 uppercase font-mono mb-1">Capacidades Standard</label>
+                    <select
+                      value={[16, 24, 32].includes(newT.maxPairs) ? "" : newT.maxPairs}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        if (val) {
+                          setNewT({
+                            ...newT,
+                            maxPairs: val,
+                            numGroups: Math.max(2, Math.floor(val / 3))
+                          });
+                        }
+                      }}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs text-white outline-none focus:border-indigo-500"
+                    >
+                      <option value="">-- Seleccionar otra --</option>
+                      {[8, 12, 18, 20, 22, 26, 28, 30, 40, 48, 64].map((size) => (
+                        <option key={size} value={size}>{size} Parejas</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[9px] text-slate-400 uppercase font-mono mb-1">Ingresar Manual (Cualquiera)</label>
+                    <input
+                      type="number"
+                      min={2}
+                      max={128}
+                      value={newT.maxPairs}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        setNewT({
+                          ...newT,
+                          maxPairs: val || 2,
+                          numGroups: Math.max(2, Math.floor((val || 2) / 3))
+                        });
+                      }}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-lg p-1.5 text-xs text-white text-center font-bold tracking-wider outline-none focus:border-indigo-500 h-[34px]"
+                    />
+                  </div>
+                </div>
+              </div>
+
               {/* Dynamic Information Banner based on selection */}
               {newT.maxPairs === 32 ? (
                 <div className="bg-indigo-950/20 border border-indigo-500/20 rounded-2xl p-4 space-y-4 shadow-sm">
@@ -1334,7 +1363,7 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
                     </div>
                   </div>
                 </div>
-              ) : (
+              ) : newT.maxPairs === 16 ? (
                 <div className="bg-indigo-950/20 border border-indigo-500/20 rounded-2xl p-4 space-y-4 shadow-sm">
                   <div className="flex gap-2">
                     <Sparkles className="w-5 h-5 text-indigo-400 shrink-0 mt-0.5" />
@@ -1342,6 +1371,18 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
                       <h4 className="font-extrabold text-[#d4fc34] text-xs font-display">Formato Directo Oficial SRTC 16</h4>
                       <p className="text-[11px] text-slate-300 mt-1 leading-relaxed">
                         Sistema de cuadro reglamentario de 16 parejas coordinado con un fixture pre-armado y progresión sincronizada de dos vidas garantizadas para competiciones de alto rendimiento.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-indigo-950/20 border border-indigo-500/20 rounded-2xl p-4 space-y-4 shadow-sm">
+                  <div className="flex gap-2">
+                    <Sparkles className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="font-extrabold text-emerald-400 text-xs font-display">Formato Adaptativo {newT.maxPairs} Parejas</h4>
+                      <p className="text-[11px] text-slate-300 mt-1 leading-relaxed">
+                        El sistema SRTC adaptará automáticamente los grupos equilibrados de 3 o 4 parejas (o de 2 si fuera indispensable) garantizando que todos jueguen un mínimo de 2 partidos. Fase eliminatoria directa calibrada hacia la potencia de 2 más cercana.
                       </p>
                     </div>
                   </div>

@@ -886,14 +886,16 @@ class PadelRepository {
     this.saveAllToStorage();
 
     if (isRealFirebase) {
-      setDoc(doc(db, "pairs", pr.id), pr).catch((err) => {
+      try {
+        await setDoc(doc(db, "pairs", pr.id), pr);
+      } catch (err: any) {
         handleFirestoreError(err, OperationType.WRITE, `pairs/${pr.id}`);
         this.addNotification(
           "Inscripción guardada en Sandbox",
           "Pareja inscrita y guardada localmente en tu navegador. Conéctate con Google para sincronizar en tiempo real.",
           "warning"
         );
-      });
+      }
     }
   }
 
@@ -902,14 +904,16 @@ class PadelRepository {
     this.saveAllToStorage();
 
     if (isRealFirebase) {
-      deleteDoc(doc(db, "pairs", id)).catch((err) => {
+      try {
+        await deleteDoc(doc(db, "pairs", id));
+      } catch (err: any) {
         handleFirestoreError(err, OperationType.DELETE, `pairs/${id}`);
         this.addNotification(
           "Inscripción cancelada localmente",
           "Pareja removida localmente del navegador.",
           "warning"
         );
-      });
+      }
     }
   }
 
@@ -951,14 +955,16 @@ class PadelRepository {
     this.saveAllToStorage();
 
     if (isRealFirebase) {
-      setDoc(doc(db, "matches", m.id), m).catch((err) => {
+      try {
+        await setDoc(doc(db, "matches", m.id), m);
+      } catch (err: any) {
         handleFirestoreError(err, OperationType.WRITE, `matches/${m.id}`);
         this.addNotification(
           "Resultado guardado en Sandbox",
           "Marcador registrado localmente en tu navegador. Inicia sesión con la cuenta de administrador para guardar cambios en tiempo real.",
           "warning"
         );
-      });
+      }
     }
   }
 
