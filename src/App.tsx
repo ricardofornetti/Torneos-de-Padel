@@ -25,10 +25,17 @@ import { repository } from './lib/repository';
 export default function App() {
   const [activeView, setActiveView] = useState<"dashboard" | "tournaments" | "players" | "rankings" | "courts" | "gallery">("dashboard");
   const [selectedTournamentId, setSelectedTournamentId] = useState<string | null>(null);
+  const [isIsolatedInscriptions, setIsIsolatedInscriptions] = useState(false);
   
   // High fidelity roles (Admin has creation/draw powers, Player has read-only exploration powers)
   const [userRole, setUserRole] = useState<"admin" | "player">("admin");
   const [notifications, setNotifications] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (selectedTournamentId === null) {
+      setIsIsolatedInscriptions(false);
+    }
+  }, [selectedTournamentId]);
 
   const loadNotifications = async () => {
     const list = await repository.getNotifications();
@@ -56,18 +63,21 @@ export default function App() {
     <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100 selection:bg-blue-500 selection:text-white">
       
       {/* Visual Navigation Bar */}
-      <Navbar 
-        userRole={userRole} 
-        onChangeRole={(role) => setUserRole(role)}
-        onNavigate={(view) => {
-          setSelectedTournamentId(null);
-          setActiveView(view);
-        }}
-        activeView={selectedTournamentId ? "tournaments" : activeView}
-        notifications={notifications}
-        onClearNotifications={handleClearAlerts}
-        onMarkAllRead={handleMarkAllRead}
-      />
+      {!isIsolatedInscriptions && (
+        <Navbar 
+          userRole={userRole} 
+          onChangeRole={(role) => setUserRole(role)}
+          onNavigate={(view) => {
+            setSelectedTournamentId(null);
+            setIsIsolatedInscriptions(false);
+            setActiveView(view);
+          }}
+          activeView={selectedTournamentId ? "tournaments" : activeView}
+          notifications={notifications}
+          onClearNotifications={handleClearAlerts}
+          onMarkAllRead={handleMarkAllRead}
+        />
+      )}
 
       {/* Main Core Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -75,7 +85,13 @@ export default function App() {
           <TournamentDetail 
             tournamentId={selectedTournamentId}
             userRole={userRole}
-            onBack={() => setSelectedTournamentId(null)}
+            onBack={() => {
+              setSelectedTournamentId(null);
+              setIsIsolatedInscriptions(false);
+            }}
+            onIsolateModeChange={(isolated) => {
+              setIsIsolatedInscriptions(isolated);
+            }}
           />
         ) : (
           <>
