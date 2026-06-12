@@ -189,14 +189,14 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
 
   useEffect(() => {
     if (onIsolateModeChange) {
-      onIsolateModeChange(viewMode === "isolated" && activeTab === "inscriptions");
+      onIsolateModeChange(viewMode === "isolated");
     }
     return () => {
       if (onIsolateModeChange) {
         onIsolateModeChange(false);
       }
     };
-  }, [viewMode, activeTab, onIsolateModeChange]);
+  }, [viewMode, onIsolateModeChange]);
 
   // Selected Category
   const categoryInitialized = React.useRef(false);
@@ -2903,27 +2903,137 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
       
       {viewMode === "isolated" ? (
         <div className="space-y-6">
-          {/* HEADER NAV FOR ISOLATED VIEW */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800 pb-4 gap-4">
-            <button
-              onClick={() => {
-                setViewMode("dashboard");
-              }}
-              className="bg-slate-900 hover:bg-slate-850 text-[#d4fc34] hover:text-white border border-[#d4fc34]/20 hover:border-[#d4fc34]/50 text-xs px-4 py-2.5 rounded-xl flex items-center gap-2 transition cursor-pointer font-bold w-fit uppercase tracking-wider"
-            >
-              <ArrowLeft className="w-4 h-4" /> Regresar
-            </button>
+          {/* HEADER NAV FOR ISOLATED VIEW SYSTEM */}
+          {activeTab === "matches" ? (
+            <div className="bg-gradient-to-r from-slate-900/90 to-slate-950/80 p-6 rounded-2xl border border-slate-800/80 shadow-2xl relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div className="absolute right-0 top-0 bottom-0 w-1/3 opacity-[0.03] pointer-events-none">
+                <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
+                  <defs>
+                    <pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
+                      <path d="M 10 0 L 0 0 0 10" fill="none" stroke="white" strokeWidth="0.5"/>
+                    </pattern>
+                  </defs>
+                  <rect width="100%" height="100%" fill="url(#grid)" />
+                </svg>
+              </div>
 
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => handleOpenPrintSheet(activeTab === "inscriptions" ? "inscriptions" : activeTab === "matches" ? "matches" : activeTab === "standings" ? "standings" : "playoffs")}
-                className="bg-[#d4fc34]/15 hover:bg-[#d4fc34] hover:text-slate-950 text-[#d4fc34] text-[10px] font-extrabold px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition cursor-pointer border border-[#d4fc34]/20 uppercase tracking-widest"
-                title="Ver planilla limpia oficial de esta categoría para imprimir o exportar, sin menús de navegación"
-              >
-                <Printer className="w-4 h-4" /> Abrir planilla oficial limpia
-              </button>
+              {/* Title Section with Sticker */}
+              <div className="flex items-center gap-5 relative z-10">
+                {/* Dynamic Padel Racket & Ball Sticker (Custom Neon SVG) */}
+                <div className="w-20 h-20 shrink-0 bg-[#d4fc34]/10 rounded-2xl border border-[#d4fc34]/30 flex items-center justify-center p-2 shadow-inner relative group select-none">
+                  <div className="absolute inset-0 bg-[#d4fc34]/5 rounded-2xl animate-pulse"></div>
+                  <svg className="w-14 h-14 relative z-10" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    {/* Handle */}
+                    <path d="M42 58 L28 78 C25 82 18 80 16 75 C14 70 17 64 21 61 L36 47" stroke="#d4fc34" strokeWidth="4.5" strokeLinecap="round" />
+                    {/* Grip tape details */}
+                    <path d="M25 71 L20 74" stroke="#0f172a" strokeWidth="2" strokeLinecap="round" />
+                    <path d="M22 75 L18 78" stroke="#0f172a" strokeWidth="2" strokeLinecap="round" />
+                    {/* Racket Frame */}
+                    <circle cx="53" cy="41" r="18" fill="#1e293b" stroke="#d4fc34" strokeWidth="5.5" />
+                    {/* Face holes */}
+                    <circle cx="47" cy="35" r="1.5" fill="#d4fc34" />
+                    <circle cx="53" cy="35" r="1.5" fill="#d4fc34" />
+                    <circle cx="59" cy="35" r="1.5" fill="#d4fc34" />
+                    <circle cx="47" cy="41" r="1.5" fill="#d4fc34" />
+                    <circle cx="53" cy="41" r="1.5" fill="#d4fc34" />
+                    <circle cx="59" cy="41" r="1.5" fill="#d4fc34" />
+                    <circle cx="47" cy="47" r="1.5" fill="#d4fc34" />
+                    <circle cx="53" cy="47" r="1.5" fill="#d4fc34" />
+                    <circle cx="59" cy="47" r="1.5" fill="#d4fc34" />
+                    <path d="M42 51 L44 49" stroke="#d4fc34" strokeWidth="3" strokeLinecap="round" />
+                    <path d="M64 31 L62 33" stroke="#d4fc34" strokeWidth="3" strokeLinecap="round" />
+                    {/* Padel Ball */}
+                    <circle cx="74" cy="62" r="7" fill="#d4fc34" stroke="#ffffff" strokeWidth="1.5" />
+                    <path d="M70 59 C72 61 72 63 70 65" stroke="#0f172a" strokeWidth="1.2" strokeLinecap="round" fill="none" />
+                    <path d="M78 59 C76 61 76 63 78 65" stroke="#0f172a" strokeWidth="1.2" strokeLinecap="round" fill="none" />
+                  </svg>
+                  <span className="absolute -top-1.5 -right-1.5 bg-[#d4fc34] text-slate-950 font-black text-[9px] px-1.5 py-0.5 rounded-full shadow border border-slate-950 uppercase tracking-widest leading-none font-sans">PÁDEL</span>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <h1 className="text-4xl sm:text-5xl font-black uppercase tracking-wider text-[#d4fc34] drop-shadow-[0_2px_12px_rgba(212,252,52,0.3)] select-none">
+                      Partidos
+                    </h1>
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3 text-slate-400">
+                    <span className="text-xs sm:text-sm font-semibold tracking-wide text-slate-200">
+                      {tournament?.name}
+                    </span>
+                    <span className="hidden sm:inline text-slate-600">•</span>
+                    <span className="bg-[#d4fc34]/10 text-[#d4fc34] border border-[#d4fc34]/20 px-2.5 py-0.5 rounded-lg text-xs font-bold w-fit uppercase tracking-wider font-mono">
+                      {selectedCategory}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-wrap items-center gap-2 relative z-10 sm:self-end md:self-center">
+                <button
+                  onClick={() => {
+                    setViewMode("dashboard");
+                  }}
+                  className="bg-slate-900 hover:bg-slate-850 text-slate-200 hover:text-white border border-slate-800 hover:border-[#d4fc34]/50 text-xs px-4 py-2.5 rounded-xl flex items-center gap-2 transition cursor-pointer font-bold uppercase tracking-wider shadow-md"
+                >
+                  <ArrowLeft className="w-4 h-4" /> Regresar
+                </button>
+
+                <button
+                  onClick={() => handleOpenPrintSheet("matches")}
+                  className="bg-[#d4fc34]/15 hover:bg-[#d4fc34] hover:text-slate-950 text-[#d4fc34] text-[10px] font-extrabold px-3.5 py-2.5 rounded-xl flex items-center gap-1.5 transition cursor-pointer border border-[#d4fc34]/20 uppercase tracking-widest shadow-md"
+                  title="Ver planilla limpia oficial de esta categoría para imprimir o exportar, sin menús de navegación"
+                >
+                  <Printer className="w-4 h-4" /> Abrir planilla oficial limpia
+                </button>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="bg-gradient-to-r from-slate-900/60 to-slate-950/65 p-5 rounded-2xl border border-slate-800/60 shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-5">
+              <div className="flex items-center gap-4">
+                {activeTab === "inscriptions" ? (
+                  <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 font-extrabold text-xl select-none">
+                    👥
+                  </div>
+                ) : activeTab === "standings" ? (
+                  <div className="w-12 h-12 rounded-xl bg-[#d4fc34]/10 border border-[#d4fc34]/20 flex items-center justify-center text-[#d4fc34] font-extrabold text-xl select-none">
+                    📊
+                  </div>
+                ) : (
+                  <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 font-extrabold text-xl select-none">
+                    🏆
+                  </div>
+                )}
+                <div>
+                  <h1 className="text-2xl sm:text-3xl font-extrabold uppercase tracking-wide text-white">
+                    {activeTab === "inscriptions" ? "Parejas Registradas" : activeTab === "standings" ? "Posiciones" : "Playoffs Bracket"}
+                  </h1>
+                  <span className="text-xs text-slate-400 block font-medium">
+                    {tournament?.name} • <span className="text-[#d4fc34] font-bold font-mono">{selectedCategory}</span>
+                  </span>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  onClick={() => {
+                    setViewMode("dashboard");
+                  }}
+                  className="bg-slate-900 hover:bg-slate-850 text-slate-350 hover:text-white border border-slate-800 hover:border-[#d4fc34]/20 text-xs px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition cursor-pointer font-bold uppercase tracking-wider"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" /> Regresar
+                </button>
+
+                <button
+                  onClick={() => handleOpenPrintSheet(activeTab === "inscriptions" ? "inscriptions" : activeTab === "standings" ? "standings" : "playoffs")}
+                  className="bg-slate-900 hover:bg-slate-850 text-slate-300 hover:text-[#d4fc34] border border-slate-800 text-[10px] font-bold px-3.5 py-2.5 rounded-xl flex items-center gap-1.5 transition cursor-pointer uppercase tracking-widest"
+                >
+                  <Printer className="w-3.5 h-3.5" /> Abrir planilla limpia
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* COMPACT CATEGORIES SELECTOR INSIDE ISOLATED VIEW */}
           {activeTab !== "inscriptions" && (
@@ -3860,100 +3970,181 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
                 return true;
               });
 
+              // Helper definitions for grouping and sorting tournament divisions/rounds
+              const getMatchGroupLabel = (m: Match) => {
+                const name = m.stageName.toLowerCase();
+                if (name.includes("grupo")) return "Fase de Grupos";
+                if (name.includes("ronda 1")) return "Ronda 1";
+                if (name.includes("ronda 2")) return "Ronda 2";
+                if (name.includes("clasificatoria") || name.includes("rc ")) return "Fase Clasificatoria";
+                if (name.includes("16avos") || name.includes("dieciseisavos")) return "16avos de Final";
+                if (name.includes("octavos") || name.includes("8avos")) return "Octavos de Final";
+                if (name.includes("cuartos") || name.includes("4tos")) return "Cuartos de Final";
+                if (name.includes("semifinal")) return "Semifinales";
+                if (name.includes("final")) return "Gran Final";
+                return m.stageName || "Otras Fases";
+              };
+
+              const getGroupWeight = (label: string) => {
+                if (label.includes("Grupos") || label.includes("Grupo")) return 1;
+                if (label === "Ronda 1") return 2;
+                if (label === "Ronda 2") return 3;
+                if (label.includes("Clasificatoria")) return 4;
+                if (label.includes("16avos")) return 5;
+                if (label.includes("Octavos") || label.includes("8avos")) return 6;
+                if (label.includes("Cuartos") || label.includes("4tos")) return 7;
+                if (label.includes("Semifinales") || label.includes("Semifinal")) return 8;
+                if (label.includes("Gran Final") || label.includes("Final")) return 9;
+                return 10;
+              };
+
+              const getGroupIcon = (label: string) => {
+                if (label.includes("Grupos") || label.includes("Grupo")) return "🎾";
+                if (label === "Ronda 1") return "📈";
+                if (label === "Ronda 2") return "📊";
+                if (label.includes("Clasificatoria")) return "🎯";
+                if (label.includes("16avos")) return "🛡️";
+                if (label.includes("Octavos") || label.includes("8avos")) return "⚡";
+                if (label.includes("Cuartos") || label.includes("4tos")) return "⚔️";
+                if (label.includes("Semifinales") || label.includes("Semifinal")) return "🥈";
+                if (label.includes("Gran Final") || label.includes("Final")) return "🏆";
+                return "📌";
+              };
+
+              // Perform division-based grouping
+              interface GroupedMatches {
+                [key: string]: Match[];
+              }
+
+              const grouped: GroupedMatches = {};
+              matchesToRender.forEach(m => {
+                const label = getMatchGroupLabel(m);
+                if (!grouped[label]) {
+                  grouped[label] = [];
+                }
+                grouped[label].push(m);
+              });
+
+              // Extract and sort unique group keys
+              const groupKeys = Object.keys(grouped).sort((a, b) => getGroupWeight(a) - getGroupWeight(b));
+
               return (
-                <div className="bg-slate-900 border border-slate-800 rounded-xl divide-y divide-slate-800">
-                  {matchesToRender.length === 0 ? (
-                    <div className="p-8 text-center text-slate-500 text-xs font-mono">
+                <div className="space-y-8">
+                  {groupKeys.length === 0 ? (
+                    <div className="bg-slate-900 border border-slate-800 rounded-xl p-8 text-center text-slate-500 text-xs font-mono">
                       No hay partidos registrados de momento para esta fase del torneo.
                     </div>
                   ) : (
-                    matchesToRender.map(m => {
-                      const finished = m.status === "completed" || m.status === "wo";
+                    groupKeys.map(groupKey => {
+                      const groupMatches = grouped[groupKey];
+                      const groupIcon = getGroupIcon(groupKey);
+
                       return (
-                        <div 
-                          key={m.id}
-                          className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-slate-950/40 transition"
-                        >
-                          {/* Metadata column */}
-                          <div className="space-y-1">
-                            <span className="bg-slate-950 text-slate-400 border border-slate-850 px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase">
-                              {m.stageName} • Ronda {m.roundNumber}
+                        <div key={groupKey} className="space-y-3">
+                          {/* Beautiful division section indicator */}
+                          <div className="flex items-center gap-2.5 border-b border-slate-800/80 pb-2.5 ml-1">
+                            <span className="text-lg select-none">{groupIcon}</span>
+                            <h3 className="text-sm font-black uppercase tracking-wider text-[#d4fc34] drop-shadow-[0_1px_6px_rgba(212,252,52,0.1)]">
+                              {groupKey}
+                            </h3>
+                            <span className="bg-slate-900 border border-slate-800 text-slate-400 text-[10px] font-mono px-2 py-0.5 rounded-lg font-bold">
+                              {groupMatches.length} {groupMatches.length === 1 ? 'partido' : 'partidos'}
                             </span>
-                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400 mt-1">
-                              <div className="flex items-center gap-1">
-                                <MapPin className="w-3.5 h-3.5 text-slate-500" />
-                                <span className={m.courtId ? "text-slate-200" : "text-amber-400 font-medium"}>
-                                  {courts.find(c => c.id === m.courtId)?.name || "Pista por asignar"}
-                                </span>
-                                {m.date && (
-                                  <span className="font-mono text-[11px] text-slate-500 ml-1">
-                                    ({m.date} • {m.time} h)
-                                  </span>
-                                )}
-                              </div>
-                              {userRole === "admin" && !finished && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleOpenCourtAssigner(m)}
-                                  className="bg-[#d4fc34] hover:bg-[#c5f015] text-slate-950 text-[10px] font-black px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer uppercase tracking-wider text-center ml-2"
+                          </div>
+
+                          {/* division/round container */}
+                          <div className="bg-slate-900 border border-slate-800/80 rounded-2xl divide-y divide-slate-800/50 overflow-hidden shadow-inner">
+                            {groupMatches.map(m => {
+                              const finished = m.status === "completed" || m.status === "wo";
+                              return (
+                                <div 
+                                  key={m.id}
+                                  className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-slate-950/40 transition"
                                 >
-                                  <Calendar className="w-3 h-3 text-slate-950" /> Asignar Cancha / Hora
-                                </button>
-                              )}
-                            </div>
-                          </div>
+                                  {/* Metadata column */}
+                                  <div className="space-y-1">
+                                    <span className="bg-slate-950 text-slate-400 border border-slate-850 px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase block w-fit">
+                                      {m.stageName} • Ronda {m.roundNumber}
+                                    </span>
+                                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400 mt-1">
+                                      <div className="flex items-center gap-1">
+                                        <MapPin className="w-3.5 h-3.5 text-slate-500" />
+                                        <span className={m.courtId ? "text-slate-200" : "text-amber-400 font-medium"}>
+                                          {courts.find(c => c.id === m.courtId)?.name || "Pista por asignar"}
+                                        </span>
+                                        {m.date && (
+                                          <span className="font-mono text-[11px] text-slate-500 ml-1">
+                                            ({m.date} • {m.time} h)
+                                          </span>
+                                        )}
+                                      </div>
+                                      {userRole === "admin" && !finished && (
+                                        <button
+                                          type="button"
+                                          onClick={() => handleOpenCourtAssigner(m)}
+                                          className="bg-[#d4fc34] hover:bg-[#c5f015] text-slate-950 text-[10px] font-black px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer uppercase tracking-wider text-center ml-2"
+                                        >
+                                          <Calendar className="w-3 h-3 text-slate-950" /> Asignar Cancha / Hora
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
 
-                          {/* Team versus */}
-                          <div className="flex-1 max-w-lg">
-                            <div className="grid grid-cols-2 gap-4 items-center">
-                              <div className="text-right">
-                                <span className={`block text-xs font-bold ${finished && m.winnerPairId === m.pair1Id ? 'text-blue-400' : 'text-slate-200'}`}>
-                                  {getPairName(m.pair1Id)}
-                                </span>
-                                {finished && m.winnerPairId === m.pair1Id && <span className="text-[10px] text-green-400 font-bold uppercase">WIN</span>}
-                              </div>
-                              <div className="border-l border-slate-800 pl-4">
-                                <span className={`block text-xs font-bold ${finished && m.winnerPairId === m.pair2Id ? 'text-blue-400' : 'text-slate-200'}`}>
-                                  {getPairName(m.pair2Id)}
-                                </span>
-                                {finished && m.winnerPairId === m.pair2Id && <span className="text-[10px] text-green-400 font-bold uppercase">WIN</span>}
-                              </div>
-                            </div>
-                          </div>
+                                  {/* Team versus */}
+                                  <div className="flex-1 max-w-lg">
+                                    <div className="grid grid-cols-2 gap-4 items-center">
+                                      <div className="text-right">
+                                        <span className={`block text-xs font-bold ${finished && m.winnerPairId === m.pair1Id ? 'text-blue-400' : 'text-slate-200'}`}>
+                                          {getPairName(m.pair1Id)}
+                                        </span>
+                                        {finished && m.winnerPairId === m.pair1Id && <span className="text-[10px] text-green-400 font-bold uppercase">WIN</span>}
+                                      </div>
+                                      <div className="border-l border-slate-800 pl-4">
+                                        <span className={`block text-xs font-bold ${finished && m.winnerPairId === m.pair2Id ? 'text-blue-400' : 'text-slate-200'}`}>
+                                          {getPairName(m.pair2Id)}
+                                        </span>
+                                        {finished && m.winnerPairId === m.pair2Id && <span className="text-[10px] text-green-400 font-bold uppercase">WIN</span>}
+                                      </div>
+                                    </div>
+                                  </div>
 
-                          {/* Actions and Score */}
-                          <div className="flex items-center md:justify-end gap-3 shrink-0">
-                            {finished ? (
-                              <div className="text-right">
-                                <span className="bg-blue-600/10 text-blue-400 border border-blue-500/20 font-mono font-black px-2.5 py-1 rounded text-xs block">
-                                  {m.scoreSummary}
-                                </span>
-                                {userRole === "admin" && (
-                                  <button 
-                                    type="button"
-                                    onClick={() => handleOpenScorer(m)}
-                                    className="text-[10px] text-slate-500 hover:text-slate-300 font-semibold hover:underline mt-1 block"
-                                  >
-                                    Corregir Marcador
-                                  </button>
-                                )}
-                              </div>
-                            ) : (
-                              <div className="flex gap-2">
-                                <span className="text-xs text-slate-505 font-mono italic flex items-center">Por jugar</span>
-                                {userRole === "admin" && (
-                                  <button
-                                    type="button"
-                                    onClick={() => handleOpenScorer(m)}
-                                    className="bg-slate-800 hover:bg-slate-700 hover:text-blue-400 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition border border-slate-700 cursor-pointer"
-                                  >
-                                    Cargar Resultado
-                                  </button>
-                                )}
-                              </div>
-                            )}
-                          </div>
+                                  {/* Actions and Score */}
+                                  <div className="flex items-center md:justify-end gap-3 shrink-0">
+                                    {finished ? (
+                                      <div className="text-right">
+                                        <span className="bg-blue-600/10 text-blue-400 border border-blue-500/20 font-mono font-black px-2.5 py-1 rounded text-xs block">
+                                          {m.scoreSummary}
+                                        </span>
+                                        {userRole === "admin" && (
+                                          <button 
+                                            type="button"
+                                            onClick={() => handleOpenScorer(m)}
+                                            className="text-[10px] text-slate-500 hover:text-slate-300 font-semibold hover:underline mt-1 block"
+                                          >
+                                            Corregir Marcador
+                                          </button>
+                                        )}
+                                      </div>
+                                    ) : (
+                                      <div className="flex gap-2">
+                                        <span className="text-xs text-slate-505 font-mono italic flex items-center">Por jugar</span>
+                                        {userRole === "admin" && (
+                                          <button
+                                            type="button"
+                                            onClick={() => handleOpenScorer(m)}
+                                            className="bg-slate-800 hover:bg-slate-700 hover:text-blue-400 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition border border-slate-700 cursor-pointer"
+                                          >
+                                            Cargar Resultado
+                                          </button>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
 
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
                       );
                     })
