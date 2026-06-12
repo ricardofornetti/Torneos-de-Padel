@@ -2904,136 +2904,89 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
       {viewMode === "isolated" ? (
         <div className="space-y-6">
           {/* HEADER NAV FOR ISOLATED VIEW SYSTEM */}
-          {activeTab === "matches" ? (
-            <div className="bg-gradient-to-r from-slate-900/90 to-slate-950/80 p-6 rounded-2xl border border-slate-800/80 shadow-2xl relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6">
-              <div className="absolute right-0 top-0 bottom-0 w-1/3 opacity-[0.03] pointer-events-none">
-                <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
-                  <defs>
-                    <pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
-                      <path d="M 10 0 L 0 0 0 10" fill="none" stroke="white" strokeWidth="0.5"/>
-                    </pattern>
-                  </defs>
-                  <rect width="100%" height="100%" fill="url(#grid)" />
-                </svg>
-              </div>
-
-              {/* Title Section with Sticker */}
-              <div className="flex items-center gap-5 relative z-10">
-                {/* Dynamic Padel Racket & Ball Sticker (Custom Neon SVG) */}
-                <div className="w-20 h-20 shrink-0 bg-[#d4fc34]/10 rounded-2xl border border-[#d4fc34]/30 flex items-center justify-center p-2 shadow-inner relative group select-none">
-                  <div className="absolute inset-0 bg-[#d4fc34]/5 rounded-2xl animate-pulse"></div>
-                  <svg className="w-14 h-14 relative z-10" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    {/* Handle */}
-                    <path d="M42 58 L28 78 C25 82 18 80 16 75 C14 70 17 64 21 61 L36 47" stroke="#d4fc34" strokeWidth="4.5" strokeLinecap="round" />
-                    {/* Grip tape details */}
-                    <path d="M25 71 L20 74" stroke="#0f172a" strokeWidth="2" strokeLinecap="round" />
-                    <path d="M22 75 L18 78" stroke="#0f172a" strokeWidth="2" strokeLinecap="round" />
-                    {/* Racket Frame */}
-                    <circle cx="53" cy="41" r="18" fill="#1e293b" stroke="#d4fc34" strokeWidth="5.5" />
-                    {/* Face holes */}
-                    <circle cx="47" cy="35" r="1.5" fill="#d4fc34" />
-                    <circle cx="53" cy="35" r="1.5" fill="#d4fc34" />
-                    <circle cx="59" cy="35" r="1.5" fill="#d4fc34" />
-                    <circle cx="47" cy="41" r="1.5" fill="#d4fc34" />
-                    <circle cx="53" cy="41" r="1.5" fill="#d4fc34" />
-                    <circle cx="59" cy="41" r="1.5" fill="#d4fc34" />
-                    <circle cx="47" cy="47" r="1.5" fill="#d4fc34" />
-                    <circle cx="53" cy="47" r="1.5" fill="#d4fc34" />
-                    <circle cx="59" cy="47" r="1.5" fill="#d4fc34" />
-                    <path d="M42 51 L44 49" stroke="#d4fc34" strokeWidth="3" strokeLinecap="round" />
-                    <path d="M64 31 L62 33" stroke="#d4fc34" strokeWidth="3" strokeLinecap="round" />
-                    {/* Padel Ball */}
-                    <circle cx="74" cy="62" r="7" fill="#d4fc34" stroke="#ffffff" strokeWidth="1.5" />
-                    <path d="M70 59 C72 61 72 63 70 65" stroke="#0f172a" strokeWidth="1.2" strokeLinecap="round" fill="none" />
-                    <path d="M78 59 C76 61 76 63 78 65" stroke="#0f172a" strokeWidth="1.2" strokeLinecap="round" fill="none" />
-                  </svg>
-                  <span className="absolute -top-1.5 -right-1.5 bg-[#d4fc34] text-slate-950 font-black text-[9px] px-1.5 py-0.5 rounded-full shadow border border-slate-950 uppercase tracking-widest leading-none font-sans">PÁDEL</span>
-                </div>
-
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <h1 className="text-4xl sm:text-5xl font-black uppercase tracking-wider text-[#d4fc34] drop-shadow-[0_2px_12px_rgba(212,252,52,0.3)] select-none">
-                      Partidos
-                    </h1>
-                  </div>
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3 text-slate-400">
-                    <span className="text-xs sm:text-sm font-semibold tracking-wide text-slate-200">
-                      {tournament?.name}
-                    </span>
-                    <span className="hidden sm:inline text-slate-600">•</span>
-                    <span className="bg-[#d4fc34]/10 text-[#d4fc34] border border-[#d4fc34]/20 px-2.5 py-0.5 rounded-lg text-xs font-bold w-fit uppercase tracking-wider font-mono">
-                      {selectedCategory}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex flex-wrap items-center gap-2 relative z-10 sm:self-end md:self-center">
-                <button
-                  onClick={() => {
-                    setViewMode("dashboard");
-                  }}
-                  className="bg-slate-900 hover:bg-slate-850 text-slate-200 hover:text-white border border-slate-800 hover:border-[#d4fc34]/50 text-xs px-4 py-2.5 rounded-xl flex items-center gap-2 transition cursor-pointer font-bold uppercase tracking-wider shadow-md"
-                >
-                  <ArrowLeft className="w-4 h-4" /> Regresar
-                </button>
-
-                <button
-                  onClick={() => handleOpenPrintSheet("matches")}
-                  className="bg-[#d4fc34]/15 hover:bg-[#d4fc34] hover:text-slate-950 text-[#d4fc34] text-[10px] font-extrabold px-3.5 py-2.5 rounded-xl flex items-center gap-1.5 transition cursor-pointer border border-[#d4fc34]/20 uppercase tracking-widest shadow-md"
-                  title="Ver planilla limpia oficial de esta categoría para imprimir o exportar, sin menús de navegación"
-                >
-                  <Printer className="w-4 h-4" /> Abrir planilla oficial limpia
-                </button>
-              </div>
+          <div className="bg-gradient-to-r from-slate-900/90 to-slate-950/80 p-6 rounded-2xl border border-slate-800/80 shadow-2xl relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="absolute right-0 top-0 bottom-0 w-1/3 opacity-[0.03] pointer-events-none">
+              <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
+                <defs>
+                  <pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
+                    <path d="M 10 0 L 0 0 0 10" fill="none" stroke="white" strokeWidth="0.5"/>
+                  </pattern>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#grid)" />
+              </svg>
             </div>
-          ) : (
-            <div className="bg-gradient-to-r from-slate-900/60 to-slate-950/65 p-5 rounded-2xl border border-slate-800/60 shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-5">
-              <div className="flex items-center gap-4">
-                {activeTab === "inscriptions" ? (
-                  <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 font-extrabold text-xl select-none">
-                    👥
-                  </div>
-                ) : activeTab === "standings" ? (
-                  <div className="w-12 h-12 rounded-xl bg-[#d4fc34]/10 border border-[#d4fc34]/20 flex items-center justify-center text-[#d4fc34] font-extrabold text-xl select-none">
-                    📊
-                  </div>
-                ) : (
-                  <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 font-extrabold text-xl select-none">
-                    🏆
-                  </div>
-                )}
-                <div>
-                  <h1 className="text-2xl sm:text-3xl font-extrabold uppercase tracking-wide text-white">
-                    {activeTab === "inscriptions" ? "Parejas Registradas" : activeTab === "standings" ? "Posiciones" : "Playoffs Bracket"}
+
+            {/* Title Section with Sticker */}
+            <div className="flex items-center gap-5 relative z-10">
+              {/* Dynamic Padel Racket & Ball Sticker (Custom Neon SVG) */}
+              <div className="w-20 h-20 shrink-0 bg-[#d4fc34]/10 rounded-2xl border border-[#d4fc34]/30 flex items-center justify-center p-2 shadow-inner relative group select-none">
+                <div className="absolute inset-0 bg-[#d4fc34]/5 rounded-2xl animate-pulse"></div>
+                <svg className="w-14 h-14 relative z-10" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  {/* Handle */}
+                  <path d="M42 58 L28 78 C25 82 18 80 16 75 C14 70 17 64 21 61 L36 47" stroke="#d4fc34" strokeWidth="4.5" strokeLinecap="round" />
+                  {/* Grip tape details */}
+                  <path d="M25 71 L20 74" stroke="#0f172a" strokeWidth="2" strokeLinecap="round" />
+                  <path d="M22 75 L18 78" stroke="#0f172a" strokeWidth="2" strokeLinecap="round" />
+                  {/* Racket Frame */}
+                  <circle cx="53" cy="41" r="18" fill="#1e293b" stroke="#d4fc34" strokeWidth="5.5" />
+                  {/* Face holes */}
+                  <circle cx="47" cy="35" r="1.5" fill="#d4fc34" />
+                  <circle cx="53" cy="35" r="1.5" fill="#d4fc34" />
+                  <circle cx="59" cy="35" r="1.5" fill="#d4fc34" />
+                  <circle cx="47" cy="41" r="1.5" fill="#d4fc34" />
+                  <circle cx="53" cy="41" r="1.5" fill="#d4fc34" />
+                  <circle cx="59" cy="41" r="1.5" fill="#d4fc34" />
+                  <circle cx="47" cy="47" r="1.5" fill="#d4fc34" />
+                  <circle cx="53" cy="47" r="1.5" fill="#d4fc34" />
+                  <circle cx="59" cy="47" r="1.5" fill="#d4fc34" />
+                  <path d="M42 51 L44 49" stroke="#d4fc34" strokeWidth="3" strokeLinecap="round" />
+                  <path d="M64 31 L62 33" stroke="#d4fc34" strokeWidth="3" strokeLinecap="round" />
+                  {/* Padel Ball */}
+                  <circle cx="74" cy="62" r="7" fill="#d4fc34" stroke="#ffffff" strokeWidth="1.5" />
+                  <path d="M70 59 C72 61 72 63 70 65" stroke="#0f172a" strokeWidth="1.2" strokeLinecap="round" fill="none" />
+                  <path d="M78 59 C76 61 76 63 78 65" stroke="#0f172a" strokeWidth="1.2" strokeLinecap="round" fill="none" />
+                </svg>
+                <span className="absolute -top-1.5 -right-1.5 bg-[#d4fc34] text-slate-950 font-black text-[9px] px-1.5 py-0.5 rounded-full shadow border border-slate-950 uppercase tracking-widest leading-none font-sans">PÁDEL</span>
+              </div>
+
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <h1 className="text-4xl sm:text-5xl font-black uppercase tracking-wider text-[#d4fc34] drop-shadow-[0_2px_12px_rgba(212,252,52,0.3)] select-none">
+                    {activeTab === "inscriptions" ? "Inscripciones" : activeTab === "matches" ? "Partidos" : activeTab === "standings" ? "Posiciones" : "Eliminatorias"}
                   </h1>
-                  <span className="text-xs text-slate-400 block font-medium">
-                    {tournament?.name} • <span className="text-[#d4fc34] font-bold font-mono">{selectedCategory}</span>
+                </div>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3 text-slate-400">
+                  <span className="text-xs sm:text-sm font-semibold tracking-wide text-slate-200">
+                    {tournament?.name}
+                  </span>
+                  <span className="hidden sm:inline text-slate-600">•</span>
+                  <span className="bg-[#d4fc34]/10 text-[#d4fc34] border border-[#d4fc34]/20 px-2.5 py-0.5 rounded-lg text-xs font-bold w-fit uppercase tracking-wider font-mono">
+                    {selectedCategory}
                   </span>
                 </div>
               </div>
-
-              {/* Action Buttons */}
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  onClick={() => {
-                    setViewMode("dashboard");
-                  }}
-                  className="bg-slate-900 hover:bg-slate-850 text-slate-350 hover:text-white border border-slate-800 hover:border-[#d4fc34]/20 text-xs px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition cursor-pointer font-bold uppercase tracking-wider"
-                >
-                  <ArrowLeft className="w-3.5 h-3.5" /> Regresar
-                </button>
-
-                <button
-                  onClick={() => handleOpenPrintSheet(activeTab === "inscriptions" ? "inscriptions" : activeTab === "standings" ? "standings" : "playoffs")}
-                  className="bg-slate-900 hover:bg-slate-850 text-slate-300 hover:text-[#d4fc34] border border-slate-800 text-[10px] font-bold px-3.5 py-2.5 rounded-xl flex items-center gap-1.5 transition cursor-pointer uppercase tracking-widest"
-                >
-                  <Printer className="w-3.5 h-3.5" /> Abrir planilla limpia
-                </button>
-              </div>
             </div>
-          )}
+
+            {/* Action Buttons */}
+            <div className="flex flex-wrap items-center gap-2 relative z-10 sm:self-end md:self-center">
+              <button
+                onClick={() => {
+                  setViewMode("dashboard");
+                }}
+                className="bg-slate-900 hover:bg-slate-850 text-slate-200 hover:text-white border border-slate-800 hover:border-[#d4fc34]/50 text-xs px-4 py-2.5 rounded-xl flex items-center gap-2 transition cursor-pointer font-bold uppercase tracking-wider shadow-md"
+              >
+                <ArrowLeft className="w-4 h-4" /> Regresar
+              </button>
+
+              <button
+                onClick={() => handleOpenPrintSheet(activeTab === "inscriptions" ? "inscriptions" : activeTab === "matches" ? "matches" : activeTab === "standings" ? "standings" : "playoffs")}
+                className="bg-[#d4fc34]/15 hover:bg-[#d4fc34] hover:text-slate-950 text-[#d4fc34] text-[10px] font-extrabold px-3.5 py-2.5 rounded-xl flex items-center gap-1.5 transition cursor-pointer border border-[#d4fc34]/20 uppercase tracking-widest shadow-md"
+                title="Ver planilla limpia oficial de esta categoría para imprimir o exportar, sin menús de navegación"
+              >
+                <Printer className="w-4 h-4" /> Abrir planilla oficial limpia
+              </button>
+            </div>
+          </div>
 
           {/* COMPACT CATEGORIES SELECTOR INSIDE ISOLATED VIEW */}
           {activeTab !== "inscriptions" && (
