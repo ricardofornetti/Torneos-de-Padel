@@ -2973,9 +2973,9 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
                 onClick={() => {
                   setViewMode("dashboard");
                 }}
-                className="bg-slate-900 hover:bg-slate-850 text-slate-200 hover:text-white border border-slate-800 hover:border-[#d4fc34]/50 text-xs px-4 py-2.5 rounded-xl flex items-center gap-2 transition cursor-pointer font-bold uppercase tracking-wider shadow-md"
+                className="flex items-center gap-1.5 text-xs font-black uppercase tracking-widest text-slate-950 bg-[#d4fc34] hover:bg-[#b8de20] hover:scale-105 active:scale-95 px-5 py-2.5 rounded-xl transition-all shadow-[0_4px_24px_rgba(212,252,52,0.25)] cursor-pointer"
               >
-                <ArrowLeft className="w-4 h-4" /> Regresar
+                <span>← Volver</span>
               </button>
 
               <button
@@ -2987,124 +2987,37 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
               </button>
             </div>
           </div>
-
-          {/* COMPACT CATEGORIES SELECTOR INSIDE ISOLATED VIEW */}
-          {activeTab !== "inscriptions" && (
-            <div className="bg-slate-900/40 p-4 rounded-xl border border-slate-800/80 space-y-3 shadow-md">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] text-slate-450 font-mono tracking-widest font-bold uppercase block pl-1">
-                  CAMBIAR CATEGORÍA EN ESTA SECCIÓN:
-                </span>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {ALL_PADEL_CATEGORIES.map(cat => {
-                  const catPairs = pairs.filter(p => p.category === cat);
-                  const active = selectedCategory === cat;
-                  return (
-                    <button
-                      key={cat}
-                      onClick={() => {
-                        setSelectedCategory(cat);
-                      }}
-                      className={`px-3 py-1.5 text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-1.5 border ${
-                        active
-                          ? "bg-[#d4fc34]/15 text-[#d4fc34] border-[#d4fc34]/30 font-black"
-                          : "bg-slate-950 text-slate-400 border-slate-900 hover:text-slate-200 hover:border-slate-800"
-                      }`}
-                    >
-                      <span>{cat}</span>
-                      {catPairs.length > 0 && (
-                        <span className="bg-[#d4fc34] text-slate-950 font-black px-1.5 py-0.5 rounded-full text-[9px]">
-                          {catPairs.length}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* TAB SWITCHER */}
-          {activeTab !== "inscriptions" && (
-            <div className="flex border-b border-slate-800 gap-1 overflow-x-auto">
-              <button
-                onClick={() => setActiveTab("inscriptions")}
-                className={`pb-2.5 px-4 text-xs font-bold border-b-2 transition-all whitespace-nowrap ${
-                  activeTab === "inscriptions"
-                    ? "border-[#d4fc34] text-[#d4fc34]"
-                    : "border-transparent text-slate-400 hover:text-slate-200"
-                }`}
-              >
-                Parejas Inscritas ({pairs.filter(p => p.category === selectedCategory).length})
-              </button>
-              
-              {matches.filter(m => m.category === selectedCategory).length > 0 && (
-                <>
-                  <button
-                    onClick={() => setActiveTab("matches")}
-                    className={`pb-2.5 px-4 text-xs font-bold border-b-2 transition-all whitespace-nowrap ${
-                      activeTab === "matches"
-                        ? "border-[#d4fc34] text-[#d4fc34]"
-                        : "border-transparent text-slate-400 hover:text-slate-200"
-                    }`}
-                  >
-                    Partidos (Fixture)
-                  </button>
-                  <button
-                    onClick={() => setActiveTab("standings")}
-                    className={`pb-2.5 px-4 text-xs font-bold border-b-2 transition-all whitespace-nowrap ${
-                      activeTab === "standings"
-                        ? "border-[#d4fc34] text-[#d4fc34]"
-                        : "border-transparent text-slate-400 hover:text-slate-200"
-                    }`}
-                  >
-                    Tablas de Posiciones
-                  </button>
-                  <button
-                    onClick={() => setActiveTab("playoffs")}
-                    className={`pb-2.5 px-4 text-xs font-bold border-b-2 transition-all whitespace-nowrap ${
-                      activeTab === "playoffs"
-                        ? "border-[#d4fc34] text-[#d4fc34]"
-                        : "border-transparent text-slate-400 hover:text-slate-200"
-                    }`}
-                  >
-                    Eliminatorias Bracket
-                  </button>
-                </>
-              )}
-            </div>
-          )}
         </div>
       ) : (
         <div className="space-y-6">
-          {/* HEADER NAV */}
-          <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-            <button
-              onClick={onBack}
-              className="bg-slate-900 text-slate-350 hover:text-white border border-slate-800 text-xs px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 transition cursor-pointer"
-            >
-              <ArrowLeft className="w-4 h-4" /> Volver al listado
-            </button>
-
-            <div className="flex items-center gap-2">
-              {userRole === "admin" && tournament.status === "in_progress" && (
-                <button
-                  id="finish-tournament-btn"
-                  onClick={handleOpenFinishModal}
-                  className="bg-red-650 hover:bg-red-500 text-white text-xs font-bold px-3.5 py-1.5 rounded-lg flex items-center gap-1 transition cursor-pointer"
-                >
-                  🏁 Finalizar Torneo
-                </button>
-              )}
-            </div>
-          </div>
-
+          
           {/* HERO LEAGUE BANNER CARD */}
           <div className="bg-gradient-to-br from-slate-950 to-slate-900 border border-slate-800 rounded-2xl p-6 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-2xl"></div>
+
+            {/* Action buttons inside the banner card */}
+            <div className="flex items-center justify-between mb-5 border-b border-slate-800/80 pb-4 relative z-10">
+              <div className="flex items-center gap-2">
+                {userRole === "admin" && tournament.status === "in_progress" && (
+                  <button
+                    id="finish-tournament-btn"
+                    onClick={handleOpenFinishModal}
+                    className="bg-red-950/40 hover:bg-red-900 border border-red-900/40 text-red-400 hover:text-white text-xs font-bold px-3.5 py-1.5 rounded-lg flex items-center gap-1 transition cursor-pointer uppercase tracking-wider"
+                  >
+                    🏁 Finalizar Torneo
+                  </button>
+                )}
+              </div>
+
+              <button
+                onClick={onBack}
+                className="flex items-center gap-1.5 text-xs font-black uppercase tracking-widest text-slate-950 bg-[#d4fc34] hover:bg-[#b8de20] hover:scale-105 active:scale-95 px-5 py-2.5 rounded-xl transition-all shadow-[0_4px_24px_rgba(212,252,52,0.25)] cursor-pointer"
+              >
+                <span>← Volver</span>
+              </button>
+            </div>
             
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative z-10">
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <span className="bg-blue-600/10 text-blue-400 border border-blue-500/20 px-2.5 py-0.5 rounded text-[10px] font-mono font-bold uppercase tracking-wider">
@@ -3118,14 +3031,14 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
                        tournament.status === "in_progress" ? "Torneo en Juego" : "Finalizado / Cerrado"}
                   </span>
                 </div>
-                <h2 className="text-2xl font-black text-white">{tournament.name}</h2>
+                <h2 className="text-3xl font-black text-white">{tournament.name}</h2>
                 <p className="text-xs text-slate-400 mt-1.5 flex items-center gap-1">
                   <MapPin className="w-3.5 h-3.5 text-slate-500" /> {tournament.club} — {tournament.city}
                 </p>
               </div>
 
               <div className="text-left md:text-right shrink-0 bg-slate-900/60 p-3 rounded-xl border border-slate-850/80">
-                <span className="block text-[9px] text-slate-500 mb-0.5 font-mono uppercase tracking-wider">CRONOGRAMA</span>
+                <span className="block text-[9px] text-[#d4fc34] mb-0.5 font-mono uppercase tracking-widest font-extrabold pb-0.5">📅 CRONOGRAMA</span>
                 <span className="block font-bold text-xs text-slate-200">
                   {tournament.startDate} • {tournament.endDate}
                 </span>
@@ -4018,6 +3931,8 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
                                   <div className="space-y-1">
                                     <span className="bg-slate-950 text-slate-400 border border-slate-850 px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase block w-fit">
                                       {m.stageName} • Ronda {m.roundNumber}
+                                      {m.date ? ` • Fecha: ${m.date} - ${m.time}h` : " • Fecha: Sin asignar"}
+                                      {` • Cancha: ${courts.find(c => c.id === m.courtId)?.name || 'Sin asignar'}`}
                                     </span>
                                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400 mt-1">
                                       <div className="flex items-center gap-1">

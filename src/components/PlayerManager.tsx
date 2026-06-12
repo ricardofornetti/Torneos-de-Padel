@@ -243,7 +243,7 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole }) => {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPlayer.firstName || !newPlayer.lastName || !newPlayer.email || !newPlayer.dni) {
-      alert("Por favor completa los campos requeridos (Nombre, Apellido, Email y DNI).");
+      alert("Por favor completa los campos requeridos (Nombre, Apellido, Email y CUIT).");
       return;
     }
 
@@ -354,77 +354,108 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole }) => {
     <div className="space-y-6">
       
       {/* Title block */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-5">
-        <div>
-          <h1 className="text-2xl font-black text-white flex items-center gap-2">
-            <Users className="w-6 h-6 text-blue-500" /> Registro de Jugadores
-          </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Ficha unificada de competidores registrados, acumuladores de ranking anual y estadísticas avanzadas globales de rendimiento.
-          </p>
+      <div className="bg-gradient-to-r from-slate-900/90 to-slate-950/80 p-6 rounded-2xl border border-slate-800/80 shadow-2xl relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="absolute right-0 top-0 bottom-0 w-1/3 opacity-[0.03] pointer-events-none">
+          <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
+            <defs>
+              <pattern id="grid-players" width="10" height="10" patternUnits="userSpaceOnUse">
+                <path d="M 10 0 L 0 0 0 10" fill="none" stroke="white" strokeWidth="0.5"/>
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#grid-players)" />
+          </svg>
         </div>
-        
-        <div className="flex flex-wrap gap-2">
+
+        {/* Title Section with Sticker */}
+        <div className="flex items-center gap-5 relative z-10">
+          {/* Dynamic player profile sticker */}
+          <div className="w-20 h-20 shrink-0 bg-[#d4fc34]/10 rounded-2xl border border-[#d4fc34]/30 flex items-center justify-center p-2 shadow-inner relative group select-none">
+            <div className="absolute inset-0 bg-[#d4fc34]/5 rounded-2xl animate-pulse"></div>
+            <svg className="w-14 h-14 relative z-10" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+              {/* Card Frame */}
+              <rect x="22" y="22" width="56" height="56" rx="10" fill="#1e293b" stroke="#d4fc34" strokeWidth="4.5" />
+              {/* Photo Profile */}
+              <circle cx="50" cy="40" r="8" fill="#1e293b" stroke="#d4fc34" strokeWidth="3.5" />
+              <path d="M34 66 C34 54 66 54 66 66" stroke="#d4fc34" strokeWidth="3.5" strokeLinecap="round" />
+            </svg>
+            <span className="absolute -top-1.5 -right-1.5 bg-[#d4fc34] text-slate-950 font-black text-[9px] px-1.5 py-0.5 rounded-full shadow border border-slate-950 uppercase tracking-widest leading-none font-sans">REG</span>
+          </div>
+
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <h1 className="text-4xl sm:text-5xl font-black uppercase tracking-wider text-[#d4fc34] drop-shadow-[0_2px_12px_rgba(212,252,52,0.3)] select-none">
+                Registro de Jugadores
+              </h1>
+            </div>
+            <p className="text-xs sm:text-sm font-semibold tracking-wide text-slate-400">
+              Ficha unificada de competidores registrados, acumuladores de ranking anual y estadísticas avanzadas globales de rendimiento.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* GENDER / RAMA TABS WITH ALIGNED REGISTRATION BUTTON */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between border-b border-slate-800 pb-px gap-3">
+        <div className="flex flex-wrap gap-1">
+          <button
+            onClick={() => {
+              setGenderFilter("Masculino");
+              setDivisionFilter("all");
+            }}
+            className={`px-5 py-3 text-xs font-black uppercase tracking-wider transition-all relative cursor-pointer ${
+              genderFilter === "Masculino"
+                ? "text-blue-400 border-b-2 border-blue-500 font-extrabold"
+                : "text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            Masculino
+          </button>
+          <button
+            onClick={() => {
+              setGenderFilter("Femenino");
+              setDivisionFilter("all");
+            }}
+            className={`px-5 py-3 text-xs font-black uppercase tracking-wider transition-all relative cursor-pointer ${
+              genderFilter === "Femenino"
+                ? "text-pink-400 border-b-2 border-pink-500 font-extrabold"
+                : "text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            Femenino
+          </button>
+          <button
+            onClick={() => {
+              setGenderFilter("all");
+              setDivisionFilter("all");
+            }}
+            className={`px-5 py-3 text-xs font-black uppercase tracking-wider transition-all relative cursor-pointer ${
+              genderFilter === "all"
+                ? "text-[#d4fc34] border-b-2 border-[#d4fc34] font-extrabold"
+                : "text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            Ver Todos
+          </button>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 pb-2 lg:pb-0">
           {userRole === "admin" && (
             <button
               onClick={handleImportFIPPlayers}
-              className="bg-indigo-950 hover:bg-indigo-900 text-indigo-300 hover:text-white border border-indigo-800 text-[11px] font-black px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition cursor-pointer uppercase tracking-wider text-center"
+              className="bg-indigo-950/40 hover:bg-indigo-950/80 text-indigo-300 hover:text-white border border-indigo-900/40 text-[10px] font-black px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition cursor-pointer uppercase tracking-wider text-center"
               title="Cargar automáticamente 100 jugadores premium por categoría (700 jugadores en total: 50% de origen FIP real)"
             >
-              <span>🎾 Cargar Ránking FIP (100 x Categoría)</span>
+              <span>🎾 Cargar Ránking FIP</span>
             </button>
           )}
           <button
             onClick={handleOpenCreateForm}
-            className="bg-[#d4fc34] hover:bg-[#c5f015] text-slate-950 text-xs font-black px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition cursor-pointer uppercase tracking-wider text-center"
+            className="bg-[#d4fc34]/15 hover:bg-[#d4fc34] hover:text-slate-950 text-[#d4fc34] text-xs font-extrabold px-4 py-2 rounded-xl flex items-center gap-1.5 transition cursor-pointer border border-[#d4fc34]/20 uppercase tracking-widest"
           >
-            <Plus className="w-4 h-4 text-slate-950" /> 
+            <Plus className="w-4 h-4 text-[#d4fc34] group-hover:text-slate-950" /> 
             <span>{userRole === "admin" ? "Registrar Jugador" : "Inscribirse como Jugador"}</span>
           </button>
         </div>
-      </div>
-
-      {/* GENDER / RAMA TABS */}
-      <div className="flex border-b border-slate-800 gap-2 pb-px justify-start">
-        <button
-          onClick={() => {
-            setGenderFilter("Masculino");
-            setDivisionFilter("all");
-          }}
-          className={`px-5 py-3 text-xs font-black uppercase tracking-wider transition-all relative cursor-pointer ${
-            genderFilter === "Masculino"
-              ? "text-blue-400 border-b-2 border-blue-500 font-extrabold"
-              : "text-slate-400 hover:text-slate-205"
-          }`}
-        >
-          Rama Masculina
-        </button>
-        <button
-          onClick={() => {
-            setGenderFilter("Femenino");
-            setDivisionFilter("all");
-          }}
-          className={`px-5 py-3 text-xs font-black uppercase tracking-wider transition-all relative cursor-pointer ${
-            genderFilter === "Femenino"
-              ? "text-pink-400 border-b-2 border-pink-500 font-extrabold"
-              : "text-slate-400 hover:text-slate-205"
-          }`}
-        >
-          Rama Femenina
-        </button>
-        <button
-          onClick={() => {
-            setGenderFilter("all");
-            setDivisionFilter("all");
-          }}
-          className={`px-5 py-3 text-xs font-black uppercase tracking-wider transition-all relative cursor-pointer ${
-            genderFilter === "all"
-              ? "text-[#d4fc34] border-b-2 border-[#d4fc34] font-extrabold"
-              : "text-slate-400 hover:text-slate-205"
-          }`}
-        >
-          Ver Todos
-        </button>
       </div>
 
       {/* SEARCH AND FILTERS */}
@@ -840,18 +871,18 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole }) => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="block text-[10px] uppercase tracking-wider text-slate-400">DNI / ID *</label>
+                  <label className="block text-[10px] uppercase tracking-wider text-slate-400">cuit *</label>
                   <input
                     type="text"
                     required
                     value={newPlayer.dni}
                     onChange={(e) => setNewPlayer({...newPlayer, dni: e.target.value})}
                     className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 outline-none focus:border-blue-500"
-                    placeholder="38927452A"
+                    placeholder="20-38927452-9"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="block text-[10px] uppercase tracking-wider text-slate-400">Procedencia / Ciudad</label>
+                  <label className="block text-[10px] uppercase tracking-wider text-slate-400">ciudad</label>
                   <input
                     type="text"
                     value={newPlayer.city}
@@ -1000,17 +1031,6 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole }) => {
                     </button>
                   </div>
                 )}
-
-                <div className="space-y-1 pt-2 border-t border-slate-900">
-                  <label className="block text-[9px] uppercase tracking-wider text-slate-500 font-semibold">O ingresa URL de Imagen para avatar</label>
-                  <input
-                    type="text"
-                    placeholder="https://ejemplo.com/foto.jpg"
-                    value={newPlayer.photoUrl}
-                    onChange={(e) => setNewPlayer({...newPlayer, photoUrl: e.target.value})}
-                    className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 outline-none focus:border-blue-500"
-                  />
-                </div>
               </div>
 
               {/* Action Buttons */}

@@ -254,15 +254,12 @@ export const Navbar: React.FC<NavbarProps> = ({
             className="flex items-center gap-2.5 cursor-pointer group"
             id="brand-logo"
           >
-            <div className="bg-gradient-to-br from-cyan-400 via-cyan-500 to-indigo-600 p-2 rounded-xl text-slate-950 shadow-md group-hover:scale-105 transition-transform">
+            <div className="bg-gradient-to-br from-[#d4fc34] to-lime-600 p-2 rounded-xl text-slate-950 shadow-md group-hover:scale-105 transition-transform">
               <Trophy className="w-5.5 h-5.5 text-slate-950" />
             </div>
             <div>
-              <span className="font-extrabold text-xl tracking-tight text-white block font-display italic">
-                SRTC <span className="text-cyan-400 font-display">PÁDEL</span>
-              </span>
-              <span className="text-[9px] text-[#22d3ee] font-mono tracking-widest block -mt-1 uppercase font-semibold">
-                Manager Automático
+              <span className="font-extrabold text-xl tracking-wider text-[#d4fc34] block font-sans uppercase drop-shadow-[0_2px_12px_rgba(212,252,52,0.3)] select-none">
+                Circuitos <span className="text-white">de Torneos</span>
               </span>
             </div>
           </div>
@@ -506,11 +503,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase font-mono block">DNI / Documento *</label>
+                    <label className="text-[9px] font-bold text-slate-400 uppercase font-mono block">CUIT *</label>
                     <input
                       type="text"
                       required
-                      placeholder="DNI del competidor"
+                      placeholder="CUIT del competidor"
                       value={regForm.dni}
                       onChange={e => setRegForm({...regForm, dni: e.target.value})}
                       className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-cyan-500/50 font-mono"
@@ -553,7 +550,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase font-mono block">Ciudad / Residencia</label>
+                    <label className="text-[9px] font-bold text-slate-400 uppercase font-mono block">Ciudad</label>
                     <input
                       type="text"
                       placeholder="Ciudad"

@@ -186,21 +186,44 @@ export const RankingManager: React.FC<RankingManagerProps> = ({ userRole }) => {
     <div className="space-y-6">
       
       {/* Header card banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-5">
-        <div>
-          <h1 className="text-2xl font-black text-white flex items-center gap-2">
-            <Trophy className="w-6 h-6 text-amber-500" /> Escalafón y Ranking Anual
-          </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Visualización oficial acumuladora del circuito de pádel profesional. Los puntos se adjudican automáticamente en función de los resultados finales de las eliminatorias.
-          </p>
+      <div className="bg-gradient-to-r from-slate-900/90 to-slate-950/80 p-6 rounded-2xl border border-slate-800/80 shadow-2xl relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="absolute right-0 top-0 bottom-0 w-1/3 opacity-[0.03] pointer-events-none">
+          <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
+            <defs>
+              <pattern id="grid-ranking" width="10" height="10" patternUnits="userSpaceOnUse">
+                <path d="M 10 0 L 0 0 0 10" fill="none" stroke="white" strokeWidth="0.5"/>
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#grid-ranking)" />
+          </svg>
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        {/* Title Section with Sticker */}
+        <div className="flex items-center gap-5 relative z-10">
+          {/* Trophy Sticker */}
+          <div className="w-20 h-20 shrink-0 bg-[#d4fc34]/10 rounded-2xl border border-[#d4fc34]/30 flex items-center justify-center p-2 shadow-inner relative group select-none">
+            <div className="absolute inset-0 bg-[#d4fc34]/5 rounded-2xl animate-pulse"></div>
+            <Trophy className="w-12 h-12 text-[#d4fc34] relative z-10 drop-shadow-[0_2px_12px_rgba(212,252,52,0.4)]" />
+            <span className="absolute -top-1.5 -right-1.5 bg-[#d4fc34] text-slate-950 font-black text-[9px] px-1.5 py-0.5 rounded-full shadow border border-slate-950 uppercase tracking-widest leading-none font-sans">PRO</span>
+          </div>
+
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <h1 className="text-4xl sm:text-5xl font-black uppercase tracking-wider text-[#d4fc34] drop-shadow-[0_2px_12px_rgba(212,252,52,0.3)] select-none">
+                Ranking
+              </h1>
+            </div>
+            <p className="text-xs sm:text-sm font-semibold tracking-wide text-slate-400">
+              Visualización oficial acumuladora del circuito de pádel profesional. Los puntos se adjudican automáticamente en función de resultados de eliminatorias directas.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-2 relative z-10 sm:self-end md:self-center">
           <button
             onClick={handleResetPoints}
             disabled={resetting}
-            className="bg-red-950/30 hover:bg-red-950/60 border border-red-900/40 text-red-400 text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"
+            className="bg-red-950/30 hover:bg-red-950/60 border border-red-900/40 text-red-00 text-xs font-bold px-3.5 py-2.5 rounded-xl flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"
           >
             <RotateCcw className={`w-3.5 h-3.5 text-red-500 ${resetting ? 'animate-spin' : ''}`} /> 
             <span>{resetting ? 'Reiniciando...' : 'Reiniciar Puntos'}</span>
@@ -210,10 +233,10 @@ export const RankingManager: React.FC<RankingManagerProps> = ({ userRole }) => {
             <button
               onClick={handleDeleteAllPlayers}
               disabled={deletingPlayers}
-              className="bg-red-900/20 hover:bg-red-1000/40 border border-red-800/50 text-red-300 text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50 animate-fade-in"
+              className="bg-red-900/20 hover:bg-red-1000/40 border border-red-800/50 text-red-300 text-xs font-bold px-3.5 py-2.5 rounded-xl flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50 animate-fade-in"
               title="Eliminar todos los jugadores cargados"
             >
-              <Trash2 className="w-3.5 h-3.5 text-red-400" />
+              <Trash2 className="w-3.5 h-3.5 text-red-405" />
               <span>{deletingPlayers ? 'Eliminando...' : 'Eliminar Jugadores'}</span>
             </button>
           )}

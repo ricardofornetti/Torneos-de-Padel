@@ -901,79 +901,81 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
 
   // Filter listings
   const filtered = tournaments.filter(t => {
-    const term = search.toLowerCase();
-    const matchesSearch = t.name.toLowerCase().includes(term) || t.club.toLowerCase().includes(term) || t.city.toLowerCase().includes(term);
-    
     // Status filters matches tab selection
     const isCompleted = t.status === "completed";
     const matchesTab = activeTabStatus === "completed" ? isCompleted : !isCompleted;
 
-    return matchesSearch && matchesTab;
+    return matchesTab;
   });
 
   return (
     <div className="space-y-6">
       
-      {/* Title */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-5">
-        <div>
-          <h1 className="text-2xl font-black text-white flex items-center gap-2">
-            <Trophy className="w-6 h-6 text-blue-500" /> Circuito de Torneos
-          </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Gestión y panel de torneos abiertos, ligas en curso y campeonatos históricos cerrados.
-          </p>
+      {/* Title block matching Inscriptions format */}
+      <div className="bg-gradient-to-r from-slate-900/90 to-slate-950/80 p-6 rounded-2xl border border-slate-800/80 shadow-2xl relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="absolute right-0 top-0 bottom-0 w-1/3 opacity-[0.03] pointer-events-none">
+          <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
+            <defs>
+              <pattern id="grid-tournaments" width="10" height="10" patternUnits="userSpaceOnUse">
+                <path d="M 10 0 L 0 0 0 10" fill="none" stroke="white" strokeWidth="0.5"/>
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#grid-tournaments)" />
+          </svg>
+        </div>
+
+        {/* Title Section with Sticker */}
+        <div className="flex items-center gap-5 relative z-10 w-full md:w-auto">
+          {/* Racket & Ball Sticker */}
+          <div className="w-20 h-20 shrink-0 bg-[#d4fc34]/10 rounded-2xl border border-[#d4fc34]/30 flex items-center justify-center p-2 shadow-inner relative group select-none">
+            <div className="absolute inset-0 bg-[#d4fc34]/5 rounded-2xl animate-pulse"></div>
+            <svg className="w-14 h-14 relative z-10" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+              {/* Handle */}
+              <path d="M42 58 L28 78 C25 82 18 80 16 75 C14 70 17 64 21 61 L36 47" stroke="#d4fc34" strokeWidth="4.5" strokeLinecap="round" />
+              {/* Grip tape details */}
+              <path d="M25 71 L20 74" stroke="#0f172a" strokeWidth="2" strokeLinecap="round" />
+              <path d="M22 75 L18 78" stroke="#0f172a" strokeWidth="2" strokeLinecap="round" />
+              {/* Racket Frame */}
+              <circle cx="53" cy="41" r="18" fill="#1e293b" stroke="#d4fc34" strokeWidth="5.5" />
+              {/* Face holes */}
+              <circle cx="47" cy="35" r="1.5" fill="#d4fc34" />
+              <circle cx="53" cy="35" r="1.5" fill="#d4fc34" />
+              <circle cx="59" cy="35" r="1.5" fill="#d4fc34" />
+              <circle cx="47" cy="41" r="1.5" fill="#d4fc34" />
+              <circle cx="53" cy="41" r="1.5" fill="#d4fc34" />
+              <circle cx="59" cy="41" r="1.5" fill="#d4fc34" />
+              <circle cx="47" cy="47" r="1.5" fill="#d4fc34" />
+              <circle cx="53" cy="47" r="1.5" fill="#d4fc34" />
+              <circle cx="59" cy="47" r="1.5" fill="#d4fc34" />
+              <path d="M42 51 L44 49" stroke="#d4fc34" strokeWidth="3" strokeLinecap="round" />
+              <path d="M64 31 L62 33" stroke="#d4fc34" strokeWidth="3" strokeLinecap="round" />
+              {/* Padel Ball */}
+              <circle cx="74" cy="62" r="7" fill="#d4fc34" stroke="#ffffff" strokeWidth="1.5" />
+            </svg>
+            <span className="absolute -top-1.5 -right-1.5 bg-[#d4fc34] text-slate-950 font-black text-[9px] px-1.5 py-0.5 rounded-full shadow border border-slate-950 uppercase tracking-widest leading-none font-sans">TOUR</span>
+          </div>
+
+          <div className="space-y-1 overflow-hidden">
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black uppercase tracking-wider text-[#d4fc34] drop-shadow-[0_2px_12px_rgba(212,252,52,0.3)] select-none whitespace-nowrap truncate">
+                Circuitos de Torneos
+              </h1>
+            </div>
+            <p className="text-xs sm:text-sm font-semibold tracking-wide text-slate-400 truncate">
+              Gestión y panel de torneos
+            </p>
+          </div>
         </div>
 
         {userRole === "admin" && (
           <button
             onClick={handleOpenCreateForm}
-            className="bg-[#d4fc34] hover:bg-[#c5f015] text-slate-950 text-xs font-black px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition cursor-pointer ml-auto uppercase tracking-wider"
+            className="bg-[#d4fc34]/15 hover:bg-[#d4fc34] hover:text-slate-950 text-[#d4fc34] text-xs font-extrabold px-5 py-3 rounded-xl flex items-center gap-1.5 transition cursor-pointer border border-[#d4fc34]/20 uppercase tracking-widest relative z-10 self-start md:self-center whitespace-nowrap shrink-0"
           >
-            <Plus className="w-4 h-4 text-slate-950" /> Crear Torneo
+            <Plus className="w-4 h-4 text-[#d4fc34] group-hover:text-slate-950" /> 
+            <span className="whitespace-nowrap">Crear Torneo</span>
           </button>
         )}
-      </div>
-
-      {/* TABS STATUS NAVIGATION */}
-      <div className="flex border-b border-slate-850 gap-2">
-        <button
-          onClick={() => setActiveTabStatus("active")}
-          className={`pb-2 px-4 text-xs font-bold border-b-2 transition ${
-            activeTabStatus === "active"
-              ? "border-blue-500 text-white font-black"
-              : "border-transparent text-slate-500 hover:text-slate-350"
-          }`}
-        >
-          🏆 Ligas y Torneos Vigentes / RegistroAbierto
-        </button>
-        <button
-          onClick={() => setActiveTabStatus("completed")}
-          className={`pb-2 px-4 text-xs font-bold border-b-2 transition ${
-            activeTabStatus === "completed"
-              ? "border-blue-500 text-white font-black"
-              : "border-transparent text-slate-500 hover:text-slate-350"
-          }`}
-        >
-          📜 Historial de Torneos Cerrados
-        </button>
-      </div>
-
-      {/* SEARCH CONTROLS */}
-      <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl flex items-center">
-        
-        {/* Search Input */}
-        <div className="w-full relative">
-          <Search className="w-4 h-4 text-slate-500 absolute left-4 top-3" />
-          <input
-            type="text"
-            placeholder="Buscar por torneo, club sede o ciudad de juego..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl pl-11 pr-4 py-2.5 text-xs text-slate-100 placeholder-slate-500 outline-none transition"
-          />
-        </div>
-
       </div>
 
       {/* TOURNAMENTS LIST DISPLAY */}
@@ -1070,6 +1072,30 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
           ))}
         </div>
       )}
+
+      {/* TABS STATUS NAVIGATION - MOVED TO THE BOTTOM */}
+      <div className="flex border-b border-slate-850 gap-2 justify-center pt-6 mt-8">
+        <button
+          onClick={() => setActiveTabStatus("active")}
+          className={`pb-2.5 px-6 text-xs font-black uppercase tracking-wider transition ${
+            activeTabStatus === "active"
+              ? "border-b-2 border-blue-500 text-blue-400 font-black"
+              : "text-slate-400 hover:text-slate-200"
+          }`}
+        >
+          🏆 Ligas y Torneos Vigentes
+        </button>
+        <button
+          onClick={() => setActiveTabStatus("completed")}
+          className={`pb-2.5 px-6 text-xs font-black uppercase tracking-wider transition ${
+            activeTabStatus === "completed"
+              ? "border-b-2 border-[#d4fc34] text-[#d4fc34]"
+              : "text-slate-400 hover:text-slate-200"
+          }`}
+        >
+          📜 Historial de Torneos Cerrados
+        </button>
+      </div>
 
       {/* MODAL CREATOR DIALOG FOR INTERACTIVE FORMS */}
       {isFormOpen && (

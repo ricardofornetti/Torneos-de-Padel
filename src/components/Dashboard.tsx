@@ -122,11 +122,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
         
         <div className="max-w-2xl relative z-10 text-white">
-          <span className="inline-flex items-center gap-1 bg-cyan-500/20 text-[#d4fc34] px-3 py-1 rounded-full text-[10px] font-extrabold border border-[#d4fc34]/30 uppercase tracking-widest mb-4 font-mono">
-            <Trophy className="w-3.5 h-3.5 text-[#d4fc34]" /> EQUIPAMIENTO Y CANCHAS DE NIVEL PRO
-          </span>
           <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-white mb-2 font-display italic uppercase">
-            SRTC PÁDEL <span className="text-[#d4fc34] not-italic font-sans">|</span> CIRCUITO 2026
+            COMPLEJO CENTER <span className="text-[#d4fc34] not-italic font-sans">|</span> CIRCUITO 2026
           </h1>
           <p className="text-slate-200 text-xs md:text-sm leading-relaxed font-sans">
             Plataforma automática para la distribución de grupos, fixtures Round Robin con control de canchas, carga de resultados, playoffs automáticos de eliminación directa y actualización de ránking anual.
@@ -400,58 +397,79 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
 
             <div className="space-y-3">
-              {matches.slice(0, 4).map(m => {
-                const isFinished = m.status === "completed" || m.status === "wo";
-                return (
-                  <div 
-                    key={m.id}
-                    className="p-3 rounded-lg bg-slate-950 border border-slate-900 text-xs hover:border-slate-800 transition"
-                  >
-                    <div className="flex items-center justify-between text-[10px] text-slate-500 mb-2">
-                      <span className="font-mono">{m.stageName} • R{m.roundNumber}</span>
-                      <span className="font-mono">{getTournamentName(m.tournamentId).split(' 20')[0]}</span>
-                    </div>
+              {(() => {
+                const recentMatches = [...matches]
+                  .filter(m => m.pair1Id && m.pair2Id) // Ensure there's actually a match with registered team pairs
+                  .sort((a, b) => {
+                    // Sort completed or explicitly scheduled matches first, then by ID desc
+                    const weightA = (a.status === "completed" || a.status === "wo") ? 2 : (a.date ? 1 : 0);
+                    const weightB = (b.status === "completed" || b.status === "wo") ? 2 : (b.date ? 1 : 0);
+                    if (weightB !== weightA) return weightB - weightA;
+                    return b.id.localeCompare(a.id);
+                  })
+                  .slice(0, 4);
 
-                    {/* Team Names */}
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <span className={`font-semibold ${isFinished && m.winnerPairId === m.pair1Id ? "text-cyan-400" : "text-slate-200"}`}>
-                          {getPlayerNamesByPairId(m.pair1Id)}
-                        </span>
-                        {isFinished && m.winnerPairId === m.pair1Id && (
-                          <CheckCircle className="w-3.5 h-3.5 text-cyan-500" />
-                        )}
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className={`font-semibold ${isFinished && m.winnerPairId === m.pair2Id ? "text-cyan-400" : "text-slate-200"}`}>
-                          {getPlayerNamesByPairId(m.pair2Id)}
-                        </span>
-                        {isFinished && m.winnerPairId === m.pair2Id && (
-                          <CheckCircle className="w-3.5 h-3.5 text-cyan-500" />
-                        )}
-                      </div>
+                if (recentMatches.length === 0) {
+                  return (
+                    <div className="p-6 text-center text-slate-500 text-xs font-mono border border-dashed border-slate-800 rounded-xl bg-slate-950/20">
+                      ⚡ No hay partidos recientes programados de momento. Comienza a definir el cronograma en los torneos para visualizarlos aquí.
                     </div>
+                  );
+                }
 
-                    {/* Bottom Metadata & score */}
-                    <div className="mt-3 pt-2 border-t border-slate-900 flex items-center justify-between text-[11px]">
-                      {isFinished ? (
-                        <span className="bg-cyan-650/10 text-cyan-400 font-extrabold px-2 py-0.5 rounded font-mono border border-cyan-500/10">
-                          {m.scoreSummary || "WO"}
-                        </span>
-                      ) : (
-                        <div className="flex items-center gap-1.5 text-slate-405 font-sans font-medium">
-                          <Calendar className="w-3 h-3 text-slate-500" />
-                          <span>{m.date} • {m.time} h</span>
+                return recentMatches.map(m => {
+                  const isFinished = m.status === "completed" || m.status === "wo";
+                  return (
+                    <div 
+                      key={m.id}
+                      className="p-3 rounded-lg bg-slate-950 border border-slate-900 text-xs hover:border-slate-800 transition"
+                    >
+                      <div className="flex items-center justify-between text-[10px] text-slate-500 mb-2">
+                        <span className="font-mono bg-slate-900 px-1.5 py-0.5 rounded text-slate-400 font-bold uppercase">{m.stageName} • R{m.roundNumber}</span>
+                        <span className="font-mono text-slate-450">{getTournamentName(m.tournamentId).split(' 20')[0]}</span>
+                      </div>
+
+                      {/* Team Names */}
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className={`font-semibold ${isFinished && m.winnerPairId === m.pair1Id ? "text-[#d4fc34]" : "text-slate-200"}`}>
+                            {getPlayerNamesByPairId(m.pair1Id)}
+                          </span>
+                          {isFinished && m.winnerPairId === m.pair1Id && (
+                            <CheckCircle className="w-3.5 h-3.5 text-cyan-500" />
+                          )}
                         </div>
-                      )}
-                      
-                      <span className="text-[10px] text-slate-500">
-                        {getCourtName(m.courtId).split(' - ')[0]}
-                      </span>
+                        <div className="flex justify-between items-center">
+                          <span className={`font-semibold ${isFinished && m.winnerPairId === m.pair2Id ? "text-[#d4fc34]" : "text-slate-200"}`}>
+                            {getPlayerNamesByPairId(m.pair2Id)}
+                          </span>
+                          {isFinished && m.winnerPairId === m.pair2Id && (
+                            <CheckCircle className="w-3.5 h-3.5 text-cyan-500" />
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Bottom Metadata & score */}
+                      <div className="mt-3 pt-2 border-t border-slate-900 flex items-center justify-between text-[11px]">
+                        {isFinished ? (
+                          <span className="bg-[#d4fc34]/10 text-[#d4fc34] font-extrabold px-2 py-0.5 rounded font-mono border border-[#d4fc34]/15">
+                            {m.scoreSummary || "W.O."}
+                          </span>
+                        ) : (
+                          <div className="flex items-center gap-1.5 text-slate-400 font-sans font-medium">
+                            <Calendar className="w-3 h-3 text-slate-500" />
+                            <span>{m.date || "Pendiente"} • {m.time ? `${m.time} h` : "s/h"}</span>
+                          </div>
+                        )}
+                        
+                        <span className="text-[10px] text-slate-500 font-mono">
+                          {getCourtName(m.courtId).split(' - ')[0]}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                });
+              })()}
             </div>
           </div>
 
