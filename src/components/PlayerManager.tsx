@@ -599,18 +599,26 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole }) => {
 
                                 {/* Body particulars */}
                                 <div className="mt-4 pt-3 border-t border-slate-800/60 space-y-2 text-xs text-slate-400">
-                                  <div className="flex items-center gap-2">
-                                    <CreditCard className="w-3.5 h-3.5 text-slate-600 shrink-0" />
-                                    <span className="font-mono text-[11px] text-slate-300">DNI: {p.dni}</span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <Mail className="w-3.5 h-3.5 text-slate-600 shrink-0" />
-                                    <span className="truncate">{p.email}</span>
-                                  </div>
-                                  {p.phone && (
-                                    <div className="flex items-center gap-2">
-                                      <Phone className="w-3.5 h-3.5 text-slate-600 shrink-0" />
-                                      <span>{p.phone}</span>
+                                  {(userRole === "admin" || isMe) ? (
+                                    <>
+                                      <div className="flex items-center gap-2">
+                                        <CreditCard className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+                                        <span className="font-mono text-[11px] text-slate-300">DNI: {p.dni}</span>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <Mail className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+                                        <span className="truncate">{p.email}</span>
+                                      </div>
+                                      {p.phone && (
+                                        <div className="flex items-center gap-2">
+                                          <Phone className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+                                          <span>{p.phone}</span>
+                                        </div>
+                                      )}
+                                    </>
+                                  ) : (
+                                    <div className="text-[10px] text-slate-500 italic pb-1">
+                                      Contacto oculto por privacidad
                                     </div>
                                   )}
                                   <div className="flex items-center gap-2">
@@ -728,18 +736,26 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole }) => {
                               </div>
 
                               <div className="mt-4 pt-3 border-t border-slate-800/60 space-y-2 text-xs text-slate-400">
-                                <div className="flex items-center gap-2">
-                                  <CreditCard className="w-3.5 h-3.5 text-slate-600 shrink-0" />
-                                  <span className="font-mono text-[11px] text-slate-300">DNI: {p.dni}</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <Mail className="w-3.5 h-3.5 text-slate-600 shrink-0" />
-                                  <span className="truncate">{p.email}</span>
-                                </div>
-                                {p.phone && (
-                                  <div className="flex items-center gap-2">
-                                    <Phone className="w-3.5 h-3.5 text-slate-600 shrink-0" />
-                                    <span>{p.phone}</span>
+                                {(userRole === "admin" || isMe) ? (
+                                  <>
+                                    <div className="flex items-center gap-2">
+                                      <CreditCard className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+                                      <span className="font-mono text-[11px] text-slate-300">DNI: {p.dni}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <Mail className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+                                      <span className="truncate">{p.email}</span>
+                                    </div>
+                                    {p.phone && (
+                                      <div className="flex items-center gap-2">
+                                        <Phone className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+                                        <span>{p.phone}</span>
+                                      </div>
+                                    )}
+                                  </>
+                                ) : (
+                                  <div className="text-[10px] text-slate-500 italic pb-1">
+                                    Contacto oculto por privacidad
                                   </div>
                                 )}
                                 <div className="flex items-center gap-2">

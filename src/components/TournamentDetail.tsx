@@ -240,6 +240,25 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
   // Group drawing assignments (In-memory grouping display)
   const [groupsMap, setGroupsMap] = useState<{ [gName: string]: Pair[] }>({});
 
+  const [loggedEmail, setLoggedEmail] = useState<string>("");
+
+  useEffect(() => {
+    const handleCheckUser = () => {
+      const uJson = localStorage.getItem("padel_mgr_mock_user");
+      if (uJson) {
+        try {
+          const u = JSON.parse(uJson);
+          setLoggedEmail(u.email || "");
+        } catch (e) {}
+      } else {
+        setLoggedEmail("");
+      }
+    };
+    handleCheckUser();
+    window.addEventListener("storage", handleCheckUser);
+    return () => window.removeEventListener("storage", handleCheckUser);
+  }, []);
+
   const loadAllData = async () => {
     setLoading(true);
     try {
@@ -402,8 +421,13 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
           const p2 = players.find(p => p.id === pr.player2Id);
           const p1Name = p1 ? `${p1.lastName}, ${p1.firstName}` : "---";
           const p2Name = p2 ? `${p2.lastName}, ${p2.firstName}` : "---";
-          const p1Contact = p1 ? `${p1.dni ? 'DNI: ' + p1.dni : ''} ${p1.phone ? '• Cel: ' + p1.phone : ''}`.trim() : "N/A";
-          const p2Contact = p2 ? `${p2.dni ? 'DNI: ' + p2.dni : ''} ${p2.phone ? '• Cel: ' + p2.phone : ''}`.trim() : "N/A";
+          const isP1Me = p1 && p1.email && loggedEmail && p1.email.toLowerCase() === loggedEmail.toLowerCase();
+          const isP2Me = p2 && p2.email && loggedEmail && p2.email.toLowerCase() === loggedEmail.toLowerCase();
+          const canSeeP1 = userRole === "admin" || isP1Me || isP2Me;
+          const canSeeP2 = userRole === "admin" || isP1Me || isP2Me;
+
+          const p1Contact = p1 ? (canSeeP1 ? `${p1.dni ? 'DNI: ' + p1.dni : ''} ${p1.phone ? '• Cel: ' + p1.phone : ''}`.trim() : "Contacto Oculto") : "N/A";
+          const p2Contact = p2 ? (canSeeP2 ? `${p2.dni ? 'DNI: ' + p2.dni : ''} ${p2.phone ? '• Cel: ' + p2.phone : ''}`.trim() : "Contacto Oculto") : "N/A";
 
           rowsHtml += `
             <tr>

@@ -79,44 +79,24 @@ export default function App() {
         />
       )}
 
-      {/* Unified Top Header Bar for inner views */}
-      {!isIsolatedInscriptions && (activeView !== "dashboard" || selectedTournamentId !== null) && (
-        <header id="top-inner-header" className="border-b border-slate-900 bg-slate-950/80 backdrop-blur-md sticky top-0 z-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-            {/* Header Brand */}
-            <div 
-              className="flex items-center gap-2.5 cursor-pointer group"
-              onClick={() => {
-                setSelectedTournamentId(null);
-                setIsIsolatedInscriptions(false);
-                setActiveView("dashboard");
-              }}
-            >
-              <div className="bg-gradient-to-br from-[#d4fc34] to-lime-600 p-2 rounded-xl text-slate-950 shadow-md group-hover:scale-105 transition-transform">
-                <Trophy className="w-5.5 h-5.5 text-slate-950" />
-              </div>
-              <span className="font-extrabold text-xl tracking-wider text-[#d4fc34] block font-sans uppercase drop-shadow-[0_2px_12px_rgba(212,252,52,0.3)] select-none">
-                Circuitos <span className="text-white">de Torneos</span>
-              </span>
-            </div>
-
-            {/* Premium Volver Button */}
+      {/* Main Core Container */}
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Elegant inline back-to-dashboard shortcut (no header/navbar branding or bar container) */}
+        {activeView !== "dashboard" && !selectedTournamentId && (
+          <div className="mb-6">
             <button
               onClick={() => {
                 setSelectedTournamentId(null);
                 setIsIsolatedInscriptions(false);
                 setActiveView("dashboard");
               }}
-              className="flex items-center gap-1.5 text-xs font-black uppercase tracking-widest text-slate-950 bg-[#d4fc34] hover:bg-[#b8de20] hover:scale-105 active:scale-95 px-5 py-2.5 rounded-xl transition-all shadow-[0_4px_24px_rgba(212,252,52,0.25)] cursor-pointer"
+              className="group flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#d4fc34] hover:text-white transition-all cursor-pointer bg-slate-900/40 hover:bg-slate-950 border border-slate-800 hover:border-slate-700 px-4 py-2 rounded-xl"
             >
-              <span>← Volver</span>
+              <span className="transition-transform group-hover:-translate-x-1">←</span>
+              <span>Volver al Dashboard</span>
             </button>
           </div>
-        </header>
-      )}
-
-      {/* Main Core Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        )}
         {selectedTournamentId ? (
           <TournamentDetail 
             tournamentId={selectedTournamentId}

@@ -65,6 +65,7 @@ export function handleFirestoreError(error: any, operationType: OperationType, p
 
   if (isPermissionError) {
     console.error('Firestore Error Captured: ', JSON.stringify(errInfo));
+    throw new Error(JSON.stringify(errInfo));
   } else {
     console.warn(`Firestore non-fatal issue (${errMsg}) at path: ${path}. Operating in Sandbox fallback.`);
   }

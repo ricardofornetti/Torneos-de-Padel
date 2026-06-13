@@ -95,7 +95,7 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
     setPrefillDemo16(true);
     setPrefillDemo32(true);
     setPrefillDemo24(true);
-    setIsSizeSelectorOpen(true);
+    setIsFormOpen(true);
   };
 
   const handleOpenEditForm = (t: Tournament) => {
