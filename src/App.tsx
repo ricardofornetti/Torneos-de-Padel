@@ -80,23 +80,7 @@ export default function App() {
       )}
 
       {/* Main Core Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Elegant inline back-to-dashboard shortcut (no header/navbar branding or bar container) */}
-        {activeView !== "dashboard" && !selectedTournamentId && (
-          <div className="mb-6">
-            <button
-              onClick={() => {
-                setSelectedTournamentId(null);
-                setIsIsolatedInscriptions(false);
-                setActiveView("dashboard");
-              }}
-              className="group flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#d4fc34] hover:text-white transition-all cursor-pointer bg-slate-900/40 hover:bg-slate-950 border border-slate-800 hover:border-slate-700 px-4 py-2 rounded-xl"
-            >
-              <span className="transition-transform group-hover:-translate-x-1">←</span>
-              <span>Volver al Dashboard</span>
-            </button>
-          </div>
-        )}
+      <main className="flex-1 w-full flex flex-col">
         {selectedTournamentId ? (
           <TournamentDetail 
             tournamentId={selectedTournamentId}
@@ -111,41 +95,72 @@ export default function App() {
           />
         ) : (
           <>
-            {activeView === "dashboard" && (
-              <Dashboard 
-                userRole={userRole}
-                onNavigateToTournament={(id) => setSelectedTournamentId(id)}
-                onNavigate={(view) => setActiveView(view)}
-              />
-            )}
+            {activeView === "dashboard" ? (
+              <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <Dashboard 
+                  userRole={userRole}
+                  onNavigateToTournament={(id) => setSelectedTournamentId(id)}
+                  onNavigate={(view) => setActiveView(view)}
+                />
+              </div>
+            ) : (
+              <>
+                {activeView === "tournaments" && (
+                  <TournamentManager 
+                    userRole={userRole}
+                    onSelectTournament={(id) => setSelectedTournamentId(id)}
+                    onBack={() => {
+                      setSelectedTournamentId(null);
+                      setIsIsolatedInscriptions(false);
+                      setActiveView("dashboard");
+                    }}
+                  />
+                )}
 
-            {activeView === "tournaments" && (
-              <TournamentManager 
-                userRole={userRole}
-                onSelectTournament={(id) => setSelectedTournamentId(id)}
-              />
-            )}
+                {activeView === "players" && (
+                  <PlayerManager 
+                    userRole={userRole}
+                    onBack={() => {
+                      setSelectedTournamentId(null);
+                      setIsIsolatedInscriptions(false);
+                      setActiveView("dashboard");
+                    }}
+                  />
+                )}
 
-            {activeView === "players" && (
-              <PlayerManager 
-                userRole={userRole}
-              />
-            )}
+                {activeView === "rankings" && (
+                  <RankingManager 
+                    userRole={userRole} 
+                    onBack={() => {
+                      setSelectedTournamentId(null);
+                      setIsIsolatedInscriptions(false);
+                      setActiveView("dashboard");
+                    }}
+                  />
+                )}
 
-             {activeView === "rankings" && (
-               <RankingManager userRole={userRole} />
-             )}
+                {activeView === "courts" && (
+                  <CourtManager 
+                    userRole={userRole}
+                    onBack={() => {
+                      setSelectedTournamentId(null);
+                      setIsIsolatedInscriptions(false);
+                      setActiveView("dashboard");
+                    }}
+                  />
+                )}
 
-            {activeView === "courts" && (
-              <CourtManager 
-                userRole={userRole}
-              />
-            )}
-
-            {activeView === "gallery" && (
-              <Gallery 
-                userRole={userRole}
-              />
+                {activeView === "gallery" && (
+                  <Gallery 
+                    userRole={userRole}
+                    onBack={() => {
+                      setSelectedTournamentId(null);
+                      setIsIsolatedInscriptions(false);
+                      setActiveView("dashboard");
+                    }}
+                  />
+                )}
+              </>
             )}
           </>
         )}

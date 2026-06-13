@@ -25,9 +25,10 @@ import { Player } from '../types';
 
 interface RankingManagerProps {
   userRole: "admin" | "player";
+  onBack?: () => void;
 }
 
-export const RankingManager: React.FC<RankingManagerProps> = ({ userRole }) => {
+export const RankingManager: React.FC<RankingManagerProps> = ({ userRole, onBack }) => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [resetting, setResetting] = useState(false);
@@ -183,10 +184,11 @@ export const RankingManager: React.FC<RankingManagerProps> = ({ userRole }) => {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="w-full flex flex-col">
       
-      {/* Header card banner */}
-      <div className="bg-gradient-to-r from-slate-900/90 to-slate-950/80 p-6 rounded-2xl border border-slate-800/80 shadow-2xl relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6">
+      {/* Full-width header banner */}
+      <div className="w-full bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border-b border-slate-900 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] bg-[size:16px_16px] opacity-10 pointer-events-none"></div>
         <div className="absolute right-0 top-0 bottom-0 w-1/3 opacity-[0.03] pointer-events-none">
           <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
             <defs>
@@ -198,50 +200,88 @@ export const RankingManager: React.FC<RankingManagerProps> = ({ userRole }) => {
           </svg>
         </div>
 
-        {/* Title Section with Sticker */}
-        <div className="flex items-center gap-5 relative z-10">
-          {/* Trophy Sticker */}
-          <div className="w-20 h-20 shrink-0 bg-[#d4fc34]/10 rounded-2xl border border-[#d4fc34]/30 flex items-center justify-center p-2 shadow-inner relative group select-none">
-            <div className="absolute inset-0 bg-[#d4fc34]/5 rounded-2xl animate-pulse"></div>
-            <Trophy className="w-12 h-12 text-[#d4fc34] relative z-10 drop-shadow-[0_2px_12px_rgba(212,252,52,0.4)]" />
-            <span className="absolute -top-1.5 -right-1.5 bg-[#d4fc34] text-slate-950 font-black text-[9px] px-1.5 py-0.5 rounded-full shadow border border-slate-950 uppercase tracking-widest leading-none font-sans">PRO</span>
-          </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10 w-full">
+          {/* Title Section with Sticker and Back button */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-5 w-full md:w-auto">
+            {onBack && (
+              <button
+                onClick={onBack}
+                className="group flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[#d4fc34] hover:text-slate-950 hover:bg-[#d4fc34] transition-all cursor-pointer bg-slate-900/60 border border-slate-800 hover:border-slate-700 px-4 py-2.5 rounded-xl self-start sm:self-auto"
+              >
+                <span className="transition-transform group-hover:-translate-x-1">←</span>
+                <span>Volver</span>
+              </button>
+            )}
 
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <h1 className="text-4xl sm:text-5xl font-black uppercase tracking-wider text-[#d4fc34] drop-shadow-[0_2px_12px_rgba(212,252,52,0.3)] select-none">
-                Ranking
-              </h1>
+            <div className="flex items-center gap-5">
+              {/* Champion Trophy Sticker */}
+              <div className="w-20 h-20 shrink-0 bg-[#d4fc34]/10 rounded-2xl border border-[#d4fc34]/30 flex items-center justify-center p-2 shadow-inner relative group select-none overflow-hidden">
+                <div className="absolute inset-0 bg-[#d4fc34]/5 rounded-2xl animate-pulse"></div>
+                <svg className="w-14 h-14 relative z-10 animate-fade-in" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  {/* Backdrop glowing sunburst */}
+                  <circle cx="50" cy="50" r="35" fill="url(#goldGrad)" opacity="0.15" />
+                  <defs>
+                    <radialGradient id="goldGrad" cx="50%" cy="50%" r="50%">
+                      <stop offset="0%" stopColor="#facc15" />
+                      <stop offset="100%" stopColor="#d4fc34" stopOpacity="0" />
+                    </radialGradient>
+                  </defs>
+                  {/* Trophy path */}
+                  <path d="M32 25 H68 V45 C68 55 58 65 50 65 C42 65 32 55 32 45 Z" fill="#0f172a" stroke="#d4fc34" strokeWidth="2.5" />
+                  <path d="M50 65 V80" stroke="#d4fc34" strokeWidth="3" />
+                  <path d="M35 80 H65" stroke="#d4fc34" strokeWidth="3" strokeLinecap="round" />
+                  {/* Left & Right Handles */}
+                  <path d="M32 30 H24 V40 C24 45 28 45 32 45" stroke="#d4fc34" strokeWidth="2" strokeLinecap="round" />
+                  <path d="M68 30 H76 V40 C76 45 72 45 68 45" stroke="#d4fc34" strokeWidth="2" strokeLinecap="round" />
+                  {/* Star details inside */}
+                  <polygon points="50,32 52,36 56,36 53,39 54,43 50,41 46,43 47,39 44,36 48,36" fill="#facc15" />
+                </svg>
+                <span className="absolute -top-1.5 -right-1.5 bg-[#d4fc34] text-slate-950 font-black text-[9px] px-1.5 py-0.5 rounded-full shadow border border-slate-950 uppercase tracking-widest leading-none font-sans">RANK</span>
+              </div>
+
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest font-mono">
+                    Official Standings
+                  </span>
+                </div>
+                <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black uppercase tracking-wider text-white">
+                  Ranking Oficial
+                </h1>
+                <p className="text-xs text-slate-400">
+                  Puntajes anuales acumulados en función de rendimientos en torneos de padel vigentes.
+                </p>
+              </div>
             </div>
-            <p className="text-xs sm:text-sm font-semibold tracking-wide text-slate-400">
-              Visualización oficial acumuladora del circuito de pádel profesional. Los puntos se adjudican automáticamente en función de resultados de eliminatorias directas.
-            </p>
           </div>
-        </div>
 
-        <div className="flex flex-wrap gap-2 relative z-10 sm:self-end md:self-center">
-          <button
-            onClick={handleResetPoints}
-            disabled={resetting}
-            className="bg-red-950/30 hover:bg-red-950/60 border border-red-900/40 text-red-00 text-xs font-bold px-3.5 py-2.5 rounded-xl flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"
-          >
-            <RotateCcw className={`w-3.5 h-3.5 text-red-500 ${resetting ? 'animate-spin' : ''}`} /> 
-            <span>{resetting ? 'Reiniciando...' : 'Reiniciar Puntos'}</span>
-          </button>
-
-          {userRole === "admin" && (
+          <div className="flex flex-wrap gap-2 relative z-10 sm:self-end md:self-center">
             <button
-              onClick={handleDeleteAllPlayers}
-              disabled={deletingPlayers}
-              className="bg-red-900/20 hover:bg-red-1000/40 border border-red-800/50 text-red-300 text-xs font-bold px-3.5 py-2.5 rounded-xl flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50 animate-fade-in"
-              title="Eliminar todos los jugadores cargados"
+              onClick={handleResetPoints}
+              disabled={resetting}
+              className="bg-red-950/45 hover:bg-red-900 border border-red-900/40 text-red-00 text-[10px] font-black px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50 uppercase tracking-wider whitespace-nowrap"
             >
-              <Trash2 className="w-3.5 h-3.5 text-red-405" />
-              <span>{deletingPlayers ? 'Eliminando...' : 'Eliminar Jugadores'}</span>
+              <RotateCcw className={`w-3.5 h-3.5 text-red-500 ${resetting ? 'animate-spin' : ''}`} /> 
+              <span>{resetting ? 'Reiniciando...' : 'Reiniciar Puntos'}</span>
             </button>
-          )}
+
+            {userRole === "admin" && (
+              <button
+                onClick={handleDeleteAllPlayers}
+                disabled={deletingPlayers}
+                className="bg-red-900/20 hover:bg-red-1000/40 border border-red-800/50 text-red-300 text-xs font-bold px-3.5 py-2.5 rounded-xl flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50 animate-fade-in"
+                title="Eliminar todos los jugadores cargados"
+              >
+                <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                <span>{deletingPlayers ? 'Eliminando...' : 'Eliminar Jugadores'}</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
+
+      {/* Main page content wrapped in centered padding */}
+      <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
 
       {/* SECCIÓN CATEGORÍAS ORGANIZADAS */}
       <div className="bg-slate-900 border border-slate-800 p-5 rounded-xl space-y-4">
@@ -776,6 +816,7 @@ export const RankingManager: React.FC<RankingManagerProps> = ({ userRole }) => {
         </div>
       )}
 
+      </div>
     </div>
   );
 };

@@ -16,7 +16,12 @@ import {
 import { repository } from '../lib/repository';
 import { Court, Match, Pair, Player } from '../types';
 
-export const CourtManager: React.FC<{ userRole: "admin" | "player" }> = ({ userRole }) => {
+interface CourtManagerProps {
+  userRole: "admin" | "player";
+  onBack?: () => void;
+}
+
+export const CourtManager: React.FC<CourtManagerProps> = ({ userRole, onBack }) => {
   const [courts, setCourts] = useState<Court[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
   const [pairs, setPairs] = useState<Pair[]>([]);
@@ -235,56 +240,112 @@ export const CourtManager: React.FC<{ userRole: "admin" | "player" }> = ({ userR
   const scheduledMatches = matches.filter(m => m.status === "pending" && m.courtId);
 
   return (
-    <div className="space-y-6">
+    <div className="w-full flex flex-col">
       
-      {/* Title */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-5">
-        <div>
-          <h1 className="text-2xl font-black text-white flex items-center gap-2">
-            <MapPin className="w-6 h-6 text-indigo-500" /> Control de Pistas y Cronograma
-          </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Gestión física del complejo deportivo: añade canchas, visualiza reservas horarias y asigna canchas evitando superposiciones.
-          </p>
+      {/* Full-width header banner */}
+      <div className="w-full bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border-b border-slate-900 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] bg-[size:16px_16px] opacity-10 pointer-events-none"></div>
+        <div className="absolute right-0 top-0 bottom-0 w-1/3 opacity-[0.02] pointer-events-none">
+          <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
+            <defs>
+              <pattern id="grid-courts" width="12" height="12" patternUnits="userSpaceOnUse">
+                <path d="M 12 0 L 0 0 0 12" fill="none" stroke="white" strokeWidth="0.5"/>
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#grid-courts)" />
+          </svg>
         </div>
 
-        {userRole === "admin" && (
-          <div className="flex flex-wrap items-center gap-2 md:gap-3 md:ml-auto">
-            <button
-              onClick={() => {
-                setEditingCourtId(null);
-                setCourtName("");
-                setCourtClub("");
-                setIsCourtFormOpen(true);
-              }}
-              className="bg-[#d4fc34] hover:bg-[#c5f015] text-slate-950 text-xs font-black px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition cursor-pointer uppercase tracking-wider"
-            >
-              <Plus className="w-4 h-4 text-slate-950" /> Agregar Cancha
-            </button>
-            <button
-              onClick={() => {
-                if (courts.length === 0) {
-                  alert("No hay canchas registradas para gestionar.");
-                  return;
-                }
-                setIsManageModalOpen(true);
-              }}
-              className="bg-[#d4fc34] hover:bg-[#c5f015] text-slate-950 text-xs font-black px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition cursor-pointer uppercase tracking-wider shadow-lg"
-            >
-              <Edit className="w-4 h-4 text-slate-950" /> {courts.length > 0 ? "Guardar" : "Modificar y Eliminar"}
-            </button>
-            <button
-              onClick={handleDeleteAllCourts}
-              disabled={deletingCourts}
-              className="bg-red-900/20 hover:bg-red-1000/40 border border-red-800/50 text-red-300 text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50 uppercase tracking-wider animate-fade-in"
-              title="Eliminar todos los complejos y canchas cargados"
-            >
-              <Trash2 className="w-4 h-4 text-red-400" />
-              <span>{deletingCourts ? 'Eliminando...' : 'Eliminar Complexes'}</span>
-            </button>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10 w-full">
+          {/* Title Section with Sticker and Back button */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-5 w-full md:w-auto">
+            {onBack && (
+              <button
+                onClick={onBack}
+                className="group flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[#d4fc34] hover:text-slate-950 hover:bg-[#d4fc34] transition-all cursor-pointer bg-slate-900/60 border border-slate-800 hover:border-slate-700 px-4 py-2.5 rounded-xl self-start sm:self-auto"
+              >
+                <span className="transition-transform group-hover:-translate-x-1">←</span>
+                <span>Volver</span>
+              </button>
+            )}
+
+            <div className="flex items-center gap-5">
+              {/* Premium Blueprint Padel Court Isotipo */}
+              <div className="w-20 h-20 shrink-0 bg-[#d4fc34]/15 rounded-2xl border border-[#d4fc34]/30 flex items-center justify-center p-2 shadow-inner relative group select-none overflow-hidden">
+                <div className="absolute inset-0 bg-[#d4fc34]/5 rounded-2xl animate-pulse"></div>
+                <svg className="w-14 h-14 relative z-10" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  {/* Outer Court Boundary (Padel Glass & Mesh) */}
+                  <rect x="22" y="15" width="56" height="70" rx="4" stroke="#d4fc34" strokeWidth="2.5" fill="#1e293b" />
+                  {/* Service line top & bottom */}
+                  <line x1="22" y1="30" x2="78" y2="30" stroke="#d4fc34" strokeWidth="1" opacity="0.6" />
+                  <line x1="22" y1="70" x2="78" y2="70" stroke="#d4fc34" strokeWidth="1" opacity="0.6" />
+                  {/* Central Service Line */}
+                  <line x1="50" y1="30" x2="50" y2="70" stroke="#d4fc34" strokeWidth="1" opacity="0.6" />
+                  {/* Central Net */}
+                  <line x1="20" y1="50" x2="80" y2="50" stroke="#facc15" strokeWidth="2" strokeDasharray="2,2" />
+                  {/* Neon Tennis Ball in action */}
+                  <circle cx="42" cy="45" r="4" fill="#d4fc34" />
+                </svg>
+                <span className="absolute -top-1.5 -right-1.5 bg-[#d4fc34] text-slate-950 font-black text-[9px] px-1.5 py-0.5 rounded-full shadow border border-slate-950 uppercase tracking-widest leading-none font-sans">COURT</span>
+              </div>
+
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest font-mono">
+                    Official Venue
+                  </span>
+                </div>
+                <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black uppercase tracking-wider text-white">
+                  Complejos y Pistas
+                </h1>
+                <p className="text-xs text-slate-450 mt-1">
+                  Control en tiempo real de partidos en cancha, disponibilidad física y turnos de juego.
+                </p>
+              </div>
+            </div>
           </div>
-        )}
+
+          {userRole === "admin" && (
+            <div className="flex flex-wrap items-center gap-2 md:gap-3 shrink-0">
+              <button
+                onClick={() => {
+                  setEditingCourtId(null);
+                  setCourtName("");
+                  setCourtClub("");
+                  setIsCourtFormOpen(true);
+                }}
+                className="bg-[#d4fc34]/15 hover:bg-[#d4fc34] hover:text-slate-950 text-[#d4fc34] text-[10px] font-black px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition cursor-pointer border border-[#d4fc34]/20 uppercase tracking-widest relative z-10 self-start md:self-center whitespace-nowrap shrink-0"
+              >
+                <Plus className="w-4 h-4 text-[#d4fc34] group-hover:text-slate-950" /> Agregar Cancha
+              </button>
+              <button
+                onClick={() => {
+                  if (courts.length === 0) {
+                    alert("No hay canchas registradas para gestionar.");
+                    return;
+                  }
+                  setIsManageModalOpen(true);
+                }}
+                className="bg-[#d4fc34]/15 hover:bg-[#d4fc34] hover:text-slate-950 text-[#d4fc34] text-[10px] font-black px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition cursor-pointer border border-[#d4fc34]/20 uppercase tracking-widest relative z-10 self-start md:self-center whitespace-nowrap shrink-0"
+              >
+                <Edit className="w-4 h-4 text-[#d4fc34] group-hover:text-slate-950" /> {courts.length > 0 ? "Guardar" : "Modificar y Eliminar"}
+              </button>
+              <button
+                onClick={handleDeleteAllCourts}
+                disabled={deletingCourts}
+                className="bg-red-950/45 hover:bg-red-900 border border-red-900/40 text-red-00 text-[10px] font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50 uppercase tracking-wider whitespace-nowrap"
+                title="Eliminar todos los complejos y canchas cargados"
+              >
+                <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                <span>{deletingCourts ? 'Eliminando...' : 'Eliminar Canchas'}</span>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Main page content wrapped in centered padding */}
+      <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
 
       {/* QUICK COURTS LIST */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -777,6 +838,7 @@ export const CourtManager: React.FC<{ userRole: "admin" | "player" }> = ({ userR
         </div>
       )}
 
+      </div>
     </div>
   );
 };

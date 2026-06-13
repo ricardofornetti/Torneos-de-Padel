@@ -109,39 +109,75 @@ export const Dashboard: React.FC<DashboardProps> = ({
     <div className="space-y-8 animate-fade-in">
       
       {/* Title & Banner HERO */}
-      <div className="relative rounded-2xl overflow-hidden border border-sky-100 p-6 md:p-8 flex flex-col justify-center min-h-[220px]">
-        {/* Background Image with overlay */}
-        <div className="absolute inset-0 z-0">
-          <img 
-            src="/src/assets/images/padel_hero_banner_1780152172518.png" 
-            alt="Padel Court Banner" 
-            className="w-full h-full object-cover"
-            referrerPolicy="no-referrer"
-          />
-          <div className="absolute inset-0 bg-slate-950/75 mix-blend-multiply"></div>
-        </div>
-        
-        <div className="max-w-2xl relative z-10 text-white">
-          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-white mb-2 font-display italic uppercase">
-            COMPLEJO CENTER <span className="text-[#d4fc34] not-italic font-sans">|</span> CIRCUITO 2026
-          </h1>
-          <p className="text-slate-200 text-xs md:text-sm leading-relaxed font-sans">
-            Plataforma automática para la distribución de grupos, fixtures Round Robin con control de canchas, carga de resultados, playoffs automáticos de eliminación directa y actualización de ránking anual.
-          </p>
+      <div className="relative rounded-2xl overflow-hidden border border-slate-800 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950/80 p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 min-h-[220px] shadow-2xl">
+        {/* Subtle decorative mesh overlay and line art */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#0f172a_1px,transparent_1px),linear-gradient(to_bottom,#0f172a_1px,transparent_1px)] bg-[size:24px_24px] opacity-20 pointer-events-none"></div>
+        <div className="absolute -top-12 -left-12 w-64 h-64 bg-lime-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="absolute -bottom-16 -right-16 w-80 h-80 bg-blue-500/15 rounded-full blur-3xl pointer-events-none"></div>
+
+        {/* Hero Info Columns */}
+        <div className="max-w-3xl relative z-10 flex flex-col sm:flex-row items-center gap-6 text-center sm:text-left">
+          {/* Elite Isotipo - Double Rackets & Stars (Gold & Lime Fusion) */}
+          <div className="relative w-24 h-24 shrink-0 bg-gradient-to-b from-slate-900 to-slate-950 rounded-2xl border-2 border-slate-700/80 p-3 shadow-2xl flex items-center justify-center group select-none overflow-hidden">
+            <div className="absolute inset-0 bg-[#d4fc34]/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            {/* Elegant SVG Logo representing international tour */}
+            <svg className="w-16 h-16 z-10" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+              {/* Outer Golden Laurel Circle */}
+              <circle cx="50" cy="50" r="42" stroke="#d4fc34" strokeWidth="1" strokeDasharray="3 3" opacity="0.4" />
+              {/* Crossed Rackets */}
+              <g transform="translate(14, 14)">
+                {/* Racket Left */}
+                <g transform="rotate(-28 36 36)">
+                  <path d="M22 45 L10 62 C8 65 3 64 1 60 C-1 56 1 50 4 47 L16 31" stroke="#d4fc34" strokeWidth="3" strokeLinecap="round" opacity="0.8"/>
+                  <rect x="22" y="16" width="22" height="22" rx="11" fill="#0f172a" stroke="#d4fc34" strokeWidth="3" />
+                </g>
+                {/* Racket Right */}
+                <g transform="rotate(28 36 36)">
+                  <path d="M50 45 L62 62 C64 65 69 64 71 60 C73 56 71 50 68 47 L56 31" stroke="#e2e8f0" strokeWidth="3" strokeLinecap="round" opacity="0.8"/>
+                  <rect x="30" y="16" width="22" height="22" rx="11" fill="#0f172a" stroke="#e2e8f0" strokeWidth="3" />
+                </g>
+              </g>
+              {/* Glowing tennis/padel ball in the center */}
+              <circle cx="50" cy="46" r="8" fill="#d4fc34" className="animate-pulse" />
+              <path d="M46 43 C48 45 48 47 46 49" stroke="#000000" strokeWidth="1.2" strokeLinecap="round" fill="none" />
+              <path d="M54 43 C52 45 52 47 54 49" stroke="#000000" strokeWidth="1.2" strokeLinecap="round" fill="none" />
+              {/* Stars badge */}
+              <polygon points="50,14 52,18 56,18 53,21 54,25 50,23 46,25 47,21 44,18 48,18" fill="#facc15" />
+            </svg>
+            <span className="absolute bottom-1 bg-slate-900 border border-slate-800 text-[8px] font-black tracking-widest text-[#d4fc34] px-1.5 py-0.5 rounded uppercase leading-none font-sans">MASTER</span>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+              <span className="bg-lime-500/10 text-[#d4fc34] border border-lime-500/20 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest font-mono">
+                Official World Tour System
+              </span>
+              <span className="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest font-mono">
+                Srtc Pro 2026
+              </span>
+            </div>
+            
+            <h1 className="text-3xl md:text-4xl font-black tracking-wider text-white font-sans uppercase">
+              COMPLEJO CENTER <span className="text-[#d4fc34] font-light font-sans">/</span> CIRCUITO PROFESIONAL
+            </h1>
+            <p className="text-slate-300 text-xs md:text-sm leading-relaxed max-w-2.5xl font-sans">
+              Plataforma automática para la distribución de grupos, fixtures Round Robin con control de canchas en tiempo real, carga de resultados, playoffs de eliminación directa y actualización instantánea del ranking anual oficial.
+            </p>
+          </div>
         </div>
 
         {/* Quick Shortcut Buttons for Administration */}
         {userRole === "admin" && (
-          <div className="mt-6 flex flex-wrap gap-3 relative z-10">
+          <div className="flex flex-col sm:flex-row md:flex-col lg:flex-row gap-3 relative z-10 shrink-0 w-full sm:w-auto">
             <button
               onClick={() => onNavigate("tournaments")}
-              className="bg-[#d4fc34] hover:bg-[#c5f015] text-slate-950 text-xs font-black px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow-md shadow-lime-500/10 transition-all cursor-pointer uppercase tracking-wider"
+              className="bg-[#d4fc34] hover:bg-[#c5f015] hover:scale-[1.03] text-slate-950 text-xs font-black px-5 py-3 rounded-xl flex items-center justify-center gap-1.5 shadow-lg shadow-lime-500/15 transition-all cursor-pointer uppercase tracking-wider w-full sm:w-auto"
             >
-              <Trophy className="w-3.5 h-3.5 text-slate-950" /> Crear Nuevo Torneo
+              <Trophy className="w-3.5 h-3.5 text-slate-950" /> Crear Torneo
             </button>
             <button
               onClick={() => onNavigate("players")}
-              className="bg-slate-900/80 hover:bg-slate-800 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 border border-slate-700/50 backdrop-blur-sm transition-all cursor-pointer uppercase tracking-wider"
+              className="bg-slate-900 hover:bg-slate-800 hover:scale-[1.03] text-white text-xs font-bold px-5 py-3 rounded-xl flex items-center justify-center gap-1.5 border border-slate-700/80 backdrop-blur-sm transition-all cursor-pointer uppercase tracking-wider w-full sm:w-auto"
             >
               <Users className="w-3.5 h-3.5 text-[#d4fc34]" /> Agregar Jugador
             </button>
