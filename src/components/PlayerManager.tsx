@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { repository } from '../lib/repository';
 import { Player } from '../types';
+import { PageHeaderBanner } from './ui/PageHeaderBanner';
 import { getFIPTop100Males, getFIPTop100Females } from '../lib/fipRankingsData';
 
 interface PlayerManagerProps {
@@ -355,65 +356,26 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole, onBack }
     <div className="w-full flex flex-col">
       
       {/* Full-width header banner */}
-      <div className="w-full bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border-b border-slate-900 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] bg-[size:16px_16px] opacity-10 pointer-events-none"></div>
-        <div className="absolute right-0 top-0 bottom-0 w-1/3 opacity-[0.03] pointer-events-none">
-          <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
-            <defs>
-              <pattern id="grid-players" width="10" height="10" patternUnits="userSpaceOnUse">
-                <path d="M 10 0 L 0 0 0 10" fill="none" stroke="white" strokeWidth="0.5"/>
-              </pattern>
-            </defs>
-            <rect width="100%" height="100%" fill="url(#grid-players)" />
+      <PageHeaderBanner
+        onBack={onBack}
+        gridPatternId="grid-players"
+        eyebrow="Athlete Database"
+        eyebrowColor="indigo"
+        title="Registro de Jugadores"
+        description="Ficha oficial unificada de competidores registrados y acumuladores de ranking anual."
+        cornerBadge="PLAYER"
+        icon={
+          <svg className="w-14 h-14 relative z-10" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            {/* Card Shield Frame */}
+            <path d="M22,24 C34,20 66,20 78,24 C78,54 68,76 50,83 C32,76 22,54 22,24 Z" fill="#0f172a" stroke="#d4fc34" strokeWidth="2.5" />
+            {/* Photo Profile Silhouette */}
+            <circle cx="50" cy="38" r="9" fill="#1e293b" stroke="#d4fc34" strokeWidth="2" />
+            <path d="M34 62 C34 51 66 51 66 62" stroke="#d4fc34" strokeWidth="2" strokeLinecap="round" />
+            {/* Shiny crown above helmet profile */}
+            <polygon points="50,23 54,27 46,27" fill="#facc15" />
           </svg>
-        </div>
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10 w-full">
-          {/* Title Section with Sticker and Back button */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-5 w-full md:w-auto">
-            {onBack && (
-              <button
-                onClick={onBack}
-                className="group flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[#d4fc34] hover:text-slate-950 hover:bg-[#d4fc34] transition-all cursor-pointer bg-slate-900/60 border border-slate-800 hover:border-slate-700 px-4 py-2.5 rounded-xl self-start sm:self-auto"
-              >
-                <span className="transition-transform group-hover:-translate-x-1">←</span>
-                <span>Volver</span>
-              </button>
-            )}
-
-            <div className="flex items-center gap-5">
-              {/* Dynamic player profile sticker */}
-              <div className="w-20 h-20 shrink-0 bg-[#d4fc34]/10 rounded-2xl border border-[#d4fc34]/30 flex items-center justify-center p-2 shadow-inner relative group select-none overflow-hidden">
-                <div className="absolute inset-0 bg-[#d4fc34]/5 rounded-2xl animate-pulse"></div>
-                <svg className="w-14 h-14 relative z-10" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  {/* Card Shield Frame */}
-                  <path d="M22,24 C34,20 66,20 78,24 C78,54 68,76 50,83 C32,76 22,54 22,24 Z" fill="#0f172a" stroke="#d4fc34" strokeWidth="2.5" />
-                  {/* Photo Profile Silhouette */}
-                  <circle cx="50" cy="38" r="9" fill="#1e293b" stroke="#d4fc34" strokeWidth="2" />
-                  <path d="M34 62 C34 51 66 51 66 62" stroke="#d4fc34" strokeWidth="2" strokeLinecap="round" />
-                  {/* Shiny crown above helmet profile */}
-                  <polygon points="50,23 54,27 46,27" fill="#facc15" />
-                </svg>
-                <span className="absolute -top-1.5 -right-1.5 bg-[#d4fc34] text-slate-950 font-black text-[9px] px-1.5 py-0.5 rounded-full shadow border border-slate-950 uppercase tracking-widest leading-none font-sans">PLAYER</span>
-              </div>
-
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest font-mono">
-                    Athlete Database
-                  </span>
-                </div>
-                <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black uppercase tracking-wider text-white">
-                  Registro de Jugadores
-                </h1>
-                <p className="text-xs text-slate-400">
-                  Ficha oficial unificada de competidores registrados y acumuladores de ranking anual.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+        }
+      />
 
       {/* Main page content wrapped in centered padding */}
       <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
