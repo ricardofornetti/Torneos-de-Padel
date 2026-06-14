@@ -39,90 +39,114 @@ import {
 } from '../lib/tournamentEngine';
 
 // Generates placeholder empty matches for all playoff phases
-export const preGeneratePlayoffsHelper = (tId: string, cat: string): Match[] => {
+export const preGeneratePlayoffsHelper = (tId: string, cat: string, pairCount?: number): Match[] => {
   const list: Match[] = [];
   
-  // 1. 16avos de Final (16 matches)
-  for (let i = 1; i <= 16; i++) {
-    list.push({
-      id: `match_${tId}_playoff_16avos_${cat.replace(/[^a-zA-Z0-9]/g, "")}_m${i}`,
-      tournamentId: tId,
-      phase: "playoff",
-      roundNumber: 1,
-      stageName: `16avos de Final ${i}`,
-      pair1Id: "",
-      pair2Id: "",
-      courtId: "",
-      date: "",
-      time: "",
-      status: "pending",
-      scoreSummary: "Por jugar",
-      winnerPairId: "",
-      category: cat
-    });
+  // Decide bracket size based on pair count
+  let bracketSize = 16; // default fallback
+  if (pairCount !== undefined) {
+    if (pairCount <= 4) {
+      bracketSize = 2;
+    } else if (pairCount <= 9) {
+      bracketSize = 4;
+    } else if (pairCount <= 16) {
+      bracketSize = 8;
+    } else if (pairCount <= 32) {
+      bracketSize = 16;
+    } else {
+      bracketSize = 32;
+    }
   }
 
-  // 2. Octavos de Final (8 matches)
-  for (let i = 1; i <= 8; i++) {
-    list.push({
-      id: `match_${tId}_playoff_8avos_${cat.replace(/[^a-zA-Z0-9]/g, "")}_m${i}`,
-      tournamentId: tId,
-      phase: "playoff",
-      roundNumber: 2,
-      stageName: `Octavos de Final ${i}`,
-      pair1Id: "",
-      pair2Id: "",
-      courtId: "",
-      date: "",
-      time: "",
-      status: "pending",
-      scoreSummary: "Por jugar",
-      winnerPairId: "",
-      category: cat
-    });
+  // 1. 16avos de Final (16 matches, only for bracketSize >= 32)
+  if (bracketSize >= 32) {
+    for (let i = 1; i <= 16; i++) {
+      list.push({
+        id: `match_${tId}_playoff_16avos_${cat.replace(/[^a-zA-Z0-9]/g, "")}_m${i}`,
+        tournamentId: tId,
+        phase: "playoff",
+        roundNumber: 1,
+        stageName: `16avos de Final ${i}`,
+        pair1Id: "",
+        pair2Id: "",
+        courtId: "",
+        date: "",
+        time: "",
+        status: "pending",
+        scoreSummary: "Por jugar",
+        winnerPairId: "",
+        category: cat
+      });
+    }
   }
 
-  // 3. Cuartos de Final (4 matches)
-  for (let i = 1; i <= 4; i++) {
-    list.push({
-      id: `match_${tId}_playoff_4tos_${cat.replace(/[^a-zA-Z0-9]/g, "")}_m${i}`,
-      tournamentId: tId,
-      phase: "playoff",
-      roundNumber: 3,
-      stageName: `Cuartos de Final ${i}`,
-      pair1Id: "",
-      pair2Id: "",
-      courtId: "",
-      date: "",
-      time: "",
-      status: "pending",
-      scoreSummary: "Por jugar",
-      winnerPairId: "",
-      category: cat
-    });
+  // 2. Octavos de Final (8 matches, only for bracketSize >= 16)
+  if (bracketSize >= 16) {
+    for (let i = 1; i <= 8; i++) {
+      list.push({
+        id: `match_${tId}_playoff_8avos_${cat.replace(/[^a-zA-Z0-9]/g, "")}_m${i}`,
+        tournamentId: tId,
+        phase: "playoff",
+        roundNumber: 2,
+        stageName: `Octavos de Final ${i}`,
+        pair1Id: "",
+        pair2Id: "",
+        courtId: "",
+        date: "",
+        time: "",
+        status: "pending",
+        scoreSummary: "Por jugar",
+        winnerPairId: "",
+        category: cat
+      });
+    }
   }
 
-  // 4. Semifinales (2 matches)
-  for (let i = 1; i <= 2; i++) {
-    list.push({
-      id: `match_${tId}_playoff_sf_${cat.replace(/[^a-zA-Z0-9]/g, "")}_m${i}`,
-      tournamentId: tId,
-      phase: "playoff",
-      roundNumber: 4,
-      stageName: `Semifinal ${i}`,
-      pair1Id: "",
-      pair2Id: "",
-      courtId: "",
-      date: "",
-      time: "",
-      status: "pending",
-      scoreSummary: "Por jugar",
-      winnerPairId: "",
-      category: cat
-    });
+  // 3. Cuartos de Final (4 matches, only for bracketSize >= 8)
+  if (bracketSize >= 8) {
+    for (let i = 1; i <= 4; i++) {
+      list.push({
+        id: `match_${tId}_playoff_4tos_${cat.replace(/[^a-zA-Z0-9]/g, "")}_m${i}`,
+        tournamentId: tId,
+        phase: "playoff",
+        roundNumber: 3,
+        stageName: `Cuartos de Final ${i}`,
+        pair1Id: "",
+        pair2Id: "",
+        courtId: "",
+        date: "",
+        time: "",
+        status: "pending",
+        scoreSummary: "Por jugar",
+        winnerPairId: "",
+        category: cat
+      });
+    }
   }
 
-  // 5. Final (1 match)
+  // 4. Semifinales (2 matches, only for bracketSize >= 4)
+  if (bracketSize >= 4) {
+    for (let i = 1; i <= 2; i++) {
+      list.push({
+        id: `match_${tId}_playoff_sf_${cat.replace(/[^a-zA-Z0-9]/g, "")}_m${i}`,
+        tournamentId: tId,
+        phase: "playoff",
+        roundNumber: 4,
+        stageName: `Semifinal ${i}`,
+        pair1Id: "",
+        pair2Id: "",
+        courtId: "",
+        date: "",
+        time: "",
+        status: "pending",
+        scoreSummary: "Por jugar",
+        winnerPairId: "",
+        category: cat
+      });
+    }
+  }
+
+  // 5. Final (1 match, always generated)
   list.push({
     id: `match_${tId}_playoff_final_${cat.replace(/[^a-zA-Z0-9]/g, "")}`,
     tournamentId: tId,
@@ -240,6 +264,26 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
   const [selectedTime, setSelectedTime] = useState("");
   const [isEditNumCourtsOpen, setIsEditNumCourtsOpen] = useState(false);
   const [tempNumCourts, setTempNumCourts] = useState(2);
+
+  // Custom Alert state for court assignment conflicts & completions
+  const [inAppAlert, setInAppAlert] = useState<{
+    visible: boolean;
+    type: "success" | "error";
+    title: string;
+    message: string;
+  } | null>(null);
+
+  const triggerInAppAlert = (type: "success" | "error", title: string, message: string) => {
+    setInAppAlert({ visible: true, type, title, message });
+    setTimeout(() => {
+      setInAppAlert(prev => {
+        if (prev && prev.title === title && prev.message === message) {
+          return null;
+        }
+        return prev;
+      });
+    }, 6050);
+  };
 
   // Custom Finalizar Torneo Confirmation Dialog States
   const [showFinishModal, setShowFinishModal] = useState(false);
@@ -1645,7 +1689,7 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
       await Promise.all(allGeneratedMatches.map(m => repository.saveMatch(m)));
 
       // Pre-generate all empty playoff phases (16avos, 8avos, 4tos, semis, final)
-      const emptyPlayoffs = preGeneratePlayoffsHelper(tournamentId, selectedCategory);
+      const emptyPlayoffs = preGeneratePlayoffsHelper(tournamentId, selectedCategory, sortedPairs.length);
       await Promise.all(emptyPlayoffs.map(m => repository.saveMatch(m)));
 
       // Update tournament status to "in_progress" if it was registrations
@@ -1792,6 +1836,18 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
       return;
     }
 
+    // Check if the court is occupied at the scheduled date and time by another non-finished match
+    const occupying = getOccupyingMatch(selectedCourtId, selectedDate, selectedTime, activeAssignCourtMatch.id);
+    if (occupying) {
+      const courtName = courts.find(c => c.id === selectedCourtId)?.name || "Cancha";
+      triggerInAppAlert(
+        "error",
+        "Conflicto de Pista",
+        `La cancha ${courtName} ya se encuentra ocupada por el partido ${getPairName(occupying.pair1Id)} vs ${getPairName(occupying.pair2Id)} el día ${formatDate(selectedDate)} a las ${occupying.time}. Elija otro horario o cancha.`
+      );
+      return;
+    }
+
     const updatedMatch: Match = {
       ...activeAssignCourtMatch,
       courtId: selectedCourtId,
@@ -1804,6 +1860,13 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
       "Cancha Asignada",
       `Partido de ${getPairName(updatedMatch.pair1Id)} vs ${getPairName(updatedMatch.pair2Id)} asignado con éxito.`,
       "success"
+    );
+
+    const courtName = courts.find(c => c.id === selectedCourtId)?.name || "Cancha";
+    triggerInAppAlert(
+      "success",
+      "Asignación Exitosa",
+      `Se ha reservado correctamente la cancha ${courtName} para el partido de ${getPairName(updatedMatch.pair1Id)} vs ${getPairName(updatedMatch.pair2Id)} el día ${formatDate(selectedDate)} a las ${selectedTime}.`
     );
 
     setActiveAssignCourtMatch(null);
@@ -1859,7 +1922,7 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
     
     // Fallback if none exist
     if (playoffMatches.length === 0) {
-      playoffMatches = preGeneratePlayoffsHelper(tournamentId, selectedCategory);
+      playoffMatches = preGeneratePlayoffsHelper(tournamentId, selectedCategory, totalPairsCount);
     }
 
     // Reset all playoff matches to blank/initial values
@@ -2139,6 +2202,18 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
       "success"
     );
 
+    const winnerName = getPairName(winnerId);
+    const assignedCourtName = courts.find(c => c.id === activeScoreMatch.courtId)?.name || "";
+    const courtMsg = assignedCourtName 
+      ? `La cancha "${assignedCourtName}" ya se encuentra liberada y disponible para nuevos encuentros.` 
+      : "La cancha queda liberada y disponible.";
+
+    triggerInAppAlert(
+      "success",
+      "Partido Finalizado",
+      `¡El encuentro ha concluido! Pareja ganadora: ${winnerName} (${scoreSummary}). ${courtMsg}`
+    );
+
     // Handle progressions based on tournament configuration
     const isSRTC16 = pairs.filter(p => p.category === selectedCategory).length === 16;
     const isSRTC32 = pairs.filter(p => p.category === selectedCategory).length === 32;
@@ -2186,7 +2261,7 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
           if (qualifiedIds.length >= 2) {
             let playoffMatches = matches.filter(m => m.tournamentId === tournamentId && m.category === selectedCategory && m.phase === "playoff");
             if (playoffMatches.length === 0) {
-              playoffMatches = preGeneratePlayoffsHelper(tournamentId, selectedCategory);
+              playoffMatches = preGeneratePlayoffsHelper(tournamentId, selectedCategory, totalPairsCount);
             }
 
             const resetMatches = playoffMatches.map(m => ({
@@ -3982,7 +4057,7 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
                                     </span>
                                   )}
                                 </div>
-                                {userRole === "admin" && !finished && (
+                                {userRole === "admin" && (
                                   <button
                                     type="button"
                                     onClick={() => handleOpenCourtAssigner(m)}
@@ -5460,8 +5535,8 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
                   {courts.filter(c => c.active).map(c => {
                     const occupying = getOccupyingMatch(c.id, selectedDate, selectedTime, activeAssignCourtMatch.id);
                     return (
-                      <option key={c.id} value={c.id} disabled={!!occupying}>
-                        {c.name} — {c.club} {occupying ? `(OCUPADA: ${getPairName(occupying.pair1Id)} vs ${getPairName(occupying.pair2Id)} @ ${occupying.time})` : ""}
+                      <option key={c.id} value={c.id} className={occupying ? "text-rose-450 bg-rose-950/10" : ""}>
+                        {c.name} — {c.club} {occupying ? `⚠️ [OCUPADA: ${getPairName(occupying.pair1Id)} vs ${getPairName(occupying.pair2Id)}]` : ""}
                       </option>
                     );
                   })}
@@ -5678,6 +5753,41 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
                 )}
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* CUSTOM FLOATING TOAST NOTIFICATION */}
+      {inAppAlert && inAppAlert.visible && (
+        <div className="fixed top-6 right-6 z-[250] max-w-md w-full bg-slate-900/95 backdrop-blur border border-slate-800 rounded-2xl shadow-2xl p-4 animate-in slide-in-from-top-4 duration-300">
+          <div className="flex gap-3">
+            <div className={`p-2 rounded-xl shrink-0 mt-0.5 ${
+              inAppAlert.type === "success" 
+                ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/15" 
+                : "bg-rose-500/10 text-rose-450 border border-rose-500/15"
+            }`}>
+              {inAppAlert.type === "success" ? (
+                <CheckCircle className="w-5 h-5" />
+              ) : (
+                <AlertCircle className="w-5 h-5" />
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <h4 className={`text-xs font-black uppercase tracking-wider font-mono ${
+                inAppAlert.type === "success" ? "text-emerald-400" : "text-rose-450"
+              }`}>
+                {inAppAlert.title}
+              </h4>
+              <p className="text-slate-300 text-xs mt-1.5 leading-relaxed font-sans font-medium">
+                {inAppAlert.message}
+              </p>
+            </div>
+            <button 
+              onClick={() => setInAppAlert(null)}
+              className="text-slate-450 hover:text-white shrink-0 cursor-pointer self-start p-1 hover:bg-slate-800/50 rounded-lg transition"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
         </div>
       )}

@@ -1,18 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Trophy, 
-  Users, 
-  MapPin, 
-  Activity, 
-  ShieldAlert, 
-  Volume2, 
-  LayoutDashboard,
-  LogOut,
-  Sparkles,
-  Award,
-  Bell
-} from 'lucide-react';
-import { Navbar } from './components/Navbar';
+import { Sidebar } from './components/Sidebar';
 import { Dashboard } from './components/Dashboard';
 import { TournamentManager } from './components/TournamentManager';
 import { TournamentDetail } from './components/TournamentDetail';
@@ -20,10 +7,12 @@ import { PlayerManager } from './components/PlayerManager';
 import { RankingManager } from './components/RankingManager';
 import { CourtManager } from './components/CourtManager';
 import { Gallery } from './components/Gallery';
+import { StatsView } from './components/StatsView';
+import { FixtureView } from './components/FixtureView';
 import { repository } from './lib/repository';
 
 export default function App() {
-  const [activeView, setActiveView] = useState<"dashboard" | "tournaments" | "players" | "rankings" | "courts" | "gallery">("dashboard");
+  const [activeView, setActiveView] = useState<"dashboard" | "tournaments" | "players" | "rankings" | "courts" | "gallery" | "stats" | "fixture">("dashboard");
   const [selectedTournamentId, setSelectedTournamentId] = useState<string | null>(null);
   const [isIsolatedInscriptions, setIsIsolatedInscriptions] = useState(false);
   
@@ -38,14 +27,18 @@ export default function App() {
   }, [selectedTournamentId]);
 
   const loadNotifications = async () => {
-    const list = await repository.getNotifications();
-    setNotifications(list);
+    try {
+      const list = await repository.getNotifications();
+      setNotifications(list);
+    } catch (e) {
+      console.warn("Failed to load notifications: ", e);
+    }
   };
 
   useEffect(() => {
     loadNotifications();
     // Refresh alerts periodically
-    const t = setInterval(loadNotifications, 4000);
+    const t = setInterval(loadNotifications, 5000);
     return () => clearInterval(t);
   }, []);
 
@@ -59,19 +52,21 @@ export default function App() {
     loadNotifications();
   };
 
+  const handleSidebarNavigation = (view: typeof activeView) => {
+    setSelectedTournamentId(null);
+    setIsIsolatedInscriptions(false);
+    setActiveView(view);
+  };
+
   return (
-    <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100 selection:bg-blue-500 selection:text-white">
+    <div className="min-h-screen flex flex-col lg:flex-row bg-slate-950 text-slate-100 selection:bg-blue-500 selection:text-white">
       
-      {/* Visual Navigation Bar */}
-      {!isIsolatedInscriptions && !selectedTournamentId && activeView === "dashboard" && (
-        <Navbar 
+      {/* Visual Navigation Sidebar */}
+      {!isIsolatedInscriptions && (
+        <Sidebar 
           userRole={userRole} 
           onChangeRole={(role) => setUserRole(role)}
-          onNavigate={(view) => {
-            setSelectedTournamentId(null);
-            setIsIsolatedInscriptions(false);
-            setActiveView(view);
-          }}
+          onNavigate={handleSidebarNavigation}
           activeView={selectedTournamentId ? "tournaments" : activeView}
           notifications={notifications}
           onClearNotifications={handleClearAlerts}
@@ -79,103 +74,96 @@ export default function App() {
         />
       )}
 
-      {/* Main Core Container */}
-      <main className="flex-1 w-full flex flex-col">
-        {selectedTournamentId ? (
-          <TournamentDetail 
-            tournamentId={selectedTournamentId}
-            userRole={userRole}
-            onBack={() => {
-              setSelectedTournamentId(null);
-              setIsIsolatedInscriptions(false);
-            }}
-            onIsolateModeChange={(isolated) => {
-              setIsIsolatedInscriptions(isolated);
-            }}
-          />
-        ) : (
-          <>
-            {activeView === "dashboard" ? (
-              <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <Dashboard 
+      {/* Main Core View Area */}
+      <main className="flex-1 w-full min-w-0 flex flex-col bg-slate-950">
+        
+        <div className="flex-1">
+          {selectedTournamentId ? (
+            <TournamentDetail 
+              tournamentId={selectedTournamentId}
+              userRole={userRole}
+              onBack={() => {
+                setSelectedTournamentId(null);
+                setIsIsolatedInscriptions(false);
+              }}
+              onIsolateModeChange={(isolated) => {
+                setIsIsolatedInscriptions(isolated);
+              }}
+            />
+          ) : (
+            <>
+              {activeView === "dashboard" && (
+                <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                  <Dashboard 
+                    userRole={userRole}
+                    onNavigateToTournament={(id) => setSelectedTournamentId(id)}
+                    onNavigate={(view) => setActiveView(view as any)}
+                  />
+                </div>
+              )}
+
+              {activeView === "tournaments" && (
+                <TournamentManager 
                   userRole={userRole}
-                  onNavigateToTournament={(id) => setSelectedTournamentId(id)}
-                  onNavigate={(view) => setActiveView(view)}
+                  onSelectTournament={(id) => setSelectedTournamentId(id)}
+                  onBack={() => handleSidebarNavigation("dashboard")}
                 />
-              </div>
-            ) : (
-              <>
-                {activeView === "tournaments" && (
-                  <TournamentManager 
-                    userRole={userRole}
-                    onSelectTournament={(id) => setSelectedTournamentId(id)}
-                    onBack={() => {
-                      setSelectedTournamentId(null);
-                      setIsIsolatedInscriptions(false);
-                      setActiveView("dashboard");
-                    }}
-                  />
-                )}
+              )}
 
-                {activeView === "players" && (
-                  <PlayerManager 
-                    userRole={userRole}
-                    onBack={() => {
-                      setSelectedTournamentId(null);
-                      setIsIsolatedInscriptions(false);
-                      setActiveView("dashboard");
-                    }}
-                  />
-                )}
+              {activeView === "players" && (
+                <PlayerManager 
+                  userRole={userRole}
+                  onBack={() => handleSidebarNavigation("dashboard")}
+                />
+              )}
 
-                {activeView === "rankings" && (
-                  <RankingManager 
-                    userRole={userRole} 
-                    onBack={() => {
-                      setSelectedTournamentId(null);
-                      setIsIsolatedInscriptions(false);
-                      setActiveView("dashboard");
-                    }}
-                  />
-                )}
+              {activeView === "rankings" && (
+                <RankingManager 
+                  userRole={userRole} 
+                  onBack={() => handleSidebarNavigation("dashboard")}
+                />
+              )}
 
-                {activeView === "courts" && (
-                  <CourtManager 
-                    userRole={userRole}
-                    onBack={() => {
-                      setSelectedTournamentId(null);
-                      setIsIsolatedInscriptions(false);
-                      setActiveView("dashboard");
-                    }}
-                  />
-                )}
+              {activeView === "courts" && (
+                <CourtManager 
+                  userRole={userRole}
+                  onBack={() => handleSidebarNavigation("dashboard")}
+                />
+              )}
 
-                {activeView === "gallery" && (
-                  <Gallery 
-                    userRole={userRole}
-                    onBack={() => {
-                      setSelectedTournamentId(null);
-                      setIsIsolatedInscriptions(false);
-                      setActiveView("dashboard");
-                    }}
-                  />
-                )}
-              </>
-            )}
-          </>
-        )}
-      </main>
+              {activeView === "gallery" && (
+                <Gallery 
+                  userRole={userRole}
+                  onBack={() => handleSidebarNavigation("dashboard")}
+                />
+              )}
 
-      {/* Professional Footer */}
-      <footer className="border-t border-slate-900 bg-slate-950/80 py-6 text-center text-xs text-slate-500 font-mono">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <span>© 2026 Padel Tournament Manager • Pro Edition v1.4.0</span>
-          <div className="flex gap-4">
-            <span className="text-[10px] text-slate-600">Firestore Online Sandbox Mode</span>
-            <span className="text-blue-500/80">fornettiricardo@gmail.com</span>
-          </div>
+              {activeView === "stats" && (
+                <StatsView />
+              )}
+
+              {activeView === "fixture" && (
+                <FixtureView 
+                  onSelectTournament={(id) => setSelectedTournamentId(id)}
+                  onNavigate={handleSidebarNavigation}
+                />
+              )}
+            </>
+          )}
         </div>
-      </footer>
+
+        {/* Clean Responsive Footer */}
+        <footer className="border-t border-slate-900/45 bg-slate-1000/30 py-6 text-center text-xs text-slate-500 font-mono mt-8">
+          <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <span>© 2026 Circuitos de Torneos • Pro League-ATP Padel Platform v1.4.0</span>
+            <div className="flex gap-4">
+              <span className="text-[10px] text-slate-600 font-bold uppercase tracking-wider">Online Mode</span>
+              <span className="text-[#d4fc34] hover:underline">ricardofornetti@gmail.com</span>
+            </div>
+          </div>
+        </footer>
+
+      </main>
 
     </div>
   );

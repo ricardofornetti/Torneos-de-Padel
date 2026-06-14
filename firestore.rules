@@ -146,10 +146,8 @@ service cloud.firestore {
 
     // Players
     match /players/{playerId} {
-      // Spectator cannot do a get query on private PII data of a player document without owning it or being an admin
-      allow get: if isPlayerOwner(playerId) || isAdmin();
-      // Allow general list read for ranking stats & name rendering
-      allow list: if isSignedIn();
+      // Allow general read for rankings & player listing profiles
+      allow read: if true;
       allow create: if isValidId(playerId) && (isPlayerOwner(playerId) || isAdmin()) && isValidPlayer(incoming());
       allow update: if (isPlayerOwner(playerId) || isAdmin()) && isValidPlayer(incoming()) && incoming().id == existing().id;
       allow delete: if isAdmin();
