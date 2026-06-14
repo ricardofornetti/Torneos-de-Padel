@@ -918,11 +918,11 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
       <PageHeaderBanner
         onBack={onBack}
         gridPatternId="grid-tournaments"
-        eyebrow="Professional Circuit"
+        eyebrow="Circuito Profesional"
         eyebrowColor="blue"
         title="Circuitos de Torneos"
         description="Planificación, llaves automáticas y control reglamentario de competencias."
-        cornerBadge="TOUR"
+        cornerBadge="TORNEO"
         icon={
           <svg className="w-14 h-14 relative z-10" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
             {/* Glowing hexagonal shield */}

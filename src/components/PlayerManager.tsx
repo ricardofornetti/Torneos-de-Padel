@@ -359,11 +359,11 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole, onBack }
       <PageHeaderBanner
         onBack={onBack}
         gridPatternId="grid-players"
-        eyebrow="Athlete Database"
+        eyebrow="Base de Atletas"
         eyebrowColor="indigo"
         title="Registro de Jugadores"
         description="Ficha oficial unificada de competidores registrados y acumuladores de ranking anual."
-        cornerBadge="PLAYER"
+        cornerBadge="JUGADORES"
         icon={
           <svg className="w-14 h-14 relative z-10" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
             {/* Card Shield Frame */}

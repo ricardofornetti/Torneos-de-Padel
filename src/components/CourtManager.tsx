@@ -247,11 +247,11 @@ export const CourtManager: React.FC<CourtManagerProps> = ({ userRole, onBack }) 
       <PageHeaderBanner
         onBack={onBack}
         gridPatternId="grid-courts"
-        eyebrow="Official Venue"
+        eyebrow="Sede Oficial"
         eyebrowColor="emerald"
         title="Complejos y Pistas"
         description="Control en tiempo real de partidos en cancha, disponibilidad física y turnos de juego."
-        cornerBadge="COURT"
+        cornerBadge="PISTAS"
         icon={
           <svg className="w-14 h-14 relative z-10" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
             {/* Outer Court Boundary (Padel Glass & Mesh) */}

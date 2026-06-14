@@ -225,11 +225,11 @@ export const RankingManager: React.FC<RankingManagerProps> = ({ userRole, onBack
       <PageHeaderBanner
         onBack={onBack}
         gridPatternId="grid-ranking"
-        eyebrow="Official League Standings"
+        eyebrow="Clasificación de la Liga"
         eyebrowColor="amber"
         title="Ranking Oficial"
         description="Cuadro de Honor y escalafón anual unificado de la liga profesional de pádel."
-        cornerBadge="RANK"
+        cornerBadge="RANKING"
         icon={
           <svg className="w-14 h-14 relative z-10" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
             {/* Backdrop glowing sunburst */}

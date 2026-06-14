@@ -175,11 +175,11 @@ export const Gallery: React.FC<GalleryProps> = ({ userRole, onBack }) => {
       <PageHeaderBanner
         onBack={onBack}
         gridPatternId="grid-gallery"
-        eyebrow="Official Coverage"
+        eyebrow="Cobertura Oficial"
         eyebrowColor="cyan"
         title="Galería Oficial"
         description="Visualizador de fotografías, resúmenes multimedia y momentos decisivos del circuito."
-        cornerBadge="LIVE"
+        cornerBadge="EN VIVO"
         icon={
           <svg className="w-14 h-14 relative z-10" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
             {/* Camera outer body */}
