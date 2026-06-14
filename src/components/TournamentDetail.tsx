@@ -3018,9 +3018,10 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
             <button
               onClick={() => setViewMode("dashboard")}
               className="text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-[#d4fc34] transition-colors flex items-center gap-1.5 cursor-pointer mb-4"
+              title="Volver al panel principal del torneo"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Volver</span>
+              <span>Volver al resumen del torneo</span>
             </button>
 
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 w-full">
@@ -3076,121 +3077,28 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
                 </button>
               </div>
             </div>
-          </div>
-        </div>
-      ) : (
-        <div className="w-full flex flex-col">
-          
-          {/* HERO LEAGUE BANNER CARD */}
-          <div className="w-full bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950/85 border-b border-slate-900 relative overflow-hidden shadow-2xl">
-            <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b_1px,transparent_1px),linear-gradient(to_bottom,#1e293b_1px,transparent_1px)] bg-[size:24px_24px] opacity-10 pointer-events-none"></div>
-            <div className="absolute -top-12 -right-12 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10 w-full flex flex-col gap-6">
-              {/* Action buttons inside the banner card */}
-              <div className="flex items-center justify-between pb-4 border-b border-slate-900/80">
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={onBack}
-                    className="group flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[#d4fc34] hover:text-slate-950 hover:bg-[#d4fc34] transition-all cursor-pointer bg-slate-900/60 border border-slate-800 hover:border-slate-700 px-4 py-2.5 rounded-xl self-start sm:self-auto"
-                  >
-                    <span className="transition-transform group-hover:-translate-x-1">←</span>
-                    <span>Volver</span>
-                  </button>
-
-                  {userRole === "admin" && tournament.status === "in_progress" && (
-                    <button
-                      id="finish-tournament-btn"
-                      onClick={handleOpenFinishModal}
-                      className="bg-red-950/40 hover:bg-red-900 border border-red-900/40 text-red-00 text-xs font-bold px-3.5 py-1.5 rounded-lg flex items-center gap-1 transition cursor-pointer uppercase tracking-wider"
-                    >
-                      🏁 Finalizar Torneo
-                    </button>
-                  )}
-                </div>
-              </div>
-            
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative z-10">
-              <div className="flex items-center gap-5">
-                {/* Custom SVG Championship Shield Isotipo */}
-                <div className="w-20 h-20 shrink-0 bg-slate-900 border-2 border-slate-700 p-2.5 rounded-2xl relative select-none flex items-center justify-center shadow-xl">
-                  <svg className="w-14 h-14" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    {/* Golden Crest */}
-                    <path d="M22,25 C35,20 65,20 78,25 C78,55 68,78 50,85 C32,78 22,55 22,25 Z" stroke="#d4fc34" strokeWidth="2.5" fill="#0f172a" />
-                    {/* Star row */}
-                    <polygon points="50,30 52,34 56,34 53,37 54,41 50,39 46,41 47,37 44,34 48,34" fill="#facc15" />
-                    {/* Racket design inside gold crest */}
-                    <circle cx="50" cy="55" r="10" stroke="#facc15" strokeWidth="2" fill="none" />
-                    <line x1="50" y1="65" x2="50" y2="74" stroke="#facc15" strokeWidth="2" strokeLinecap="round" />
-                  </svg>
-                  <span className="absolute -bottom-1 bg-slate-950 border border-slate-800 text-[8px] text-[#d4fc34] pl-1 pr-1 py-0.5 rounded font-black tracking-widest font-mono">CHAMP</span>
-                </div>
-
-                <div>
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <span className="bg-blue-600/10 text-blue-400 border border-blue-500/20 px-2.5 py-0.5 rounded text-[10px] font-mono font-bold uppercase tracking-wider">
-                      {tournament.category}
-                    </span>
-                    <span className={`text-[10px] font-bold uppercase flex items-center gap-1 ${
-                      tournament.status === "registration" ? "text-amber-400" :
-                      tournament.status === "in_progress" ? "text-green-400 animate-pulse" : "text-slate-500"
-                    }`}>
-                      ● {tournament.status === "registration" ? "Inscripción Libre" :
-                         tournament.status === "in_progress" ? "Torneo en Juego" : "Finalizado / Cerrado"}
-                    </span>
-                  </div>
-                  <h2 className="text-2xl sm:text-3xl font-black text-white">{tournament.name}</h2>
-                  <p className="text-xs text-slate-400 mt-1 flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5 text-slate-500" /> {tournament.club} — {tournament.city}
-                  </p>
-                </div>
-              </div>
-
-              <div className="text-left md:text-right shrink-0 bg-slate-900/60 p-4 rounded-xl border border-slate-800/80 w-full md:w-auto">
-                <span className="block text-[9px] text-[#d4fc34] mb-0.5 font-mono uppercase tracking-widest font-extrabold pb-0.5">📅 CRONOGRAMA</span>
-                <span className="block font-bold text-xs text-slate-200">
-                  {tournament.startDate} • {tournament.endDate}
-                </span>
-                <span className="block text-[10px] text-slate-400 mt-1">
-                  Configuración: {tournament.numGroups} Zonas • {tournament.numCourts} Canchas asignadas
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Main page content wrapped in centered padding */}
-        <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-
-          {/* CENTRAL CATEGORY RIBBON */}
-          <div className="bg-slate-900/40 p-4 rounded-2xl border border-slate-800 space-y-3 shadow-md">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] text-slate-450 font-mono tracking-widest font-bold uppercase block pl-1">
-                CATEGORÍAS DE ESTE TORNEO
+            {/* COMPACT CATEGORY SELECTOR IN ISOLATED VIEW */}
+            <div className="flex items-center gap-2 mt-4 overflow-x-auto pb-2 scrollbar-none border-b border-slate-900">
+              <span className="text-[9px] font-mono font-black text-slate-500 uppercase tracking-widest shrink-0 mr-1">
+                Categoría activa:
               </span>
-              <span className="text-[10px] text-blue-400 font-mono font-bold uppercase tracking-wider">
-                Soporte Jerárquico Multicategoría
-              </span>
-            </div>
-            <div className="flex flex-wrap gap-2">
               {ALL_PADEL_CATEGORIES.map(cat => {
                 const catPairs = pairs.filter(p => p.category === cat);
                 const active = selectedCategory === cat;
                 return (
                   <button
                     key={cat}
-                    onClick={() => {
-                      setSelectedCategory(cat);
-                    }}
-                    className={`px-3.5 py-2 text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-1.5 border ${
+                    onClick={() => setSelectedCategory(cat)}
+                    className={`px-2.5 py-1 text-[10px] font-bold rounded-lg transition border shrink-0 cursor-pointer ${
                       active
-                        ? "bg-[#d4fc34]/15 text-[#d4fc34] border-[#d4fc34]/30 font-black"
-                        : "bg-slate-950 text-slate-400 border-slate-900 hover:text-slate-200 hover:border-slate-800"
+                        ? "bg-[#d4fc34]/15 text-[#d4fc34] border-[#d4fc34]/40 font-black"
+                        : "bg-slate-950/60 text-slate-400 border-slate-900 hover:text-slate-200 hover:border-slate-800"
                     }`}
                   >
                     <span>{cat}</span>
                     {catPairs.length > 0 && (
-                      <span className="bg-[#d4fc34] text-slate-950 font-black px-1.5 py-0.5 rounded-full text-[9px]">
+                      <span className="ml-1 bg-[#d4fc34] text-slate-950 font-black px-1 rounded-full text-[8px]">
                         {catPairs.length}
                       </span>
                     )}
@@ -3198,147 +3106,321 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
                 );
               })}
             </div>
-          </div>
 
-          {/* DYNAMIC NAVIGATION GRID */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
-            
-            {/* Card 1: Inscriptions */}
-            <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 hover:border-blue-500/50 hover:bg-slate-900 transition duration-300 flex flex-col justify-between shadow-lg">
-              <div>
-                <div className="flex justify-between items-start mb-4">
-                  <span className="p-3 bg-blue-500/10 text-blue-400 rounded-xl">
-                    <Users className="w-5 h-5" />
-                  </span>
-                  <span className="text-[11px] font-mono font-medium text-[#d4fc34] bg-slate-950 px-2.5 py-1 rounded-lg">
-                    {pairs.filter(p => p.category === selectedCategory).length} Parejas en {selectedCategory}
-                  </span>
-                </div>
-                <h3 className="text-base font-extrabold text-white mb-2">Parejas Inscritas</h3>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Planilla de participación para <strong>{selectedCategory}</strong>. Modifica/elimina parejas, administra jugadores libres y realiza el sorteo de grupos de forma instantánea.
-                </p>
-              </div>
-              <button
-                onClick={() => {
-                  setActiveTab("inscriptions");
-                  setViewMode("isolated");
-                }}
-                className="mt-6 bg-slate-950 hover:bg-slate-850 hover:text-[#d4fc34] text-slate-350 border border-slate-800/80 py-3 px-4 rounded-xl text-xs font-black transition flex items-center justify-center gap-2 cursor-pointer uppercase tracking-wider"
-              >
-                Ingresar a Inscripciones <ChevronRight className="w-4 h-4 text-blue-400 animate-pulse" />
-              </button>
-            </div>
-
-            {/* Card 2: Fixture */}
-            <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 hover:border-blue-500/50 hover:bg-slate-900 transition duration-300 flex flex-col justify-between shadow-lg">
-              <div>
-                <div className="flex justify-between items-start mb-4">
-                  <span className="p-3 bg-blue-500/10 text-blue-400 rounded-xl">
-                    <Calendar className="w-5 h-5" />
-                  </span>
-                  <span className="text-[11px] font-mono text-slate-450 bg-slate-950 px-2.5 py-1 rounded-lg">
-                    {matches.filter(m => m.category === selectedCategory).length} Partidos Totales
-                  </span>
-                </div>
-                <h3 className="text-base font-extrabold text-[#d4fc34] mb-2 uppercase tracking-wider">Partidos</h3>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Cronograma oficial de juego para <strong>{selectedCategory}</strong>. Controla la asignación de pistas, carga resultados de los sets y procesa abandonos o Walkovers.
-                </p>
-              </div>
-              <button
-                disabled={matches.filter(m => m.category === selectedCategory).length === 0}
-                onClick={() => {
-                  setActiveTab("matches");
-                  setViewMode("isolated");
-                }}
-                className={`mt-6 py-3 px-4 rounded-xl text-xs font-black transition flex items-center justify-center gap-2 cursor-pointer uppercase tracking-wider ${
-                  matches.filter(m => m.category === selectedCategory).length === 0
-                    ? "bg-slate-950/40 text-slate-600 border-slate-900 cursor-not-allowed"
-                    : "bg-slate-950 hover:bg-slate-850 hover:text-[#d4fc34] text-slate-350 border border-slate-800/80"
-                }`}
-              >
-                {matches.filter(m => m.category === selectedCategory).length === 0
-                  ? "Fixture No Sorteado"
-                  : "Explorar Partidos y Resultados"}
-                {matches.filter(m => m.category === selectedCategory).length > 0 && <ChevronRight className="w-4 h-4 text-[#d4fc34]" />}
-              </button>
-            </div>
-
-            {/* Card 3: Standings */}
-            <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 hover:border-[#d4fc34]/50 hover:bg-slate-900 transition duration-300 flex flex-col justify-between shadow-lg">
-              <div>
-                <div className="flex justify-between items-start mb-4">
-                  <span className="p-3 bg-[#d4fc34]/15 text-[#d4fc34] rounded-xl">
-                    <Trophy className="w-5 h-5" />
-                  </span>
-                  <span className="text-[11px] font-mono text-slate-450 bg-slate-950 px-2.5 py-1 rounded-lg">
-                    Cálculo Oficial de Puntos
-                  </span>
-                </div>
-                <h3 className="text-base font-extrabold text-white mb-2">Tablas de Posiciones</h3>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Tablas analíticas generadas automáticamente para <strong>{selectedCategory}</strong>: rendimiento de zonas de grupos y la Tabla Unificada de Doble Eliminación (Dos Vidas srtc).
-                </p>
-              </div>
-              <button
-                disabled={matches.filter(m => m.category === selectedCategory).length === 0}
-                onClick={() => {
-                  setActiveTab("standings");
-                  setViewMode("isolated");
-                }}
-                className={`mt-6 py-3 px-4 rounded-xl text-xs font-black transition flex items-center justify-center gap-2 cursor-pointer uppercase tracking-wider ${
-                  matches.filter(m => m.category === selectedCategory).length === 0
-                    ? "bg-slate-950/40 text-slate-600 border-slate-900 cursor-not-allowed"
-                    : "bg-[#d4fc34]/10 hover:bg-[#d4fc34] hover:text-slate-950 text-[#d4fc34] border border-[#d4fc34]/20"
-                }`}
-              >
-                {matches.filter(m => m.category === selectedCategory).length === 0
-                  ? "Posiciones No Disponibles"
-                  : "Ver Tablas de Clasificación"}
-                {matches.filter(m => m.category === selectedCategory).length > 0 && <ChevronRight className="w-4 h-4" />}
-              </button>
-            </div>
-
-            {/* Card 4: Bracket */}
-            <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 hover:border-[#d4fc34]/50 hover:bg-slate-900 transition duration-300 flex flex-col justify-between shadow-lg">
-              <div>
-                <div className="flex justify-between items-start mb-4">
-                  <span className="p-3 bg-[#d4fc34]/15 text-[#d4fc34] rounded-xl">
-                    <Trophy className="w-5 h-5" />
-                  </span>
-                  <span className="text-[11px] font-mono text-slate-450 bg-slate-950 px-2.5 py-1 rounded-lg">
-                    Cuadros de Play-Offs
-                  </span>
-                </div>
-                <h3 className="text-base font-extrabold text-[#d4fc34] mb-2 uppercase tracking-wider">Cuadros</h3>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Visualiza el bracket interactivo con los cruces directos y llaves de eliminación directa hasta coronar a los campeones de <strong>{selectedCategory}</strong>.
-                </p>
-              </div>
-              <button
-                disabled={matches.filter(m => m.category === selectedCategory).length === 0}
-                onClick={() => {
-                  setActiveTab("playoffs");
-                  setViewMode("isolated");
-                }}
-                className={`mt-6 py-3 px-4 rounded-xl text-xs font-black transition flex items-center justify-center gap-2 cursor-pointer uppercase tracking-wider ${
-                  matches.filter(m => m.category === selectedCategory).length === 0
-                    ? "bg-slate-950/40 text-slate-600 border-slate-900 cursor-not-allowed"
-                    : "bg-[#d4fc34]/10 hover:bg-[#d4fc34] hover:text-slate-950 text-[#d4fc34] border border-[#d4fc34]/20"
-                }`}
-              >
-                {matches.filter(m => m.category === selectedCategory).length === 0
-                  ? "Bracket No Disponible"
-                  : "Ver Cuadros / Llaves"}
-                {matches.filter(m => m.category === selectedCategory).length > 0 && <ChevronRight className="w-4 h-4 text-slate-950" />}
-              </button>
+            {/* LATERAL NAVIGATION TABS */}
+            <div className="flex gap-2 border-b border-slate-800 pb-px overflow-x-auto scrollbar-none mt-6 w-full">
+              {[
+                { id: "inscriptions", label: "Inscripciones", icon: ClipboardList },
+                { id: "matches", label: "Partidos", icon: Calendar },
+                { id: "standings", label: "Posiciones", icon: BarChart2 },
+                { id: "playoffs", label: "Cuadros", icon: GitBranch },
+              ].map(tab => {
+                const isDisabled = (tab.id === "standings" || tab.id === "playoffs" || tab.id === "matches") && matches.filter(m => m.category === selectedCategory).length === 0;
+                return (
+                  <button
+                    key={tab.id}
+                    title={isDisabled ? "Disponible después del sorteo" : ""}
+                    onClick={() => {
+                      if (isDisabled) return;
+                      setActiveTab(tab.id as any);
+                    }}
+                    className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold uppercase tracking-wider rounded-t-lg transition border-b-2 shrink-0 ${
+                      isDisabled
+                        ? "text-slate-600 border-transparent opacity-40 cursor-not-allowed select-none"
+                        : activeTab === tab.id
+                        ? "text-[#d4fc34] border-[#d4fc34] bg-slate-900/40"
+                        : "text-slate-400 border-transparent hover:text-slate-200"
+                    }`}
+                  >
+                    <tab.icon className="w-4 h-4" />
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
             </div>
 
           </div>
         </div>
-      </div>
-    )}
+      ) : (
+        <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-8 animate-fade-in space-y-6">
+          {/* HEADER DE ACCIÓN Y VOLVER */}
+          <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+            <button
+              onClick={onBack}
+              className="text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-[#d4fc34] transition-colors flex items-center gap-1.5 cursor-pointer"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Volver a Torneos</span>
+            </button>
+
+            {userRole === "admin" && tournament.status === "in_progress" && (
+              <button
+                id="finish-tournament-btn"
+                onClick={handleOpenFinishModal}
+                className="bg-red-950/20 hover:bg-red-900 border border-red-900/40 text-red-00 text-xs font-bold px-3.5 py-1.5 rounded-lg flex items-center gap-1 transition cursor-pointer uppercase tracking-wider shadow-md"
+              >
+                🏁 Finalizar Torneo
+              </button>
+            )}
+          </div>
+
+          {/* MAIN HERO CARD SECTION */}
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 w-full">
+            {/* Left Side: Title, Badges, and MapPin */}
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="bg-blue-600/10 text-blue-400 border border-blue-500/20 px-2.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest font-mono">
+                  {tournament.category}
+                </span>
+                <span className={`px-2.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest font-mono border ${
+                  tournament.status === "registration" ? "bg-amber-500/10 text-amber-400 border-amber-500/20" :
+                  tournament.status === "in_progress" ? "bg-green-500/10 text-green-400 border-green-500/20 animate-pulse" :
+                  "bg-slate-500/10 text-slate-400 border-slate-500/20"
+                }`}>
+                  {tournament.status === "registration" ? "● Inscripción Libre" :
+                   tournament.status === "in_progress" ? "● Torneo en Juego" : "● Finalizado"}
+                </span>
+              </div>
+              <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black uppercase tracking-wider text-white flex items-center gap-2.5">
+                <Trophy className="w-7 h-7 text-[#d4fc34]" /> {tournament.name}
+              </h1>
+              <p className="text-xs text-slate-400 mt-1 flex items-center gap-1">
+                <MapPin className="w-3.5 h-3.5 text-slate-500" /> {tournament.club} — {tournament.city}
+              </p>
+
+              {/* INDICADOR DE PROGRESO */}
+              <div className="mt-4 flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                {[
+                  { label: "Inscripción", active: tournament.status === "registration" },
+                  { label: "Sorteo", active: tournament.status === "in_progress" && matches.filter(m => m.category === selectedCategory).length === 0 },
+                  { label: "Grupos", active: tournament.status === "in_progress" && matches.filter(m => m.category === selectedCategory).length > 0 && matches.some(m => m.category === selectedCategory && (m.stageName.toLowerCase().includes("grupo") || m.stageName.toLowerCase().includes("zona"))) },
+                  { label: "Playoffs", active: tournament.status === "in_progress" && matches.filter(m => m.category === selectedCategory).length > 0 && matches.some(m => m.category === selectedCategory && (m.stageName.toLowerCase().includes("playoff") || m.stageName.toLowerCase().includes("ronda") || m.stageName.toLowerCase().includes("octavos") || m.stageName.toLowerCase().includes("cuartos") || m.stageName.toLowerCase().includes("final"))) },
+                  { label: "Finalizado", active: tournament.status === "completed" }
+                ].map((step, idx) => (
+                  <React.Fragment key={step.label}>
+                    {idx > 0 && <span className="text-slate-700 text-[10px] select-none">→</span>}
+                    <span className={`text-[9px] font-black uppercase tracking-wider font-mono px-2 py-0.5 rounded-md ${
+                      step.active
+                        ? "bg-[#d4fc34]/15 text-[#d4fc34] border border-[#d4fc34]/30"
+                        : "text-slate-600 border border-transparent"
+                    }`}>
+                      {step.label}
+                    </span>
+                  </React.Fragment>
+                ))}
+              </div>
+            </div>
+
+            {/* Right Side: Simplified Schedule Card */}
+            <div className="shrink-0 bg-slate-900/60 p-4 rounded-2xl border border-slate-800/80 w-full md:w-auto">
+              <span className="block text-[8px] text-[#d4fc34] mb-0.5 font-mono uppercase tracking-widest font-black">📅 CRONOGRAMA</span>
+              <span className="block font-bold text-xs text-slate-200">
+                {tournament.startDate} • {tournament.endDate}
+              </span>
+              <span className="block text-[10px] text-slate-400 mt-1">
+                Zonas: {tournament.numGroups} Zonas • Canchas: {tournament.numCourts} Asignadas
+              </span>
+            </div>
+          </div>
+
+          {/* BELOW THE MAIN DASHBOARD HEADER CONTENT */}
+          <div className="space-y-6 pt-6">
+
+            {/* CENTRAL CATEGORY RIBBON */}
+            <div className="bg-slate-900/40 p-4 rounded-2xl border border-slate-800 space-y-3 shadow-md">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-slate-450 font-mono tracking-widest font-bold uppercase block pl-1">
+                  CATEGORÍAS DE ESTE TORNEO • Mostrando: <strong className="text-[#d4fc34]">{selectedCategory}</strong>
+                </span>
+                <span className="text-[10px] text-blue-400 font-mono font-bold uppercase tracking-wider">
+                  Soporte Jerárquico Multicategoría
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {ALL_PADEL_CATEGORIES.map(cat => {
+                  const catPairs = pairs.filter(p => p.category === cat);
+                  const active = selectedCategory === cat;
+                  return (
+                    <button
+                      key={cat}
+                      onClick={() => {
+                        setSelectedCategory(cat);
+                      }}
+                      className={`px-3.5 py-2 text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-1.5 border ${
+                        active
+                          ? "bg-[#d4fc34]/15 text-[#d4fc34] border-[#d4fc34]/30 font-black"
+                          : "bg-slate-950 text-slate-400 border-slate-900 hover:text-slate-200 hover:border-slate-800"
+                      }`}
+                    >
+                      <span>{cat}</span>
+                      {catPairs.length > 0 && (
+                        <span className="bg-[#d4fc34] text-slate-950 font-black px-1.5 py-0.5 rounded-full text-[9px]">
+                          {catPairs.length}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* DYNAMIC NAVIGATION GRID */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
+              
+              {/* Card 1: Inscriptions */}
+              <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 hover:border-blue-500/50 hover:bg-slate-900 transition duration-300 flex flex-col justify-between shadow-lg">
+                <div>
+                  <div className="flex justify-between items-start mb-4">
+                    <span className="p-3 bg-blue-500/10 text-blue-400 rounded-xl">
+                      <Users className="w-5 h-5" />
+                    </span>
+                    <span className="text-[11px] font-mono font-medium text-[#d4fc34] bg-slate-950 px-2.5 py-1 rounded-lg">
+                      {pairs.filter(p => p.category === selectedCategory).length} Parejas
+                    </span>
+                  </div>
+                  <h3 className="text-base font-extrabold text-white mb-2">Parejas Inscritas</h3>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Planilla de participación para esta categoría. Modifica/elimina parejas, administra jugadores libres y realiza el sorteo de grupos de forma instantánea.
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setActiveTab("inscriptions");
+                    setViewMode("isolated");
+                  }}
+                  className="mt-6 bg-slate-950 hover:bg-slate-850 hover:text-[#d4fc34] text-slate-350 border border-slate-800/80 py-3 px-4 rounded-xl text-xs font-black transition flex items-center justify-center gap-2 cursor-pointer uppercase tracking-wider"
+                >
+                  Ingresar a Inscripciones <ChevronRight className="w-4 h-4 text-blue-400 animate-pulse" />
+                </button>
+              </div>
+
+              {/* Card 2: Fixture */}
+              <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 hover:border-blue-500/50 hover:bg-slate-900 transition duration-300 flex flex-col justify-between shadow-lg">
+                <div>
+                  <div className="flex justify-between items-start mb-4">
+                    <span className="p-3 bg-blue-500/10 text-blue-400 rounded-xl">
+                      <Calendar className="w-5 h-5" />
+                    </span>
+                    {matches.filter(m => m.category === selectedCategory).length === 0 ? (
+                      <span className="bg-amber-500/10 text-amber-500 text-[8px] px-2 py-0.5 rounded uppercase font-black tracking-wider border border-amber-500/20">
+                        PENDIENTE DE SORTEO
+                      </span>
+                    ) : (
+                      <span className="text-[11px] font-mono text-slate-400 bg-slate-950 px-2.5 py-1 rounded-lg">
+                        {matches.filter(m => m.category === selectedCategory).length} Partidos Totales
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="text-base font-extrabold text-[#d4fc34] mb-2 uppercase tracking-wider">Partidos</h3>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Cronograma oficial de juego para esta categoría. Controla la asignación de pistas, carga resultados de los sets y procesa abandonos o Walkovers.
+                  </p>
+                </div>
+                <button
+                  disabled={matches.filter(m => m.category === selectedCategory).length === 0}
+                  onClick={() => {
+                    setActiveTab("matches");
+                    setViewMode("isolated");
+                  }}
+                  className={`mt-6 py-3 px-4 rounded-xl text-xs font-black transition flex items-center justify-center gap-2 cursor-pointer uppercase tracking-wider ${
+                    matches.filter(m => m.category === selectedCategory).length === 0
+                      ? "bg-slate-950/40 text-slate-600 border-slate-900 cursor-not-allowed"
+                      : "bg-slate-950 hover:bg-slate-850 hover:text-[#d4fc34] text-slate-350 border border-slate-800/80"
+                  }`}
+                >
+                  {matches.filter(m => m.category === selectedCategory).length === 0
+                    ? "Fixture No Sorteado"
+                    : "Explorar Partidos y Resultados"}
+                  {matches.filter(m => m.category === selectedCategory).length > 0 && <ChevronRight className="w-4 h-4 text-[#d4fc34]" />}
+                </button>
+              </div>
+
+              {/* Card 3: Standings */}
+              <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 hover:border-[#d4fc34]/50 hover:bg-slate-900 transition duration-300 flex flex-col justify-between shadow-lg">
+                <div>
+                  <div className="flex justify-between items-start mb-4">
+                    <span className="p-3 bg-[#d4fc34]/15 text-[#d4fc34] rounded-xl">
+                      <Trophy className="w-5 h-5" />
+                    </span>
+                    {matches.filter(m => m.category === selectedCategory).length === 0 ? (
+                      <span className="bg-amber-500/10 text-amber-500 text-[8px] px-2 py-0.5 rounded uppercase font-black tracking-wider border border-amber-500/20">
+                        PENDIENTE DE SORTEO
+                      </span>
+                    ) : (
+                      <span className="text-[11px] font-mono text-slate-400 bg-slate-950 px-2.5 py-1 rounded-lg">
+                        Cálculo Oficial de Puntos
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="text-base font-extrabold text-white mb-2">Tablas de Posiciones</h3>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Tablas analíticas generadas automáticamente: rendimiento de zonas de grupos y la Tabla Unificada de Doble Eliminación (Dos Vidas srtc).
+                  </p>
+                </div>
+                <button
+                  disabled={matches.filter(m => m.category === selectedCategory).length === 0}
+                  onClick={() => {
+                    setActiveTab("standings");
+                    setViewMode("isolated");
+                  }}
+                  className={`mt-6 py-3 px-4 rounded-xl text-xs font-black transition flex items-center justify-center gap-2 cursor-pointer uppercase tracking-wider ${
+                    matches.filter(m => m.category === selectedCategory).length === 0
+                      ? "bg-slate-950/40 text-slate-600 border-slate-900 cursor-not-allowed"
+                      : "bg-[#d4fc34]/10 hover:bg-[#d4fc34] hover:text-slate-950 text-[#d4fc34] border border-[#d4fc34]/20"
+                  }`}
+                >
+                  {matches.filter(m => m.category === selectedCategory).length === 0
+                    ? "Posiciones No Disponibles"
+                    : "Ver Tablas de Clasificación"}
+                  {matches.filter(m => m.category === selectedCategory).length > 0 && <ChevronRight className="w-4 h-4" />}
+                </button>
+              </div>
+
+              {/* Card 4: Bracket */}
+              <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 hover:border-[#d4fc34]/50 hover:bg-slate-900 transition duration-300 flex flex-col justify-between shadow-lg">
+                <div>
+                  <div className="flex justify-between items-start mb-4">
+                    <span className="p-3 bg-[#d4fc34]/15 text-[#d4fc34] rounded-xl">
+                      <Trophy className="w-5 h-5" />
+                    </span>
+                    {matches.filter(m => m.category === selectedCategory).length === 0 ? (
+                      <span className="bg-amber-500/10 text-amber-500 text-[8px] px-2 py-0.5 rounded uppercase font-black tracking-wider border border-amber-500/20">
+                        PENDIENTE DE SORTEO
+                      </span>
+                    ) : (
+                      <span className="text-[11px] font-mono text-slate-450 bg-slate-950 px-2.5 py-1 rounded-lg">
+                        Cuadros de Play-Offs
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="text-base font-extrabold text-[#d4fc34] mb-2 uppercase tracking-wider">Cuadros</h3>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Visualiza el bracket interactivo con los cruces directos y llaves de eliminación directa hasta coronar a los campeones.
+                  </p>
+                </div>
+                <button
+                  disabled={matches.filter(m => m.category === selectedCategory).length === 0}
+                  onClick={() => {
+                    setActiveTab("playoffs");
+                    setViewMode("isolated");
+                  }}
+                  className={`mt-6 py-3 px-4 rounded-xl text-xs font-black transition flex items-center justify-center gap-2 cursor-pointer uppercase tracking-wider ${
+                    matches.filter(m => m.category === selectedCategory).length === 0
+                      ? "bg-slate-950/40 text-slate-600 border-slate-900 cursor-not-allowed"
+                      : "bg-[#d4fc34]/10 hover:bg-[#d4fc34] hover:text-slate-950 text-[#d4fc34] border border-[#d4fc34]/20"
+                  }`}
+                >
+                  {matches.filter(m => m.category === selectedCategory).length === 0
+                    ? "Bracket No Disponible"
+                    : "Ver Cuadros / Llaves"}
+                  {matches.filter(m => m.category === selectedCategory).length > 0 && <ChevronRight className="w-4 h-4 text-slate-950" />}
+                </button>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* CONTENT SWITCHER */}
       {viewMode === "isolated" && (
