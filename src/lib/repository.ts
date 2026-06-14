@@ -10,7 +10,7 @@ import {
   query,
   where
 } from 'firebase/firestore';
-import { Tournament, Player, Pair, Match, Court, AppNotification, GalleryMedia } from '../types';
+import { Tournament, Player, PlayerPrivateData, Pair, Match, Court, AppNotification, GalleryMedia } from '../types';
 
 export enum OperationType {
   CREATE = 'create',
@@ -611,6 +611,7 @@ class PadelRepository {
   private cache: {
     tournaments: Tournament[];
     players: Player[];
+    playersPrivate: PlayerPrivateData[];
     pairs: Pair[];
     matches: Match[];
     courts: Court[];
@@ -622,6 +623,7 @@ class PadelRepository {
     this.cache = {
       tournaments: getLocal("tournaments", INITIAL_TOURNAMENTS),
       players: getLocal("players", INITIAL_PLAYERS),
+      playersPrivate: getLocal("playersPrivate", []),
       pairs: getLocal("pairs", INITIAL_PAIRS),
       matches: getLocal("matches", INITIAL_MATCHES),
       courts: getLocal("courts", INITIAL_COURTS),
@@ -693,6 +695,7 @@ class PadelRepository {
   private saveAllToStorage() {
     setLocal("tournaments", this.cache.tournaments);
     setLocal("players", this.cache.players);
+    setLocal("playersPrivate", this.cache.playersPrivate);
     setLocal("pairs", this.cache.pairs);
     setLocal("matches", this.cache.matches);
     setLocal("courts", this.cache.courts);
@@ -786,18 +789,46 @@ class PadelRepository {
     return this.cache.players;
   }
 
-  async savePlayer(p: Player): Promise<void> {
+  async getPlayerPrivateData(playerId: string): Promise<PlayerPrivateData | null> {
+    if (isRealFirebase) {
+      try {
+        const docSnap = await withTimeout(getDoc(doc(db, "playersPrivate", playerId)), 5000);
+        if (docSnap.exists()) {
+          return docSnap.data() as PlayerPrivateData;
+        }
+        return null;
+      } catch (err) {
+        handleFirestoreError(err, OperationType.GET, `playersPrivate/${playerId}`);
+        return this.cache.playersPrivate.find(p => p.id === playerId) || null;
+      }
+    }
+    return this.cache.playersPrivate.find(p => p.id === playerId) || null;
+  }
+
+  async savePlayer(p: Player, privateData?: PlayerPrivateData): Promise<void> {
     const idx = this.cache.players.findIndex(item => item.id === p.id);
     if (idx >= 0) {
       this.cache.players[idx] = p;
     } else {
       this.cache.players.push(p);
     }
+
+    if (privateData) {
+      const pIdx = this.cache.playersPrivate.findIndex(item => item.id === privateData.id);
+      if (pIdx >= 0) {
+        this.cache.playersPrivate[pIdx] = privateData;
+      } else {
+        this.cache.playersPrivate.push(privateData);
+      }
+    }
     this.saveAllToStorage();
 
     if (isRealFirebase) {
       try {
         await setDoc(doc(db, "players", p.id), p);
+        if (privateData) {
+          await setDoc(doc(db, "playersPrivate", privateData.id), privateData);
+        }
       } catch (err) {
         handleFirestoreError(err, OperationType.WRITE, `players/${p.id}`);
         this.addNotification(
@@ -811,17 +842,21 @@ class PadelRepository {
 
   async deletePlayer(id: string): Promise<void> {
     this.cache.players = this.cache.players.filter(item => item.id !== id);
+    this.cache.playersPrivate = this.cache.playersPrivate.filter(item => item.id !== id);
     this.saveAllToStorage();
 
     if (isRealFirebase) {
-      deleteDoc(doc(db, "players", id)).catch((err) => {
+      try {
+        await deleteDoc(doc(db, "players", id));
+        await deleteDoc(doc(db, "playersPrivate", id));
+      } catch (err) {
         handleFirestoreError(err, OperationType.DELETE, `players/${id}`);
         this.addNotification(
           "Eliminado en Sandbox Local",
           "Jugador removido del navegador en modo offline/sandbox.",
           "warning"
         );
-      });
+      }
     }
   }
 
@@ -838,10 +873,22 @@ class PadelRepository {
     ];
     for (const dp of defaultDemos) {
       if (!this.cache.players.some(p => p.id === dp.id)) {
-        this.cache.players.push(dp);
+        const { dni, phone, email, birthDate, ...publicDp } = dp;
+        this.cache.players.push(publicDp as Player);
+        
+        const privateDp: PlayerPrivateData = {
+          id: dp.id,
+          dni,
+          phone,
+          email,
+          birthDate
+        };
+        this.cache.playersPrivate.push(privateDp);
+
         if (isRealFirebase) {
           try {
-            await setDoc(doc(db, "players", dp.id), dp);
+            await setDoc(doc(db, "players", dp.id), publicDp);
+            await setDoc(doc(db, "playersPrivate", dp.id), privateDp);
           } catch(e) {}
         }
       }
@@ -1144,12 +1191,13 @@ class PadelRepository {
   async purgeAllSimulatedAndMockData(): Promise<{ playersCount: number; pairsCount: number; matchesCount: number; tournamentsUpdatedCount: number }> {
     // 1. Get all players
     const playersList = await this.getPlayers();
-    const mockPlayers = playersList.filter(p => 
-      p.id.includes("player_mock_qa_") || 
-      p.id.includes("tp_srtc") || 
-      p.email?.includes("@example.com") || 
-      p.email?.includes("@demo-padel.com")
-    );
+    const mockPlayers = playersList.filter(p => {
+      const anyP = p as any;
+      return p.id.includes("player_mock_qa_") || 
+        p.id.includes("tp_srtc") || 
+        anyP.email?.includes("@example.com") || 
+        anyP.email?.includes("@demo-padel.com");
+    });
 
     // 2. Delete mock players
     for (const p of mockPlayers) {

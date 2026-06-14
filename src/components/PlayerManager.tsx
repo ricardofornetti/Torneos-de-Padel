@@ -21,7 +21,7 @@ import {
   ArrowLeft
 } from 'lucide-react';
 import { repository } from '../lib/repository';
-import { Player } from '../types';
+import { Player, PlayerPrivateData } from '../types';
 import { getFIPTop100Males, getFIPTop100Females } from '../lib/fipRankingsData';
 
 interface PlayerManagerProps {
@@ -155,13 +155,30 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole, onBack }
   const loadPlayers = async () => {
     setLoading(true);
     const list = await repository.getPlayers();
-    setPlayers(list);
+    if (userRole === "admin") {
+      const mergedList = await Promise.all(list.map(async (p) => {
+        const priv = await repository.getPlayerPrivateData(p.id);
+        if (priv) {
+          return {
+            ...p,
+            dni: priv.dni,
+            phone: priv.phone,
+            email: priv.email,
+            birthDate: priv.birthDate
+          };
+        }
+        return p;
+      }));
+      setPlayers(mergedList);
+    } else {
+      setPlayers(list);
+    }
     setLoading(false);
   };
 
   useEffect(() => {
     loadPlayers();
-  }, []);
+  }, [userRole]);
 
   useEffect(() => {
     const handleCheckUser = () => {
@@ -206,7 +223,7 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole, onBack }
     setIsFormOpen(true);
   };
 
-  const handleOpenEditForm = (player: Player) => {
+  const handleOpenEditForm = async (player: Player) => {
     setEditingPlayer(player);
     let cat = player.category;
     if (!PADEL_CATEGORIES.includes(cat)) {
@@ -227,14 +244,16 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole, onBack }
       }
     }
 
+    const priv = await repository.getPlayerPrivateData(player.id);
+
     setNewPlayer({
       firstName: player.firstName,
       lastName: player.lastName,
-      dni: player.dni,
-      phone: player.phone,
-      email: player.email,
+      dni: priv?.dni || "",
+      phone: priv?.phone || "",
+      email: priv?.email || "",
       city: player.city,
-      birthDate: player.birthDate,
+      birthDate: priv?.birthDate || "1995-01-01",
       category: cat,
       rankingPoints: player.rankingPoints,
       photoUrl: player.photoUrl
@@ -245,7 +264,7 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole, onBack }
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPlayer.firstName || !newPlayer.lastName || !newPlayer.email || !newPlayer.dni) {
-      alert("Por favor completa los campos requeridos (Nombre, Apellido, Email y CUIT).");
+      alert("Por favor completa los campos requeridos (Nombre, Apellido, Email y CUIT/DNI).");
       return;
     }
 
@@ -256,11 +275,7 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole, onBack }
       id,
       firstName: newPlayer.firstName,
       lastName: newPlayer.lastName,
-      dni: newPlayer.dni,
-      phone: newPlayer.phone,
-      email: newPlayer.email,
       city: newPlayer.city,
-      birthDate: newPlayer.birthDate,
       category: categoryString,
       rankingPoints: Number(newPlayer.rankingPoints) || 0,
       photoUrl: newPlayer.photoUrl || AVATARS[0],
@@ -274,7 +289,15 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole, onBack }
       gamesLost: editingPlayer?.gamesLost || 0
     };
 
-    await repository.savePlayer(playerToSave);
+    const privateToSave: PlayerPrivateData = {
+      id,
+      dni: newPlayer.dni,
+      phone: newPlayer.phone,
+      email: newPlayer.email,
+      birthDate: newPlayer.birthDate
+    };
+
+    await repository.savePlayer(playerToSave, privateToSave);
     await repository.addNotification(
       editingPlayer ? "Jugador Modificado" : "Nuevo Jugador Registrado",
       `Se ha cargado con éxito a ${playerToSave.firstName} ${playerToSave.lastName} en la categoría ${playerToSave.category}.`,
@@ -293,7 +316,15 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole, onBack }
       const allPlayers = [...males, ...females];
 
       for (const p of allPlayers) {
-        await repository.savePlayer(p);
+        const { dni, phone, email, birthDate, ...publicP } = p as any;
+        const privateP: PlayerPrivateData = {
+          id: p.id,
+          dni: dni || "",
+          phone: phone || "",
+          email: email || "",
+          birthDate: birthDate || "1995-01-01"
+        };
+        await repository.savePlayer(publicP as Player, privateP);
       }
 
       await repository.addNotification(

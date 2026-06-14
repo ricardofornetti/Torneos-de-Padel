@@ -22,13 +22,12 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { repository } from '../lib/repository';
-import { AppNotification } from '../types';
+import { AppNotification, Player, PlayerPrivateData } from '../types';
 import { auth, isRealFirebase } from '../lib/firebase';
 import { signInWithPopup, GoogleAuthProvider, signOut, User as FirebaseUser } from 'firebase/auth';
 
 interface SidebarProps {
   userRole: "admin" | "player";
-  onChangeRole: (role: "admin" | "player") => void;
   onNavigate: (view: "dashboard" | "tournaments" | "players" | "rankings" | "courts" | "gallery" | "stats" | "fixture") => void;
   activeView: string;
   notifications?: AppNotification[];
@@ -38,7 +37,6 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ 
   userRole, 
-  onChangeRole, 
   onNavigate,
   activeView,
   notifications = [],
@@ -71,11 +69,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
       try {
         const localUser = JSON.parse(localUserJson);
         setCurrentUser(localUser);
-        if (localUser.email === 'fornettiricardo@gmail.com') {
-          onChangeRole("admin");
-        } else {
-          onChangeRole("player");
-        }
       } catch (e) {
         console.error("Error reading localUserJson in Sidebar:", e);
       }
@@ -86,18 +79,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
         const hasLocal = !!localStorage.getItem("padel_mgr_mock_user");
         if (!hasLocal) {
           setCurrentUser(user);
-          if (user) {
-            if (user.email === 'fornettiricardo@gmail.com') {
-              onChangeRole("admin");
-            } else {
-              onChangeRole("player");
-            }
-          }
         }
       });
       return () => unsubscribe();
     }
-  }, [onChangeRole]);
+  }, []);
 
   const handleGoogleLogin = async () => {
     setGoogleLoading(true);
@@ -110,23 +96,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
       if (user) {
         // Create player profile if doesn't exist
         const existingPlayers = await repository.getPlayers();
-        const exists = existingPlayers.some(p => p.email && p.email.toLowerCase() === user.email?.toLowerCase());
+        const exists = existingPlayers.some(p => p.id === `p_google_${user.uid}`);
         
         if (!exists && user.email) {
           const parts = (user.displayName || "Jugador Gmail").split(" ");
           const fName = parts[0] || "Gmail";
           const lName = parts.slice(1).join(" ") || "Usuario";
           
-          await repository.savePlayer({
+          const playerProfile: Player = {
             id: `p_google_${user.uid}`,
             firstName: fName,
             lastName: lName,
-            dni: `G-${user.uid.slice(0, 6)}`,
-            email: user.email.toLowerCase(),
-            phone: "",
             city: "General",
             category: "6ta Masculina",
-            birthDate: "1995-05-05",
             rankingPoints: 100,
             matchesPlayed: 0,
             matchesWon: 0,
@@ -136,7 +118,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
             gamesWon: 0,
             gamesLost: 0,
             photoUrl: user.photoURL || `https://api.dicebear.com/7.x/adventurer/svg?seed=${user.email}`
-          });
+          };
+
+          const privateProfile: PlayerPrivateData = {
+            id: `p_google_${user.uid}`,
+            dni: `G-${user.uid.slice(0, 6)}`,
+            email: user.email.toLowerCase(),
+            phone: "",
+            birthDate: "1995-05-05"
+          };
+
+          await repository.savePlayer(playerProfile, privateProfile);
         }
 
         const mockUser = {
@@ -147,12 +139,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
         };
         localStorage.setItem("padel_mgr_mock_user", JSON.stringify(mockUser));
         setCurrentUser(mockUser as any);
-        
-        if (user.email === 'fornettiricardo@gmail.com') {
-          onChangeRole("admin");
-        } else {
-          onChangeRole("player");
-        }
         
         setShowRegisterModal(false);
       }
@@ -183,16 +169,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
     
     try {
       const newPlayerId = `p_gmail_${Date.now()}`;
-      const playerProfile = {
+      
+      const playerProfile: Player = {
         id: newPlayerId,
         firstName: regForm.firstName.trim(),
         lastName: regForm.lastName.trim(),
-        dni: regForm.dni.trim(),
-        phone: regForm.phone.trim(),
-        email: emailSanitized,
         city: regForm.city.trim() || "Sin Especificar",
         category: regForm.category,
-        birthDate: "1995-01-01",
         rankingPoints: 100,
         matchesPlayed: 0,
         matchesWon: 0,
@@ -203,8 +186,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
         gamesLost: 0,
         photoUrl: `https://api.dicebear.com/7.x/adventurer/svg?seed=${emailSanitized}`
       };
+
+      const privateProfile: PlayerPrivateData = {
+        id: newPlayerId,
+        dni: regForm.dni.trim(),
+        email: emailSanitized,
+        phone: regForm.phone.trim(),
+        birthDate: "1995-01-01"
+      };
       
-      await repository.savePlayer(playerProfile);
+      await repository.savePlayer(playerProfile, privateProfile);
       
       const mockUser = {
         uid: newPlayerId,
@@ -215,12 +206,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
       
       localStorage.setItem("padel_mgr_mock_user", JSON.stringify(mockUser));
       setCurrentUser(mockUser as any);
-      
-      if (emailSanitized === "fornettiricardo@gmail.com") {
-        onChangeRole("admin");
-      } else {
-        onChangeRole("player");
-      }
       
       await repository.addNotification(
         "Registro Exitoso",
@@ -238,7 +223,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const handleLogout = async () => {
     localStorage.removeItem("padel_mgr_mock_user");
     setCurrentUser(null);
-    onChangeRole("player");
     window.dispatchEvent(new Event("storage"));
     if (isRealFirebase && auth) {
       try {
@@ -465,23 +449,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
               {!isCollapsed && <span className="font-display font-medium">Ingresar Gmail</span>}
             </button>
           )}
-
-          {/* Quick Admin switch indicator */}
-          {!isCollapsed && (
-            <div className="mt-3 pt-3 border-t border-slate-900/50 flex items-center justify-between text-[9px] font-mono px-1">
-              <span className="text-slate-500 uppercase tracking-wider font-bold">ROL DE ACCESO:</span>
-              <button
-                onClick={() => onChangeRole(userRole === "admin" ? "player" : "admin")}
-                className={`px-2 py-0.5 rounded font-bold uppercase text-[8px] transition hover:translate-y-[-0.5px] cursor-pointer ${
-                  userRole === "admin"
-                    ? "bg-[#d4fc34]/15 text-[#d4fc34] border border-[#d4fc34]/30"
-                    : "bg-slate-900 text-slate-400 border border-slate-800"
-                }`}
-              >
-                {userRole === "admin" ? "Organizador" : "Espectador"}
-              </button>
-            </div>
-          )}
         </div>
       </aside>
 
@@ -564,28 +531,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       </div>
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-2 text-[10px] font-mono">
-                      <button
-                        onClick={() => {
-                          onChangeRole(userRole === "admin" ? "player" : "admin");
-                        }}
-                        className={`py-2 px-3 rounded-xl uppercase font-bold text-center border transition-all cursor-pointer ${
-                          userRole === "admin"
-                            ? "bg-[#d4fc34]/15 text-[#d4fc34] border-[#d4fc34]/30"
-                            : "bg-slate-900 text-slate-400 border-slate-800"
-                        }`}
-                      >
-                        {userRole === "admin" ? "⚡ ORG" : "👀 SPECTATOR"}
-                      </button>
+                    <div className="text-[10px] font-mono">
                       <button
                         onClick={() => {
                           handleLogout();
                           setIsMobileOpen(false);
                         }}
-                        className="py-2 px-3 bg-red-950/20 text-red-400 hover:bg-red-950/40 rounded-xl border border-red-900/20 flex items-center justify-center gap-1.5 font-bold uppercase cursor-pointer"
+                        className="w-full py-2.5 px-3 bg-red-950/20 text-red-400 hover:bg-red-950/40 rounded-xl border border-red-900/20 flex items-center justify-center gap-1.5 font-bold uppercase cursor-pointer"
                       >
                         <LogOut className="w-3.5 h-3.5" />
-                        <span>Salir</span>
+                        <span>Salir de la Cuenta</span>
                       </button>
                     </div>
                   </div>

@@ -17,7 +17,7 @@ import {
   ArrowLeft
 } from 'lucide-react';
 import { repository } from '../lib/repository';
-import { Tournament, Pair, Match } from '../types';
+import { Tournament, Pair, Match, Player, PlayerPrivateData } from '../types';
 
 interface TournamentManagerProps {
   userRole: "admin" | "player";
@@ -248,15 +248,11 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
         for (let idx = 0; idx < playersList32.length; idx++) {
           const item = playersList32[idx];
           const pId = `tp_srtc32_${idx + 1}_${Date.now()}`;
-          await repository.savePlayer({
+          const pProfile: Player = {
             id: pId,
             firstName: item.firstName,
             lastName: item.lastName,
-            dni: `${20020000 + idx}B`,
-            phone: `+34 600 032 ${String(idx).padStart(3, "0")}`,
-            email: `${item.firstName.toLowerCase()}.${item.lastName.toLowerCase().replace(/[^a-zA-Z]/g, "")}@demo-padel.com`,
             city: newT.city || "Madrid",
-            birthDate: "1998-05-15",
             category: "5ta Masculina",
             rankingPoints: item.pts,
             photoUrl: "https://images.unsplash.com/photo-1594381898411-846e7d193883?auto=format&fit=crop&q=80&w=200",
@@ -267,7 +263,15 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
             setsLost: 10,
             gamesWon: 100,
             gamesLost: 100
-          });
+          };
+          const privateProfile: PlayerPrivateData = {
+            id: pId,
+            dni: `${20020000 + idx}B`,
+            phone: `+34 600 032 ${String(idx).padStart(3, "0")}`,
+            email: `${item.firstName.toLowerCase()}.${item.lastName.toLowerCase().replace(/[^a-zA-Z]/g, "")}@demo-padel.com`,
+            birthDate: "1998-05-15"
+          };
+          await repository.savePlayer(pProfile, privateProfile);
           savedPlayerIds.push(pId);
         }
 
@@ -464,15 +468,11 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
         for (let idx = 0; idx < playersList.length; idx++) {
           const item = playersList[idx];
           const pId = `tp_srtc16_${idx + 1}_${Date.now()}`;
-          await repository.savePlayer({
+          const pProfile: Player = {
             id: pId,
             firstName: item.firstName,
             lastName: item.lastName,
-            dni: `${10020000 + idx}A`,
-            phone: `+34 600 000 ${String(idx).padStart(3, "0")}`,
-            email: `${item.firstName.toLowerCase()}.${item.lastName.toLowerCase().replace(/[^a-zA-Z]/g, "")}@demo-padel.com`,
             city: newT.city || "Madrid",
-            birthDate: "1998-05-15",
             category: "5ta Masculina",
             rankingPoints: item.pts,
             photoUrl: "https://images.unsplash.com/photo-1594381898411-846e7d193883?auto=format&fit=crop&q=80&w=200",
@@ -483,7 +483,15 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
             setsLost: 10,
             gamesWon: 100,
             gamesLost: 100
-          });
+          };
+          const privateProfile: PlayerPrivateData = {
+            id: pId,
+            dni: `${10020000 + idx}A`,
+            phone: `+34 600 000 ${String(idx).padStart(3, "0")}`,
+            email: `${item.firstName.toLowerCase()}.${item.lastName.toLowerCase().replace(/[^a-zA-Z]/g, "")}@demo-padel.com`,
+            birthDate: "1998-05-15"
+          };
+          await repository.savePlayer(pProfile, privateProfile);
           savedPlayerIds.push(pId);
         }
 
@@ -676,15 +684,11 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
         for (let idx = 0; idx < playersList24.length; idx++) {
           const item = playersList24[idx];
           const pId = `tp_srtc24_${idx + 1}_${Date.now()}`;
-          await repository.savePlayer({
+          const pProfile: Player = {
             id: pId,
             firstName: item.firstName,
             lastName: item.lastName,
-            dni: `${30020000 + idx}C`,
-            phone: `+34 600 024 ${String(idx).padStart(3, "0")}`,
-            email: `${item.firstName.toLowerCase()}.${item.lastName.toLowerCase().replace(/[^a-zA-Z]/g, "")}@demo-padel.com`,
             city: newT.city || "Madrid",
-            birthDate: "1998-05-15",
             category: "5ta Masculina",
             rankingPoints: item.pts,
             photoUrl: "https://images.unsplash.com/photo-1594381898411-846e7d193883?auto=format&fit=crop&q=80&w=200",
@@ -695,7 +699,15 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
             setsLost: 10,
             gamesWon: 100,
             gamesLost: 100
-          });
+          };
+          const privateProfile: PlayerPrivateData = {
+            id: pId,
+            dni: `${30020000 + idx}C`,
+            phone: `+34 600 024 ${String(idx).padStart(3, "0")}`,
+            email: `${item.firstName.toLowerCase()}.${item.lastName.toLowerCase().replace(/[^a-zA-Z]/g, "")}@demo-padel.com`,
+            birthDate: "1998-05-15"
+          };
+          await repository.savePlayer(pProfile, privateProfile);
           savedPlayerIds.push(pId);
         }
 

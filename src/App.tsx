@@ -10,6 +10,7 @@ import { Gallery } from './components/Gallery';
 import { StatsView } from './components/StatsView';
 import { FixtureView } from './components/FixtureView';
 import { repository } from './lib/repository';
+import { auth } from './lib/firebase';
 
 export default function App() {
   const [activeView, setActiveView] = useState<"dashboard" | "tournaments" | "players" | "rankings" | "courts" | "gallery" | "stats" | "fixture">("dashboard");
@@ -17,8 +18,41 @@ export default function App() {
   const [isIsolatedInscriptions, setIsIsolatedInscriptions] = useState(false);
   
   // High fidelity roles (Admin has creation/draw powers, Player has read-only exploration powers)
-  const [userRole, setUserRole] = useState<"admin" | "player">("admin");
+  const [userRole, setUserRole] = useState<"admin" | "player">("player");
   const [notifications, setNotifications] = useState<any[]>([]);
+
+  useEffect(() => {
+    const checkRole = () => {
+      const user = auth.currentUser;
+      const localUserJson = localStorage.getItem("padel_mgr_mock_user");
+      if (user) {
+        if (user.email === 'fornettiricardo@gmail.com') {
+          setUserRole("admin");
+          return;
+        }
+      } else if (localUserJson) {
+        try {
+          const localUser = JSON.parse(localUserJson);
+          if (localUser.email === 'fornettiricardo@gmail.com') {
+            setUserRole("admin");
+            return;
+          }
+        } catch (e) {}
+      }
+      setUserRole("player");
+    };
+
+    checkRole();
+    const unsubscribe = auth.onAuthStateChanged(checkRole);
+    window.addEventListener("storage", checkRole);
+    const interval = setInterval(checkRole, 1000);
+
+    return () => {
+      unsubscribe();
+      window.removeEventListener("storage", checkRole);
+      clearInterval(interval);
+    };
+  }, []);
 
   useEffect(() => {
     if (selectedTournamentId === null) {
@@ -65,7 +99,6 @@ export default function App() {
       {!isIsolatedInscriptions && (
         <Sidebar 
           userRole={userRole} 
-          onChangeRole={(role) => setUserRole(role)}
           onNavigate={handleSidebarNavigation}
           activeView={selectedTournamentId ? "tournaments" : activeView}
           notifications={notifications}

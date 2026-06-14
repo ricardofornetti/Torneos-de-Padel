@@ -22,17 +22,13 @@
     },
     "Player": {
       "title": "Player",
-      "description": "Represents a padel player and their permanent ranking / lifetime statistics.",
+      "description": "Represents a padel player and their permanent ranking / lifetime statistics (public data).",
       "type": "object",
       "properties": {
         "id": { "type": "string", "description": "Unique player ID" },
         "firstName": { "type": "string", "description": "First name" },
         "lastName": { "type": "string", "description": "Last name" },
-        "dni": { "type": "string", "description": "Documento Nacional de Identidad/National ID" },
-        "phone": { "type": "string", "description": "Phone number" },
-        "email": { "type": "string", "description": "E-mail address" },
         "city": { "type": "string", "description": "Current residency city" },
-        "birthDate": { "type": "string", "description": "Format YYYY-MM-DD" },
         "category": { "type": "string", "description": "Current player category level" },
         "rankingPoints": { "type": "number", "description": "Accumulated ranking points for the year" },
         "photoUrl": { "type": "string", "description": "URL to player image" },
@@ -44,7 +40,20 @@
         "gamesWon": { "type": "number" },
         "gamesLost": { "type": "number" }
       },
-      "required": ["id", "firstName", "lastName", "dni", "email", "category"]
+      "required": ["id", "firstName", "lastName", "category"]
+    },
+    "PlayerPrivateData": {
+      "title": "PlayerPrivateData",
+      "description": "Represents a padel player's sensitive personally identifiable information (PII).",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Same as playerId" },
+        "dni": { "type": "string", "description": "National ID digits" },
+        "phone": { "type": "string", "description": "WhatsApp contact number" },
+        "email": { "type": "string", "description": "Verified Gmail email address" },
+        "birthDate": { "type": "string", "description": "Format YYYY-MM-DD" }
+      },
+      "required": ["id", "dni", "email"]
     },
     "Pair": {
       "title": "Pair",
@@ -134,6 +143,10 @@
     "/players/{playerId}": {
       "schema": "Player",
       "description": "Global user-level player cards and ranking profiles."
+    },
+    "/playersPrivate/{playerId}": {
+      "schema": "PlayerPrivateData",
+      "description": "Sensitive personally identifiable information (PII) for padel players."
     },
     "/pairs/{pairId}": {
       "schema": "Pair",

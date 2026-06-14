@@ -34,11 +34,7 @@ export interface Player {
   id: string;
   firstName: string;
   lastName: string;
-  dni: string;
-  phone: string;
-  email: string;
   city: string;
-  birthDate: string; // YYYY-MM-DD
   category: string; // Full category name matching "Division - Level"
   rankingPoints: number;
   photoUrl: string;
@@ -50,6 +46,14 @@ export interface Player {
   setsLost: number;
   gamesWon: number;
   gamesLost: number;
+}
+
+export interface PlayerPrivateData {
+  id: string; // matches Player id
+  dni: string;
+  email: string;
+  phone: string;
+  birthDate: string; // YYYY-MM-DD
 }
 
 export interface Tournament {

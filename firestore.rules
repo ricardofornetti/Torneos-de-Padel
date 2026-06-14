@@ -65,16 +65,12 @@ service cloud.firestore {
     }
 
     function isValidPlayer(p) {
-      return p.keys().hasAll(['id', 'firstName', 'lastName', 'dni', 'phone', 'email', 'city', 'birthDate', 'category', 'rankingPoints', 'photoUrl', 'matchesPlayed', 'matchesWon', 'matchesLost', 'setsWon', 'setsLost', 'gamesWon', 'gamesLost'])
-        && p.keys().size() == 18
+      return p.keys().hasAll(['id', 'firstName', 'lastName', 'city', 'category', 'rankingPoints', 'photoUrl', 'matchesPlayed', 'matchesWon', 'matchesLost', 'setsWon', 'setsLost', 'gamesWon', 'gamesLost'])
+        && p.keys().size() == 14
         && p.id is string && p.id.size() <= 64
         && p.firstName is string && p.firstName.size() <= 50
         && p.lastName is string && p.lastName.size() <= 50
-        && p.dni is string && p.dni.size() <= 20
-        && p.phone is string && p.phone.size() <= 30
-        && p.email is string && p.email.size() <= 100
         && p.city is string && p.city.size() <= 50
-        && p.birthDate is string && p.birthDate.size() <= 10
         && p.category is string && p.category.size() <= 50
         && (p.rankingPoints is int || p.rankingPoints is float)
         && p.photoUrl is string && p.photoUrl.size() <= 256
@@ -85,6 +81,16 @@ service cloud.firestore {
         && p.setsLost is int
         && p.gamesWon is int
         && p.gamesLost is int;
+    }
+
+    function isValidPlayerPrivate(p) {
+      return p.keys().hasAll(['id', 'dni', 'phone', 'email', 'birthDate'])
+        && p.keys().size() == 5
+        && p.id is string && p.id.size() <= 64
+        && p.dni is string && p.dni.size() <= 20
+        && p.phone is string && p.phone.size() <= 30
+        && p.email is string && p.email.size() <= 100
+        && p.birthDate is string && p.birthDate.size() <= 10;
     }
 
     function isValidPair(pr) {
@@ -146,10 +152,19 @@ service cloud.firestore {
 
     // Players
     match /players/{playerId} {
-      // Allow general read for rankings & player listing profiles
+      // Allow general read for rankings & player listing profiles (No PII)
       allow read: if true;
       allow create: if isValidId(playerId) && (isPlayerOwner(playerId) || isAdmin()) && isValidPlayer(incoming());
       allow update: if (isPlayerOwner(playerId) || isAdmin()) && isValidPlayer(incoming()) && incoming().id == existing().id;
+      allow delete: if isAdmin();
+    }
+
+    // Players Private Data (PII)
+    match /playersPrivate/{playerId} {
+      // Strict isolation: only the specific player owner or admins can read or write PII
+      allow read: if isPlayerOwner(playerId) || isAdmin();
+      allow create: if isValidId(playerId) && (isPlayerOwner(playerId) || isAdmin()) && isValidPlayerPrivate(incoming());
+      allow update: if (isPlayerOwner(playerId) || isAdmin()) && isValidPlayerPrivate(incoming()) && incoming().id == existing().id;
       allow delete: if isAdmin();
     }
 

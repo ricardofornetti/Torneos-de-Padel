@@ -281,7 +281,7 @@ export const getFIPPlayersForCategory = (category: string): Player[] => {
       setsLost: matchesLost * 2 + Math.floor(Math.random() * matchesWon),
       gamesWon: matchesWon * 12 + Math.floor(Math.random() * matchesLost * 4),
       gamesLost: matchesLost * 12 + Math.floor(Math.random() * matchesWon * 4)
-    });
+    } as any);
   }
 
   return result;
