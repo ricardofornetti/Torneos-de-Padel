@@ -144,9 +144,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
       }
     } catch (error: any) {
       console.error("Google sign-in error in Sidebar UI:", error);
-      setRegError(
-        `Error de autenticación Google: ${error.message || 'Error general'}. Puede intentar con el formulario manual.`
+      const isUnauthorizedDomain = error.message && (
+        error.message.includes("auth/unauthorized-domain") || 
+        error.message.includes("unauthorized-domain")
       );
+      
+      if (isUnauthorizedDomain) {
+        setRegError(
+          `⚠️ Dominio No Autorizado en Firebase Auth.\n\nPara solucionarlo e ingresar con Google:\n1. Abre la consola de Firebase en:\nhttps://console.firebase.google.com/project/silken-concept-wsjh2/authentication/settings\n2. Ve a la pestaña "Ajustes" -> "Dominios autorizados" -> "Agregar dominio".\n3. Registra este dominio actual: ${window.location.host}\n\nMientras tanto, puedes registrarte usando el "Registro Manual Directo" de abajo.`
+        );
+      } else {
+        setRegError(
+          `Error de autenticación Google: ${error.message || 'Error general'}. Puede intentar con el formulario manual.`
+        );
+      }
     } finally {
       setGoogleLoading(false);
     }
