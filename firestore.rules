@@ -73,7 +73,7 @@ service cloud.firestore {
         && p.city is string && p.city.size() <= 50
         && p.category is string && p.category.size() <= 50
         && (p.rankingPoints is int || p.rankingPoints is float)
-        && p.photoUrl is string && p.photoUrl.size() <= 256
+        && p.photoUrl is string && p.photoUrl.size() <= 2048
         && p.matchesPlayed is int
         && p.matchesWon is int
         && p.matchesLost is int

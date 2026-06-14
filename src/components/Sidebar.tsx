@@ -100,8 +100,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
         
         if (!exists && user.email) {
           const parts = (user.displayName || "Jugador Gmail").split(" ");
-          const fName = parts[0] || "Gmail";
-          const lName = parts.slice(1).join(" ") || "Usuario";
+          const fName = (parts[0] || "Gmail").slice(0, 45);
+          const lName = (parts.slice(1).join(" ") || "Usuario").slice(0, 45);
           
           const playerProfile: Player = {
             id: `p_google_${user.uid}`,
