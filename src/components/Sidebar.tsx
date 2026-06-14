@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { 
   Trophy, 
   Bell, 
-  Shield, 
   User, 
   LogIn, 
   LogOut, 
@@ -17,8 +16,11 @@ import {
   Menu,
   ChevronLeft,
   ChevronRight,
-  Sparkle
+  Shield,
+  Zap,
+  Award
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { repository } from '../lib/repository';
 import { AppNotification } from '../types';
 import { auth, isRealFirebase } from '../lib/firebase';
@@ -252,16 +254,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const navItems = [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
     { id: "tournaments", label: "Torneos", icon: Trophy },
-    { id: "fixture", label: "Fixture / Calendario", icon: Calendar },
+    { id: "fixture", label: "Calendario", icon: Calendar },
     { id: "players", label: "Jugadores", icon: Users },
-    { id: "rankings", label: "Ranking Oficial", icon: BadgeTrophyIcon },
+    { id: "rankings", label: "Rankings", icon: AwardTrophyIcon },
     { id: "stats", label: "Estadísticas", icon: BarChart3 },
     { id: "courts", label: "Canchas", icon: MapPin },
-    { id: "gallery", label: "Galería de Fotos", icon: ImageIcon }
+    { id: "gallery", label: "Fotos", icon: ImageIcon }
   ];
 
-  function BadgeTrophyIcon(props: any) {
-    return <Trophy {...props} className={props.className + " text-amber-400"} />;
+  function AwardTrophyIcon(props: any) {
+    return <Trophy {...props} className={props.className + " text-[#d4fc34] shrink-0"} />;
   }
 
   const handleNavItemClick = (id: any) => {
@@ -271,100 +273,130 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <>
-      {/* MOBILE HEADER BAR */}
-      <header className="lg:hidden bg-slate-950 border-b border-slate-900 sticky top-0 z-40 px-4 py-3 flex items-center justify-between w-full">
-        <div className="flex items-center gap-2.5">
+      {/* MOBILE TOP STATUS GREETING HEADER */}
+      <header className="lg:hidden bg-slate-950/95 border-b border-slate-900/80 sticky top-0 z-40 px-4 py-3 flex items-center justify-between w-full backdrop-blur-md select-none">
+        <div className="flex items-center gap-2">
+          {/* Menu button for profile settings slide */}
           <button 
+            type="button"
             onClick={() => setIsMobileOpen(true)}
-            className="p-2 -ml-2 text-slate-400 hover:text-white hover:bg-slate-900 rounded-lg transition"
+            className="p-2 -ml-2 text-slate-400 hover:text-white rounded-xl transition cursor-pointer"
             id="mobile-menu-trigger"
           >
-            <Menu className="w-5 h-5" />
+            <Menu className="w-5 h-5 text-[#d4fc34]" />
           </button>
           
-          <div onClick={() => onNavigate("dashboard")} className="flex items-center gap-2 cursor-pointer">
-            <div className="bg-gradient-to-br from-[#d4fc34] to-lime-600 p-1.5 rounded-lg text-slate-950">
-              <Trophy className="w-4 h-4 text-slate-950" />
-            </div>
-            <span className="font-extrabold text-sm tracking-wider text-[#d4fc34] uppercase font-sans">
-              Circuitos <span className="text-white">PRO</span>
+          <div onClick={() => onNavigate("dashboard")} className="flex items-center gap-1.5 cursor-pointer">
+            <span className="font-display font-black text-xs tracking-wider text-[#d4fc34] uppercase">
+              SRTC <span className="text-white">PADEL</span>
             </span>
           </div>
         </div>
 
-        {/* Mobile Header Icons */}
-        <div className="flex items-center gap-2">
+        {/* Mobile Header Icons: Alerts & Accounts */}
+        <div className="flex items-center gap-1">
           {/* Notifications Trigger */}
           <div className="relative">
             <button 
               onClick={() => setShowNotifications(!showNotifications)}
-              className="p-2 hover:bg-slate-900 rounded-lg text-slate-400 hover:text-white transition relative"
+              className="p-2 hover:bg-slate-900 text-slate-400 hover:text-white rounded-xl transition relative cursor-pointer"
             >
               <Bell className="w-4.5 h-4.5" />
               {unreadCount > 0 && (
-                <span className="absolute top-1 right-1 w-2 h-2 bg-rose-500 rounded-full"></span>
+                <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-[#d4fc34] rounded-full animate-pulse"></span>
               )}
             </button>
           </div>
 
-          {/* Quick login / Profile image */}
+          {/* User profile bubble modal trigger */}
           {currentUser ? (
             <img 
               src={currentUser.photoURL || `https://api.dicebear.com/7.x/adventurer/svg?seed=${currentUser.email}`} 
               alt="Me" 
-              className="w-7 h-7 rounded-full border border-[#d4fc34]/60 object-cover" 
+              className="w-7 h-7 rounded-lg border border-[#d4fc34] object-cover shrink-0 ml-1 cursor-pointer" 
               referrerPolicy="no-referrer" 
-              onClick={() => setShowRegisterModal(true)}
+              onClick={() => setIsMobileOpen(true)}
             />
           ) : (
             <button 
               onClick={() => setShowRegisterModal(true)}
-              className="p-2 bg-[#d4fc34]/10 text-[#d4fc34] rounded-lg border border-[#d4fc34]/20 text-xs font-semibold"
+              className="p-1 px-2.5 bg-[#d4fc34]/15 text-[#d4fc34] border border-[#d4fc34]/20 rounded-lg text-[10px] font-mono font-bold tracking-wider uppercase ml-1 cursor-pointer"
             >
-              <LogIn className="w-4 h-4" />
+              FICHARSE
             </button>
           )}
         </div>
       </header>
 
+      {/* MOBILE SPORTY BOTTOM NAVIGATION BAR */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-45 bg-[#0b0f19]/95 border-t border-slate-900/90 py-1.5 px-2 flex justify-around items-center backdrop-blur-lg select-none pb-safe">
+        {navItems.slice(0, 5).map((item) => {
+          const Icon = item.icon;
+          const isActive = activeView === item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => handleNavItemClick(item.id)}
+              className="flex flex-col items-center justify-center p-2 rounded-xl transition-all relative flex-1 min-w-[50px] min-h-[44px] cursor-pointer"
+            >
+              {isActive && (
+                <motion.div 
+                  layoutId="mobileActiveIndicator"
+                  className="absolute inset-0 bg-[#d4fc34]/10 rounded-xl -z-10"
+                  transition={{ type: 'spring', stiffness: 350, damping: 28 }}
+                />
+              )}
+              <Icon className={`w-[18px] h-[18px] ${isActive ? "text-[#d4fc34] scale-105" : "text-slate-400"}`} />
+              <span className={`text-[9px] font-display font-medium tracking-wide mt-1 ${isActive ? "text-[#d4fc34] font-bold" : "text-slate-500"}`}>
+                {item.id === "fixture" ? "Calendario" : item.label}
+              </span>
+            </button>
+          );
+        })}
+      </nav>
+
       {/* DESKTOP SIDEBAR PANEL */}
       <aside 
-        className={`hidden lg:flex flex-col bg-slate-950 border-r border-slate-900 sticky top-0 h-screen transition-all duration-300 z-40 shrink-0 ${
+        className={`hidden lg:flex flex-col bg-[#0b0f19] border-r border-slate-900/80 sticky top-0 h-screen transition-all duration-300 z-40 shrink-0 ${
           isCollapsed ? "w-20" : "w-64"
         }`}
         id="desktop-sidebar"
       >
         {/* Sidebar Header Brand */}
-        <div className="p-5 border-b border-slate-900/60 flex items-center justify-between">
+        <div className="p-5 border-b border-slate-900/50 flex items-center justify-between">
           <div 
             onClick={() => onNavigate("dashboard")} 
-            className="flex items-center gap-2.5 cursor-pointer overflow-hidden select-none"
+            className="flex items-center gap-3 cursor-pointer overflow-hidden select-none"
           >
-            <div className="bg-gradient-to-br from-[#d4fc34] to-lime-600 p-2 rounded-xl text-slate-950 shadow-md">
-              <Trophy className="w-5.5 h-5.5 text-slate-950" />
+            <div className="bg-gradient-to-br from-[#d4fc34] to-lime-500 p-2 rounded-xl text-slate-950 shadow-md">
+              <Trophy className="w-5 h-5 text-slate-950" />
             </div>
             {!isCollapsed && (
-              <div className="animate-fade-in">
-                <span className="font-extrabold text-base tracking-wider text-[#d4fc34] block font-sans uppercase">
-                  Circuitos <span className="text-white">PRO</span>
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="font-display font-bold leading-none"
+              >
+                <span className="font-black text-sm tracking-widest text-[#d4fc34] block uppercase">
+                  SRTC <span className="text-white">PADEL</span>
                 </span>
-                <span className="text-[9px] font-mono font-bold text-slate-500 block uppercase tracking-widest mt-0.5">
-                  Padel League
+                <span className="text-[8px] font-mono text-slate-500 tracking-widest block uppercase mt-1">
+                  OFFICIAL LEAGUE
                 </span>
-              </div>
+              </motion.div>
             )}
           </div>
 
           <button 
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="p-1.5 hover:bg-slate-900 rounded-lg text-slate-500 hover:text-white transition hidden md:block"
+            className="p-1.5 hover:bg-slate-900 rounded-lg text-slate-500 hover:text-white transition cursor-pointer"
           >
             {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
           </button>
         </div>
 
         {/* Sidebar Nav Items */}
-        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+        <nav className="flex-1 px-3 py-5 space-y-1 overflow-y-auto">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeView === item.id;
@@ -372,13 +404,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <button
                 key={item.id}
                 onClick={() => handleNavItemClick(item.id)}
-                className={`w-full flex items-center gap-3.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all group cursor-pointer ${
+                className={`w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl text-xs font-bold transition-all group cursor-pointer relative ${
                   isActive
-                    ? "bg-[#d4fc34]/10 text-[#d4fc34] border-l-2 border-[#d4fc34]"
-                    : "text-slate-400 hover:text-white hover:bg-slate-900"
+                    ? "text-[#d4fc34]"
+                    : "text-slate-400 hover:text-white hover:bg-slate-900/60"
                 }`}
               >
-                <Icon className={`w-4.5 h-4.5 shrink-0 transition-transform ${isActive ? 'scale-105' : 'group-hover:scale-105'}`} />
+                {isActive && (
+                  <motion.div 
+                    layoutId="activeTabPill"
+                    className="absolute inset-0 bg-[#d4fc34]/10 rounded-xl border-l-[3px] border-[#d4fc34] -z-10"
+                    transition={{ type: 'spring', stiffness: 350, damping: 28 }}
+                  />
+                )}
+                <Icon className={`w-4.5 h-4.5 shrink-0 transition-transform ${isActive ? 'scale-105 text-[#d4fc34]' : 'group-hover:scale-105'}`} />
                 {!isCollapsed && (
                   <span className="truncate">{item.label}</span>
                 )}
@@ -388,21 +427,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </nav>
 
         {/* Sidebar Footer Account & Profile */}
-        <div className="p-3 border-t border-slate-900/60 bg-slate-1000/60">
+        <div className="p-3 border-t border-slate-900/50 bg-[#090d15]/50">
           {currentUser ? (
-            <div className={`flex items-center gap-3 ${isCollapsed ? "justify-center" : "px-2 py-1.5 bg-slate-900/40 rounded-xl border border-slate-900"}`}>
+            <div className={`flex items-center gap-3 ${isCollapsed ? "justify-center" : "px-2 py-1.5 bg-slate-900/30 rounded-xl border border-slate-900"}`}>
               <img 
                 src={currentUser.photoURL || `https://api.dicebear.com/7.x/adventurer/svg?seed=${currentUser.email}`} 
                 alt="Perfil" 
-                className="w-7 h-7 rounded-xl object-cover border border-[#22d3ee]/60 shrink-0" 
+                className="w-7.5 h-7.5 rounded-lg object-cover border border-[#d4fc34]/50 shrink-0" 
                 referrerPolicy="no-referrer"
               />
               {!isCollapsed && (
-                <div className="flex-1 min-w-0 animate-fade-in">
-                  <span className="block text-[10px] font-black text-white leading-none truncate">
+                <div className="flex-1 min-w-0">
+                  <span className="block text-[10px] font-black text-white leading-none truncate font-display">
                     {currentUser.displayName || 'Usuario'}
                   </span>
-                  <span className="block text-[8px] text-slate-500 font-mono leading-none truncate mt-0.5">
+                  <span className="block text-[8px] text-slate-500 font-mono leading-none truncate mt-1">
                     {currentUser.email}
                   </span>
                 </div>
@@ -410,7 +449,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               {!isCollapsed && (
                 <button
                   onClick={handleLogout}
-                  className="p-1 hover:text-red-400 text-slate-500 transition shrink-0"
+                  className="p-1 hover:text-red-400 text-slate-500 transition shrink-0 cursor-pointer"
                   title="Cerrar Sesión"
                 >
                   <LogOut className="w-3.5 h-3.5" />
@@ -420,22 +459,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
           ) : (
             <button
               onClick={() => setShowRegisterModal(true)}
-              className="w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-slate-900 hover:bg-slate-850 text-white text-xs font-bold rounded-xl transition border border-slate-805"
+              className="w-full flex items-center justify-center gap-2 px-3 py-3 bg-slate-900/60 hover:bg-slate-900 text-white text-xs font-bold rounded-xl transition border border-slate-800 cursor-pointer"
             >
-              <LogIn className="w-4 h-4 text-cyan-400 shrink-0" />
-              {!isCollapsed && <span>Ingresar con Gmail</span>}
+              <LogIn className="w-4 h-4 text-[#d4fc34] shrink-0" />
+              {!isCollapsed && <span className="font-display font-medium">Ingresar Gmail</span>}
             </button>
           )}
 
-          {/* Quick Admin switch indicator beneath if not collapsed */}
+          {/* Quick Admin switch indicator */}
           {!isCollapsed && (
-            <div className="mt-2.5 pt-2.5 border-t border-slate-900/60 flex items-center justify-between text-[9px] font-mono">
+            <div className="mt-3 pt-3 border-t border-slate-900/50 flex items-center justify-between text-[9px] font-mono px-1">
               <span className="text-slate-500 uppercase tracking-wider font-bold">ROL DE ACCESO:</span>
               <button
                 onClick={() => onChangeRole(userRole === "admin" ? "player" : "admin")}
-                className={`px-2 py-0.5 rounded uppercase font-bold text-[8px] transition-all tracking-wider ${
+                className={`px-2 py-0.5 rounded font-bold uppercase text-[8px] transition hover:translate-y-[-0.5px] cursor-pointer ${
                   userRole === "admin"
-                    ? "bg-cyan-500/10 text-cyan-400 border border-cyan-500/20"
+                    ? "bg-[#d4fc34]/15 text-[#d4fc34] border border-[#d4fc34]/30"
                     : "bg-slate-900 text-slate-400 border border-slate-800"
                 }`}
               >
@@ -446,328 +485,361 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </aside>
 
-      {/* MOBILE BAR SLIDEOUT DRAWER */}
-      {isMobileOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden flex">
-          {/* Backdrop mask */}
-          <div 
-            onClick={() => setIsMobileOpen(false)}
-            className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm transition-opacity"
-          ></div>
-          
-          {/* Drawer Panel */}
-          <aside className="w-72 bg-slate-950 border-r border-slate-900 h-full relative z-10 flex flex-col p-5 shadow-2xl animate-in slide-in-from-left duration-250">
-            <div className="flex items-center justify-between pb-5 border-b border-slate-900">
-              <div className="flex items-center gap-2">
-                <div className="bg-gradient-to-br from-[#d4fc34] to-lime-600 p-1.5 rounded-lg text-slate-950">
-                  <Trophy className="w-4 h-4 text-slate-950" />
-                </div>
-                <span className="font-extrabold text-sm tracking-wider text-[#d4fc34] uppercase font-sans">
-                  Circuitos <span className="text-white">PRO</span>
-                </span>
-              </div>
-              <button 
-                onClick={() => setIsMobileOpen(false)}
-                className="p-1.5 hover:bg-slate-900 text-slate-400 hover:text-white rounded-lg"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Nav List */}
-            <nav className="flex-1 py-6 space-y-1 overflow-y-auto">
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = activeView === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => handleNavItemClick(item.id)}
-                    className={`w-full flex items-center gap-3.5 px-3 py-3 rounded-xl text-xs font-bold transition-all group ${
-                      isActive
-                        ? "bg-[#d4fc34]/10 text-[#d4fc34] border-l-2 border-[#d4fc34]"
-                        : "text-slate-400 hover:text-white hover:bg-slate-900/60"
-                    }`}
-                  >
-                    <Icon className="w-4.5 h-4.5 shrink-0" />
-                    <span>{item.label}</span>
-                  </button>
-                );
-              })}
-            </nav>
-
-            {/* Profile footer inside mobile slideout */}
-            <div className="pt-4 border-t border-slate-900">
-              {currentUser ? (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3 px-1">
-                    <img 
-                      src={currentUser.photoURL || `https://api.dicebear.com/7.x/adventurer/svg?seed=${currentUser.email}`} 
-                      alt="Perfil" 
-                      className="w-9 h-9 rounded-xl object-cover border border-[#22d3ee]/60 shrink-0" 
-                    />
-                    <div className="min-w-0">
-                      <span className="block text-xs font-bold text-white truncate">{currentUser.displayName}</span>
-                      <span className="block text-[9px] text-slate-500 font-mono truncate mt-0.5">{currentUser.email}</span>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-2 text-[10px] font-mono">
-                    <button
-                      onClick={() => onChangeRole(userRole === "admin" ? "player" : "admin")}
-                      className={`py-2 px-3 rounded-xl uppercase font-bold text-center border transition-all ${
-                        userRole === "admin"
-                          ? "bg-cyan-500/10 text-cyan-400 border-cyan-500/20"
-                          : "bg-slate-900 text-slate-400 border-slate-800"
-                      }`}
-                    >
-                      {userRole === "admin" ? "⚡ ORG" : "👀 ESPECTADOR"}
-                    </button>
-                    <button
-                      onClick={handleLogout}
-                      className="py-2 px-3 bg-red-950/20 text-red-400 hover:bg-red-950/40 rounded-xl border border-red-900/25 flex items-center justify-center gap-1.5 font-bold uppercase"
-                    >
-                      <LogOut className="w-3.5 h-3.5" />
-                      <span>Salir</span>
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <button
-                  onClick={() => {
-                    setIsMobileOpen(false);
-                    setShowRegisterModal(true);
-                  }}
-                  className="w-full py-2.5 bg-[#d4fc34] hover:bg-[#c5f015] text-slate-950 font-black text-xs rounded-xl transition uppercase tracking-wider flex items-center justify-center gap-1.5"
-                >
-                  <LogIn className="w-4 h-4 text-slate-950 shrink-0" />
-                  <span>Ingresar con Gmail</span>
-                </button>
-              )}
-            </div>
-          </aside>
-        </div>
-      )}
-
-      {/* NOTIFICATIONS TRAY SYSTEM */}
-      {showNotifications && (
-        <div className="fixed inset-0 z-50 flex justify-end p-4 lg:p-8 animate-in fade-in duration-200 pointer-events-none">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl relative z-10 self-start pointer-events-auto mt-14 lg:mt-6 animate-in slide-in-from-right duration-250">
-            <div className="px-4 py-3 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
-              <span className="font-extrabold text-xs text-white uppercase tracking-wider font-display">
-                Notificaciones ({unreadCount})
-              </span>
-              <div className="flex gap-2">
-                <button 
-                  onClick={onMarkAllRead} 
-                  className="text-[10px] text-[#d4fc34] hover:underline cursor-pointer"
-                >
-                  Marcar leídas
-                </button>
-                <button 
-                  onClick={() => setShowNotifications(false)} 
-                  className="text-slate-400 hover:text-white"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
+      {/* MOBILE BAR SLIDEOUT DRAWER (DRAWER SIDE-MODAL) */}
+      <AnimatePresence>
+        {isMobileOpen && (
+          <div className="fixed inset-0 z-50 lg:hidden flex">
+            {/* Backdrop mask */}
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsMobileOpen(false)}
+              className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm pointer-events-auto"
+            />
             
-            <div className="max-h-[350px] overflow-y-auto divide-y divide-slate-800/80">
-              {notifications.length === 0 ? (
-                <div className="p-6 text-center text-slate-500 text-xs font-mono">
-                  No hay notificaciones cargadas.
-                </div>
-              ) : (
-                notifications.map((notif) => (
-                  <div key={notif.id} className={`p-4 space-y-1 transition ${notif.read ? 'opacity-60' : 'bg-slate-850/30'}`}>
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-bold text-xs text-slate-150">{notif.title}</span>
-                      <span className="text-[8px] text-slate-500 font-mono">{notif.timestamp ? notif.timestamp.slice(11, 16) : ""} h</span>
-                    </div>
-                    <p className="text-[11px] text-slate-400 leading-normal">{notif.message}</p>
+            {/* Drawer Panel */}
+            <motion.aside 
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+              className="w-72 bg-[#090d16] border-r border-slate-900/90 h-full relative z-10 flex flex-col p-5 shadow-2.5xl"
+            >
+              <div className="flex items-center justify-between pb-5 border-b border-slate-900">
+                <div className="flex items-center gap-2">
+                  <div className="bg-gradient-to-br from-[#d4fc34] to-lime-600 p-1.5 rounded-lg text-slate-950">
+                    <Trophy className="w-4 h-4 text-slate-950" />
                   </div>
-                ))
-              )}
-            </div>
-
-            {notifications.length > 0 && (
-              <div className="p-3 bg-slate-950/50 text-center border-t border-slate-805">
-                <button 
-                  onClick={onClearNotifications}
-                  className="text-[10px] text-red-400 hover:underline cursor-pointer"
-                >
-                  Borrar todas las alertas
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* REGISTRATION MODAL FORM */}
-      {showRegisterModal && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full overflow-hidden shadow-2xl relative my-8">
-            
-            <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 bg-cyan-500/10 border border-cyan-500/30 rounded-lg">
-                  <Trophy className="w-4 h-4 text-cyan-400" />
-                </div>
-                <div>
-                  <h3 className="font-extrabold text-white text-sm">Registrarse con Gmail</h3>
-                  <span className="text-[9px] text-slate-400 block font-mono">Padel Pro Single Sign-On Hybrid</span>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowRegisterModal(false)}
-                className="p-1.5 hover:bg-slate-800 text-slate-400 hover:text-white rounded-lg transition"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
-              {regError && (
-                <div className="p-3 bg-red-950/45 border border-red-900/60 rounded-xl text-[11px] text-red-400 font-medium whitespace-pre-wrap leading-relaxed">
-                  {regError}
-                </div>
-              )}
-
-              <div className="space-y-1.5">
-                <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest font-mono block">MÉTODO AUTOMÁTICO RECOMENDADO:</span>
-                <button
-                  type="button"
-                  onClick={handleGoogleLogin}
-                  disabled={googleLoading}
-                  className="w-full py-2.5 bg-white hover:bg-gray-100 text-slate-950 font-black text-xs rounded-xl transition cursor-pointer flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 uppercase tracking-wider"
-                >
-                  <img 
-                    src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" 
-                    alt="Google" 
-                    className="w-4 h-4"
-                  />
-                  <span>{googleLoading ? 'Iniciando sesión...' : 'Ingresar con cuenta Google'}</span>
-                </button>
-              </div>
-
-              <div className="relative flex py-2 items-center">
-                <div className="flex-grow border-t border-slate-800"></div>
-                <span className="flex-shrink mx-3 text-[9px] text-slate-500 font-mono uppercase tracking-widest leading-none">ó Registro Manual Directo</span>
-                <div className="flex-grow border-t border-slate-800"></div>
-              </div>
-
-              <form onSubmit={handleLocalRegisterSubmit} className="space-y-3 text-left">
-                <div className="p-3 bg-blue-950/20 border border-blue-900/30 rounded-xl text-[10px] text-blue-300 leading-normal font-mono flex items-start gap-2">
-                  <Sparkles className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5 animate-pulse" />
-                  <span>
-                    Si Google Sign-In presenta un error debido a la API Key, puedes completar este registro de resguardo con cualquier cuenta <strong>@gmail.com</strong>.
+                  <span className="font-display font-black text-xs tracking-wider text-[#d4fc34] uppercase">
+                    SRTC <span className="text-white">PADEL</span>
                   </span>
                 </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase font-mono block">Email de Gmail *</label>
-                    <input
-                      type="email"
-                      required
-                      placeholder="ejemplo@gmail.com"
-                      value={regForm.email}
-                      onChange={e => setRegForm({...regForm, email: e.target.value})}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-cyan-500/50 font-mono"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase font-mono block">CUIT *</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="CUIT del competidor"
-                      value={regForm.dni}
-                      onChange={e => setRegForm({...regForm, dni: e.target.value})}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-cyan-500/50 font-mono"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase font-mono block">Nombre *</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Nombre"
-                      value={regForm.firstName}
-                      onChange={e => setRegForm({...regForm, firstName: e.target.value})}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-cyan-500/50"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase font-mono block">Apellido *</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Apellido"
-                      value={regForm.lastName}
-                      onChange={e => setRegForm({...regForm, lastName: e.target.value})}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-cyan-500/50"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase font-mono block">Teléfono / WhatsApp</label>
-                    <input
-                      type="tel"
-                      placeholder="+54 9..."
-                      value={regForm.phone}
-                      onChange={e => setRegForm({...regForm, phone: e.target.value})}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-cyan-500/50 font-mono"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase font-mono block">Ciudad</label>
-                    <input
-                      type="text"
-                      placeholder="Ciudad"
-                      value={regForm.city}
-                      onChange={e => setRegForm({...regForm, city: e.target.value})}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-cyan-500/50"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-1 pt-1">
-                  <label className="text-[9px] font-bold text-slate-400 uppercase font-mono block">Categoría de Ficha Padel *</label>
-                  <select
-                    required
-                    value={regForm.category}
-                    onChange={e => setRegForm({...regForm, category: e.target.value})}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500/50 block"
-                  >
-                    <option value="Libre Masculina">Libre Masculina</option>
-                    <option value="4ta Masculina">4ta Masculina</option>
-                    <option value="5ta Masculina">5ta Masculina</option>
-                    <option value="6ta Masculina">6ta Masculina</option>
-                    <option value="7ma Masculina">7ma Masculina</option>
-                    <option value="6ta Femenina">6ta Femenina</option>
-                    <option value="7ma Femenina">7ma Femenina</option>
-                  </select>
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-black text-xs rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 shadow-lg uppercase tracking-wider mt-3"
+                <button 
+                  onClick={() => setIsMobileOpen(false)}
+                  className="p-1.5 hover:bg-slate-900 text-slate-400 hover:text-white rounded-lg cursor-pointer"
                 >
-                  <Sparkles className="w-4 h-4 text-slate-950 shrink-0" />
-                  <span>Registrarme e Ingresar</span>
+                  <X className="w-4.5 h-4.5" />
                 </button>
-              </form>
-            </div>
+              </div>
+
+              {/* Drawer Extra Actions / Profile Settings */}
+              <div className="flex-1 py-6 space-y-4 overflow-y-auto">
+                <span className="text-[9px] font-mono font-bold tracking-widest text-slate-500 uppercase block">Menú del Competidor</span>
+                <div className="space-y-1">
+                  {navItems.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = activeView === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => handleNavItemClick(item.id)}
+                        className={`w-full flex items-center gap-3.5 px-3 py-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                          isActive
+                            ? "bg-[#d4fc34]/10 text-[#d4fc34] border-l-2 border-[#d4fc34]"
+                            : "text-slate-400 hover:text-white hover:bg-slate-900/40"
+                        }`}
+                      >
+                        <Icon className="w-4.5 h-4.5 shrink-0" />
+                        <span>{item.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Profile footer inside mobile slideout */}
+              <div className="pt-4 border-t border-slate-900">
+                {currentUser ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3 px-1">
+                      <img 
+                        src={currentUser.photoURL || `https://api.dicebear.com/7.x/adventurer/svg?seed=${currentUser.email}`} 
+                        alt="Perfil" 
+                        className="w-9 h-9 rounded-xl object-cover border border-[#d4fc34]/50 shrink-0" 
+                      />
+                      <div className="min-w-0">
+                        <span className="block text-xs font-bold text-white truncate font-display">{currentUser.displayName}</span>
+                        <span className="block text-[9px] text-slate-550 font-mono truncate mt-0.5">{currentUser.email}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-2 text-[10px] font-mono">
+                      <button
+                        onClick={() => {
+                          onChangeRole(userRole === "admin" ? "player" : "admin");
+                        }}
+                        className={`py-2 px-3 rounded-xl uppercase font-bold text-center border transition-all cursor-pointer ${
+                          userRole === "admin"
+                            ? "bg-[#d4fc34]/15 text-[#d4fc34] border-[#d4fc34]/30"
+                            : "bg-slate-900 text-slate-400 border-slate-800"
+                        }`}
+                      >
+                        {userRole === "admin" ? "⚡ ORG" : "👀 SPECTATOR"}
+                      </button>
+                      <button
+                        onClick={() => {
+                          handleLogout();
+                          setIsMobileOpen(false);
+                        }}
+                        className="py-2 px-3 bg-red-950/20 text-red-400 hover:bg-red-950/40 rounded-xl border border-red-900/20 flex items-center justify-center gap-1.5 font-bold uppercase cursor-pointer"
+                      >
+                        <LogOut className="w-3.5 h-3.5" />
+                        <span>Salir</span>
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => {
+                      setIsMobileOpen(false);
+                      setShowRegisterModal(true);
+                    }}
+                    className="w-full py-3 bg-[#d4fc34] hover:bg-[#bde61f] text-slate-950 font-black text-xs rounded-xl transition uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md cursor-pointer"
+                  >
+                    <LogIn className="w-4 h-4 text-slate-950 shrink-0" />
+                    <span>Ficharse</span>
+                  </button>
+                )}
+              </div>
+            </motion.aside>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
+
+      {/* NOTIFICATIONS TRAY SYSTEM */}
+      <AnimatePresence>
+        {showNotifications && (
+          <div className="fixed inset-0 z-50 flex justify-end p-4 lg:p-8 animate-in fade-in duration-200 pointer-events-none">
+            <motion.div 
+              initial={{ opacity: 0, y: -10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.95 }}
+              className="bg-slate-900 border border-slate-800/80 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl relative z-10 self-start pointer-events-auto mt-14 lg:mt-6"
+            >
+              <div className="px-4 py-3 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+                <span className="font-extrabold text-xs text-white uppercase tracking-wider font-display">
+                  Notificaciones ({unreadCount})
+                </span>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={onMarkAllRead} 
+                    className="text-[10px] text-[#d4fc34] hover:underline cursor-pointer"
+                  >
+                    Marcar leídas
+                  </button>
+                  <button 
+                    onClick={() => setShowNotifications(false)} 
+                    className="text-slate-400 hover:text-white cursor-pointer"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+              
+              <div className="max-h-[350px] overflow-y-auto divide-y divide-slate-800/60">
+                {notifications.length === 0 ? (
+                  <div className="p-6 text-center text-slate-500 text-xs font-mono">
+                    No hay notificaciones cargadas.
+                  </div>
+                ) : (
+                  notifications.map((notif) => (
+                    <div key={notif.id} className={`p-4 space-y-1 transition ${notif.read ? 'opacity-60' : 'bg-slate-850/15'}`}>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-bold text-xs text-slate-150">{notif.title}</span>
+                        <span className="text-[8px] text-slate-550 font-mono">{notif.timestamp ? notif.timestamp.slice(11, 16) : ""} h</span>
+                      </div>
+                      <p className="text-[11px] text-slate-400 leading-normal">{notif.message}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {notifications.length > 0 && (
+                <div className="p-3 bg-slate-950/50 text-center border-t border-slate-900">
+                  <button 
+                    onClick={onClearNotifications}
+                    className="text-[10px] text-red-400 hover:underline cursor-pointer"
+                  >
+                    Borrar todas las de la lista
+                  </button>
+                </div>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* REGISTRATION MODAL FORM */}
+      <AnimatePresence>
+        {showRegisterModal && (
+          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 z-50 overflow-y-auto">
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0, y: 15 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 15 }}
+              className="bg-slate-900 border border-slate-800/95 rounded-2xl max-w-md w-full overflow-hidden shadow-2xl relative my-8"
+            >
+              <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 bg-[#d4fc34]/10 border border-[#d4fc34]/20 rounded-lg">
+                    <Trophy className="w-4 h-4 text-[#d4fc34]" />
+                  </div>
+                  <div>
+                    <h3 className="font-black text-white text-xs font-display uppercase tracking-widest">Ficha del Competidor</h3>
+                    <span className="text-[9px] text-[#d4fc34] block font-mono">Autenticación híbrida federada</span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowRegisterModal(false)}
+                  className="p-1.5 hover:bg-slate-800 text-slate-400 hover:text-white rounded-lg transition cursor-pointer"
+                >
+                  <X className="w-4.5 h-4.5" />
+                </button>
+              </div>
+
+              <div className="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
+                {regError && (
+                  <div className="p-3 bg-red-950/45 border border-red-900/60 rounded-xl text-[11px] text-red-400 font-medium whitespace-pre-wrap leading-relaxed">
+                    {regError}
+                  </div>
+                )}
+
+                <div className="space-y-1.5">
+                  <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest font-mono block">MÉTODO AUTOMÁTICO RECOMENDADO:</span>
+                  <button
+                    type="button"
+                    onClick={handleGoogleLogin}
+                    disabled={googleLoading}
+                    className="w-full py-2.5 bg-white hover:bg-gray-100 text-slate-950 font-black text-xs rounded-xl transition cursor-pointer flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 uppercase tracking-wider"
+                  >
+                    <img 
+                      src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" 
+                      alt="Google" 
+                      className="w-4 h-4"
+                    />
+                    <span>{googleLoading ? 'Iniciando sesión...' : 'Ingresar con cuenta Google'}</span>
+                  </button>
+                </div>
+
+                <div className="relative flex py-2 items-center">
+                  <div className="flex-grow border-t border-slate-800"></div>
+                  <span className="flex-shrink mx-3 text-[9px] text-slate-500 font-mono uppercase tracking-widest leading-none">ó Registro Manual Directo</span>
+                  <div className="flex-grow border-t border-slate-800"></div>
+                </div>
+
+                <form onSubmit={handleLocalRegisterSubmit} className="space-y-4 text-left">
+                  <div className="p-3 bg-[#d4fc34]/10 border border-[#d4fc34]/20 rounded-xl text-[10px] text-slate-300 leading-normal font-mono flex items-start gap-2">
+                    <Sparkles className="w-3.5 h-3.5 text-[#d4fc34] shrink-0 mt-0.5 animate-pulse" />
+                    <span>
+                      Si Google Sign-In presenta un error debido a la API Key, puedes completar este registro de resguardo con cualquier cuenta <strong>@gmail.com</strong>.
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-bold text-slate-400 uppercase font-mono block">Email de Gmail *</label>
+                      <input
+                        type="email"
+                        required
+                        placeholder="ejemplo@gmail.com"
+                        value={regForm.email}
+                        onChange={e => setRegForm({...regForm, email: e.target.value})}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#d4fc34]/50 font-mono"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-bold text-slate-400 uppercase font-mono block">DNI *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Documento único"
+                        value={regForm.dni}
+                        onChange={e => setRegForm({...regForm, dni: e.target.value})}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#d4fc34]/50 font-mono"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-bold text-slate-400 uppercase font-mono block">Nombre *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Nombre completo"
+                        value={regForm.firstName}
+                        onChange={e => setRegForm({...regForm, firstName: e.target.value})}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#d4fc34]/50"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-bold text-slate-400 uppercase font-mono block">Apellido *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Apellido registrado"
+                        value={regForm.lastName}
+                        onChange={e => setRegForm({...regForm, lastName: e.target.value})}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#d4fc34]/50"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-bold text-slate-400 uppercase font-mono block">WhatsApp</label>
+                      <input
+                        type="tel"
+                        placeholder="Tel de contacto"
+                        value={regForm.phone}
+                        onChange={e => setRegForm({...regForm, phone: e.target.value})}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#d4fc34]/50 font-mono"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-bold text-slate-400 uppercase font-mono block">Ciudad de Residencia</label>
+                      <input
+                        type="text"
+                        placeholder="Localidad"
+                        value={regForm.city}
+                        onChange={e => setRegForm({...regForm, city: e.target.value})}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#d4fc34]/50"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1 pt-1">
+                    <label className="text-[9px] font-bold text-slate-400 uppercase font-mono block">Categoría de Inscripción Oficial *</label>
+                    <select
+                      required
+                      value={regForm.category}
+                      onChange={e => setRegForm({...regForm, category: e.target.value})}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#d4fc34]/55 block appearance-none"
+                    >
+                      <option value="Libre Masculina">Libre Masculina</option>
+                      <option value="4ta Masculina">4ta Masculina</option>
+                      <option value="5ta Masculina">5ta Masculina</option>
+                      <option value="6ta Masculina">6ta Masculina</option>
+                      <option value="7ma Masculina">7ma Masculina</option>
+                      <option value="6ta Femenina">6ta Femenina</option>
+                      <option value="7ma Femenina">7ma Femenina</option>
+                    </select>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="btn-padel-primary w-full py-3 text-slate-950 font-black text-xs rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 shadow-lg uppercase tracking-wider mt-4"
+                  >
+                    <Sparkles className="w-4 h-4 text-slate-950 shrink-0" />
+                    <span>Matricularse y Acceder</span>
+                  </button>
+                </form>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </>
   );
 };
