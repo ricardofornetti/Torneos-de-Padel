@@ -13,11 +13,11 @@ import {
   Save, 
   Sparkles,
   ArrowRight,
-  Edit
+  Edit,
+  ArrowLeft
 } from 'lucide-react';
 import { repository } from '../lib/repository';
 import { Tournament, Pair, Match } from '../types';
-import { PageHeaderBanner, PageHeaderButton } from './ui/PageHeaderBanner';
 
 interface TournamentManagerProps {
   userRole: "admin" | "player";
@@ -912,46 +912,47 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
   });
 
   return (
-    <div className="w-full flex flex-col">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 animate-fade-in">
       
-      {/* Full-width header banner */}
-      <PageHeaderBanner
-        onBack={onBack}
-        gridPatternId="grid-tournaments"
-        eyebrow="Circuito Profesional"
-        eyebrowColor="blue"
-        title="Circuitos de Torneos"
-        description="Planificación, llaves automáticas y control reglamentario de competencias."
-        cornerBadge="TORNEO"
-        icon={
-          <svg className="w-14 h-14 relative z-10" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-            {/* Glowing hexagonal shield */}
-            <polygon points="50,15 80,30 80,70 50,85 20,70 20,30" stroke="#d4fc34" strokeWidth="2" fill="#0f172a" />
-            {/* Brackets line connections */}
-            <path d="M28,40 L38,40 L38,60 L28,60 M38,50 L50,50 L50,65" stroke="#d4fc34" strokeWidth="1.5" strokeLinecap="round" opacity="0.4" />
-            <path d="M72,40 L62,40 L62,60 L72,60 M62,50 L50,50" stroke="#d4fc34" strokeWidth="1.5" strokeLinecap="round" opacity="0.4" />
-            {/* Golden Champion Trophy */}
-            <path d="M42,32 L58,32 M44,32 L44,46 C44,52 56,52 56,46 L56,32 M50,49 L50,58 M43,58 L57,58" stroke="#facc15" strokeWidth="2.5" strokeLinecap="round" />
-            <path d="M38,36 C36,36 36,42 42,42 M62,36 C64,36 64,42 58,42" stroke="#facc15" strokeWidth="1.8" />
-            {/* Little star above */}
-            <polygon points="50,18 51,21 54,21 52,23 53,26 50,24 47,26 48,23 46,21 49,21" fill="#d4fc34" />
-          </svg>
-        }
-        actions={
-          userRole === "admin" && (
-            <PageHeaderButton
-              variant="primary"
-              icon={<Plus className="w-4 h-4" />}
-              onClick={handleOpenCreateForm}
-            >
-              Crear Torneo
-            </PageHeaderButton>
-          )
-        }
-      />
+      {onBack && (
+        <button
+          onClick={onBack}
+          className="group text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-[#d4fc34] transition-colors flex items-center gap-1.5 self-start mb-2"
+        >
+          <ArrowLeft className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#d4fc34]" />
+          <span>Volver</span>
+        </button>
+      )}
 
-      {/* Main page content wrapped in centered padding */}
-      <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      {/* Header section */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <span className="bg-[#d4fc34]/15 text-[#d4fc34] border border-[#d4fc34]/20 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest font-mono">
+              Circuito Profesional
+            </span>
+            <span className="bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest font-mono">
+              TORNEO
+            </span>
+          </div>
+          <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black uppercase tracking-wider text-white flex items-center gap-2.5">
+            <Trophy className="w-7 h-7 text-[#d4fc34]" /> Circuitos de Torneos
+          </h1>
+          <p className="text-xs text-slate-400 mt-1">
+            Planificación, llaves automáticas y control reglamentario de competencias.
+          </p>
+        </div>
+
+        {userRole === "admin" && (
+          <button
+            onClick={handleOpenCreateForm}
+            className="bg-[#d4fc34]/15 hover:bg-[#d4fc34] hover:text-slate-950 text-[#d4fc34] text-[10px] sm:text-xs font-black px-4 py-2.5 rounded-xl uppercase tracking-wider border border-[#d4fc34]/20 flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer self-start sm:self-center"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Crear Torneo</span>
+          </button>
+        )}
+      </div>
       {loading ? (
         <div className="text-center py-10 font-mono text-slate-500 text-xs">
           Comunicando con Firestore...
@@ -1405,7 +1406,6 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
         </div>
       )}
 
-      </div>
     </div>
   );
 };

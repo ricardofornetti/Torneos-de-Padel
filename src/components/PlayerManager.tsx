@@ -17,11 +17,11 @@ import {
   Image,
   Camera,
   Video,
-  VideoOff
+  VideoOff,
+  ArrowLeft
 } from 'lucide-react';
 import { repository } from '../lib/repository';
 import { Player } from '../types';
-import { PageHeaderBanner } from './ui/PageHeaderBanner';
 import { getFIPTop100Males, getFIPTop100Females } from '../lib/fipRankingsData';
 
 interface PlayerManagerProps {
@@ -353,32 +353,35 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole, onBack }
   });
 
   return (
-    <div className="w-full flex flex-col">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 animate-fade-in">
       
-      {/* Full-width header banner */}
-      <PageHeaderBanner
-        onBack={onBack}
-        gridPatternId="grid-players"
-        eyebrow="Base de Atletas"
-        eyebrowColor="indigo"
-        title="Registro de Jugadores"
-        description="Ficha oficial unificada de competidores registrados y acumuladores de ranking anual."
-        cornerBadge="JUGADORES"
-        icon={
-          <svg className="w-14 h-14 relative z-10" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-            {/* Card Shield Frame */}
-            <path d="M22,24 C34,20 66,20 78,24 C78,54 68,76 50,83 C32,76 22,54 22,24 Z" fill="#0f172a" stroke="#d4fc34" strokeWidth="2.5" />
-            {/* Photo Profile Silhouette */}
-            <circle cx="50" cy="38" r="9" fill="#1e293b" stroke="#d4fc34" strokeWidth="2" />
-            <path d="M34 62 C34 51 66 51 66 62" stroke="#d4fc34" strokeWidth="2" strokeLinecap="round" />
-            {/* Shiny crown above helmet profile */}
-            <polygon points="50,23 54,27 46,27" fill="#facc15" />
-          </svg>
-        }
-      />
+      {onBack && (
+        <button
+          onClick={onBack}
+          className="group text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-[#d4fc34] transition-colors flex items-center gap-1.5 self-start mb-2"
+        >
+          <ArrowLeft className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#d4fc34]" />
+          <span>Volver</span>
+        </button>
+      )}
 
-      {/* Main page content wrapped in centered padding */}
-      <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      {/* Header section */}
+      <div>
+        <div className="flex items-center gap-2 mb-2">
+          <span className="bg-[#d4fc34]/15 text-[#d4fc34] border border-[#d4fc34]/20 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest font-mono">
+            Base de Atletas
+          </span>
+          <span className="bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest font-mono">
+            JUGADORES
+          </span>
+        </div>
+        <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black uppercase tracking-wider text-white flex items-center gap-2.5">
+          <Users className="w-7 h-7 text-[#d4fc34]" /> Registro de Jugadores
+        </h1>
+        <p className="text-xs text-slate-400 mt-1">
+          Ficha oficial unificada de competidores registrados y acumuladores de ranking anual.
+        </p>
+      </div>
 
       {/* GENDER / RAMA TABS WITH ALIGNED REGISTRATION BUTTON */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between border-b border-slate-800 pb-px gap-3">
@@ -1057,7 +1060,6 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole, onBack }
         </div>
       )}
 
-      </div>
     </div>
   );
 };
