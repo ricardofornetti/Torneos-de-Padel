@@ -16,7 +16,6 @@ import {
 } from 'lucide-react';
 import { repository } from '../lib/repository';
 import { Court, Match, Pair, Player } from '../types';
-import { PageHeaderBanner, PageHeaderButton } from './ui/PageHeaderBanner';
 
 interface CourtManagerProps {
   userRole: "admin" | "player";
@@ -243,32 +242,53 @@ export const CourtManager: React.FC<CourtManagerProps> = ({ userRole, onBack }) 
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col animate-fade-in">
-      <PageHeaderBanner
-        onBack={onBack}
-        icon={<MapPin className="w-10 h-10 text-[#d4fc34]" />}
-        cornerBadge="COURT"
-        eyebrow="Sede Oficial"
-        eyebrowColor="emerald"
-        title="Complejos y Pistas"
-        description="Control en tiempo real de partidos en cancha, disponibilidad física y turnos de juego."
-        gridPatternId="grid-courts"
-        actions={
-          userRole === "admin" && (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 w-full flex-1">
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="group text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-[#d4fc34] transition-colors flex items-center gap-1.5 self-start mb-2 cursor-pointer"
+          >
+            <ArrowLeft className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#d4fc34]" />
+            <span>Volver</span>
+          </button>
+        )}
+
+        {/* Light Header (Style A) */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-900 pb-6">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="bg-[#d4fc34]/15 text-[#d4fc34] border border-[#d4fc34]/20 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest font-mono">
+                Sede Oficial
+              </span>
+              <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest font-mono">
+                PISTAS
+              </span>
+            </div>
+            <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black uppercase tracking-wider text-white flex items-center gap-2.5">
+              <MapPin className="w-7 h-7 text-[#d4fc34]" />
+              <span>Complejos y Pistas</span>
+            </h1>
+            <p className="text-xs text-slate-400 font-normal">
+              Control en tiempo real de partidos en cancha, disponibilidad física y turnos de juego.
+            </p>
+          </div>
+
+          {userRole === "admin" && (
             <div className="flex flex-wrap items-center gap-2 md:gap-3">
-              <PageHeaderButton
-                variant="primary"
+              <button
                 onClick={() => {
                   setEditingCourtId(null);
                   setCourtName("");
                   setCourtClub("");
                   setIsCourtFormOpen(true);
                 }}
-                icon={<Plus className="w-4 h-4" />}
+                className="bg-[#d4fc34]/15 hover:bg-[#d4fc34] hover:text-slate-950 text-[#d4fc34] text-xs font-black px-5 py-3 rounded-xl border border-[#d4fc34]/20 uppercase tracking-widest flex items-center gap-2 transition-all cursor-pointer shadow-sm hover:shadow-lg hover:shadow-[#d4fc34]/10"
               >
-                Agregar Cancha
-              </PageHeaderButton>
-              <PageHeaderButton
-                variant="secondary"
+                <Plus className="w-4 h-4" />
+                <span>Agregar Cancha</span>
+              </button>
+
+              <button
                 onClick={() => {
                   if (courts.length === 0) {
                     alert("No hay canchas registradas para gestionar.");
@@ -276,24 +296,23 @@ export const CourtManager: React.FC<CourtManagerProps> = ({ userRole, onBack }) 
                   }
                   setIsManageModalOpen(true);
                 }}
-                icon={<Edit className="w-4 h-4 text-[#d4fc34]" />}
+                className="bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 text-xs font-bold px-4 py-3 rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer uppercase tracking-wider whitespace-nowrap"
               >
-                {courts.length > 0 ? "Modificar y Eliminar" : "Gestionar"}
-              </PageHeaderButton>
-              <PageHeaderButton
-                variant="danger"
+                <Edit className="w-4 h-4 text-[#d4fc34]" />
+                <span>{courts.length > 0 ? "Modificar y Eliminar" : "Gestionar"}</span>
+              </button>
+
+              <button
                 onClick={handleDeleteAllCourts}
                 disabled={deletingCourts}
-                icon={<Trash2 className="w-3.5 h-3.5 text-red-500" />}
+                className="bg-red-955/20 hover:bg-red-900/40 border border-red-900/50 text-red-300 hover:text-white text-xs font-bold px-4 py-3 rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50 uppercase tracking-wider whitespace-nowrap"
               >
-                {deletingCourts ? 'Eliminando...' : 'Eliminar Canchas'}
-              </PageHeaderButton>
+                <Trash2 className="w-3.5 h-3.5 text-red-550" />
+                <span>{deletingCourts ? 'Eliminando...' : 'Eliminar Canchas'}</span>
+              </button>
             </div>
-          )
-        }
-      />
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 w-full flex-1">
+          )}
+        </div>
 
       {/* QUICK COURTS LIST */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

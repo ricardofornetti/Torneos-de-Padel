@@ -27,7 +27,6 @@ import {
 } from 'lucide-react';
 import { repository } from '../lib/repository';
 import { Player } from '../types';
-import { PageHeaderBanner, PageHeaderButton } from './ui/PageHeaderBanner';
 
 interface RankingManagerProps {
   userRole: "admin" | "player";
@@ -220,49 +219,68 @@ export const RankingManager: React.FC<RankingManagerProps> = ({ userRole, onBack
   const top3 = filteredPlayers[2];
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col animate-fade-in">
-      <PageHeaderBanner
-        onBack={onBack}
-        icon={<Award className="w-10 h-10 text-[#d4fc34]" />}
-        cornerBadge="RANK"
-        eyebrow="Clasificación de la Liga"
-        eyebrowColor="amber"
-        title="Ranking Oficial"
-        description="Cuadro de Honor y escalafón anual unificado de la liga profesional de pádel."
-        gridPatternId="grid-ranking"
-        actions={
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 w-full flex-1">
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="group text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-[#d4fc34] transition-colors flex items-center gap-1.5 self-start mb-2 cursor-pointer"
+          >
+            <ArrowLeft className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#d4fc34]" />
+            <span>Volver</span>
+          </button>
+        )}
+
+        {/* Light Header (Style A) */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-900 pb-6">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="bg-[#d4fc34]/15 text-[#d4fc34] border border-[#d4fc34]/20 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest font-mono">
+                Clasificación de la Liga
+              </span>
+              <span className="bg-amber-500/10 text-amber-500 border border-amber-500/20 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest font-mono">
+                RANKING
+              </span>
+            </div>
+            <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black uppercase tracking-wider text-white flex items-center gap-2.5">
+              <Award className="w-7 h-7 text-[#d4fc34]" />
+              <span>Ranking Oficial</span>
+            </h1>
+            <p className="text-xs text-slate-400 font-normal">
+              Cuadro de Honor y escalafón anual unificado de la liga profesional de pádel.
+            </p>
+          </div>
+
           <div className="flex flex-wrap items-center gap-2 md:gap-3">
-            <PageHeaderButton
-              variant="secondary"
+            <button
               onClick={handleExportCSV}
-              icon={<FileSpreadsheet className="w-3.5 h-3.5 text-[#d4fc34]" />}
+              className="bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 text-xs font-bold px-4 py-3 rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer uppercase tracking-wider whitespace-nowrap"
             >
-              Exportar XLS / CSV
-            </PageHeaderButton>
+              <FileSpreadsheet className="w-4 h-4 text-[#d4fc34]" />
+              <span>Exportar XLS / CSV</span>
+            </button>
+
             {userRole === "admin" && (
               <>
-                <PageHeaderButton
-                  variant="danger"
+                <button
                   onClick={handleResetPoints}
                   disabled={resetting}
-                  icon={<RotateCcw className={`w-3.5 h-3.5 text-red-500 ${resetting ? 'animate-spin' : ''}`} />}
+                  className="bg-red-950/20 hover:bg-red-900/40 border border-red-900/50 text-red-300 hover:text-white text-xs font-bold px-4 py-3 rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50 uppercase tracking-wider whitespace-nowrap"
                 >
-                  {resetting ? 'Reiniciando...' : 'Reiniciar Puntos'}
-                </PageHeaderButton>
-                <PageHeaderButton
-                  variant="danger"
+                  <RotateCcw className={`w-3.5 h-3.5 text-red-500 ${resetting ? 'animate-spin' : ''}`} /> 
+                  <span>{resetting ? 'Reiniciando...' : 'Reiniciar Puntos'}</span>
+                </button>
+                <button
                   onClick={handleDeleteAllPlayers}
                   disabled={deletingPlayers}
-                  icon={<Trash2 className="w-3.5 h-3.5 text-red-500" />}
+                  className="bg-red-950/20 hover:bg-red-900/40 border border-red-900/50 text-red-300 hover:text-white text-xs font-bold px-4 py-3 rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50 uppercase tracking-wider whitespace-nowrap"
                 >
-                  {deletingPlayers ? 'Eliminando...' : 'Eliminar Jugadores'}
-                </PageHeaderButton>
+                  <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                  <span>{deletingPlayers ? 'Eliminando...' : 'Eliminar Jugadores'}</span>
+                </button>
               </>
             )}
           </div>
-        }
-      />
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 w-full flex-1">
+        </div>
 
       {/* SECCIÓN CATEGORÍAS ORGANIZADAS */}
       <div className="bg-slate-900 border border-slate-800 p-5 rounded-xl space-y-4">

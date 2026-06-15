@@ -23,7 +23,6 @@ import {
 import { repository } from '../lib/repository';
 import { Player, PlayerPrivateData } from '../types';
 import { getFIPTop100Males, getFIPTop100Females } from '../lib/fipRankingsData';
-import { PageHeaderBanner, PageHeaderButton } from './ui/PageHeaderBanner';
 
 interface PlayerManagerProps {
   userRole: "admin" | "player";
@@ -386,38 +385,56 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole, onBack }
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col animate-fade-in">
-      <PageHeaderBanner
-        onBack={onBack}
-        icon={<Users className="w-10 h-10 text-[#d4fc34]" />}
-        cornerBadge="PLAYER"
-        eyebrow="Base de Atletas"
-        eyebrowColor="emerald"
-        title="Registro de Jugadores"
-        description="Ficha oficial unificada de competidores registrados y acumuladores de ranking anual."
-        gridPatternId="grid-players"
-        actions={
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 w-full flex-1">
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="group text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-[#d4fc34] transition-colors flex items-center gap-1.5 self-start mb-2 cursor-pointer"
+          >
+            <ArrowLeft className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#d4fc34]" />
+            <span>Volver</span>
+          </button>
+        )}
+
+        {/* Light Header (Style A) */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-900 pb-6">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="bg-[#d4fc34]/15 text-[#d4fc34] border border-[#d4fc34]/20 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest font-mono">
+                Base de Atletas
+              </span>
+              <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest font-mono">
+                JUGADORES
+              </span>
+            </div>
+            <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black uppercase tracking-wider text-white flex items-center gap-2.5">
+              <Users className="w-7 h-7 text-[#d4fc34]" />
+              <span>Registro de Jugadores</span>
+            </h1>
+            <p className="text-xs text-slate-400 font-normal">
+              Ficha oficial unificada de competidores registrados y acumuladores de ranking anual.
+            </p>
+          </div>
+
           <div className="flex flex-wrap items-center gap-2 md:gap-3">
             {userRole === "admin" && (
-              <PageHeaderButton
-                variant="secondary"
+              <button
                 onClick={handleImportFIPPlayers}
+                className="bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 text-xs font-bold px-4 py-3 rounded-xl flex items-center gap-1.5 transition cursor-pointer uppercase tracking-wider text-center"
                 title="Cargar automáticamente 100 jugadores premium por categoría (700 jugadores en total: 50% de origen FIP real)"
               >
-                🎾 Cargar Ránking FIP
-              </PageHeaderButton>
+                <span>🎾 Cargar Ránking FIP</span>
+              </button>
             )}
-            <PageHeaderButton
-              variant="primary"
+            <button
               onClick={handleOpenCreateForm}
-              icon={<Plus className="w-4 h-4" />}
+              className="bg-[#d4fc34]/15 hover:bg-[#d4fc34] hover:text-slate-950 text-[#d4fc34] text-xs font-black px-5 py-3 rounded-xl border border-[#d4fc34]/20 uppercase tracking-widest flex items-center gap-2 transition-all cursor-pointer shadow-sm hover:shadow-lg hover:shadow-[#d4fc34]/10"
             >
-              {userRole === "admin" ? "Registrar Jugador" : "Inscribirse como Jugador"}
-            </PageHeaderButton>
+              <Plus className="w-4 h-4" />
+              <span>{userRole === "admin" ? "Registrar Jugador" : "Inscribirse como Jugador"}</span>
+            </button>
           </div>
-        }
-      />
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 w-full flex-1">
+        </div>
         
         {/* GENDER / RAMA TABS WITH ALIGNED REGISTRATION BUTTON */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between border-b border-slate-800 pb-px gap-3">

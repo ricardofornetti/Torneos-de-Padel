@@ -18,7 +18,6 @@ import {
 } from 'lucide-react';
 import { repository } from '../lib/repository';
 import { GalleryMedia, Tournament, Match } from '../types';
-import { PageHeaderBanner, PageHeaderButton } from './ui/PageHeaderBanner';
 
 interface GalleryProps {
   userRole: "admin" | "player";
@@ -171,29 +170,49 @@ export const Gallery: React.FC<GalleryProps> = ({ userRole, onBack }) => {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col animate-fade-in">
-      <PageHeaderBanner
-        onBack={onBack}
-        icon={<Camera className="w-10 h-10 text-[#d4fc34]" />}
-        cornerBadge="LIVE"
-        eyebrow="Cobertura Oficial"
-        eyebrowColor="cyan"
-        title="Galería Oficial"
-        description="Visualizador de fotografías, resúmenes multimedia y momentos decisivos del circuito."
-        gridPatternId="grid-gallery"
-        actions={
-          userRole === "admin" ? (
-            <PageHeaderButton
-              variant="primary"
-              onClick={handleOpenForm}
-              icon={<Plus className="w-4 h-4" />}
-            >
-              Cargar Multimedia
-            </PageHeaderButton>
-          ) : undefined
-        }
-      />
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 w-full flex-1">
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="group text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-[#d4fc34] transition-colors flex items-center gap-1.5 self-start mb-2 cursor-pointer"
+          >
+            <ArrowLeft className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#d4fc34]" />
+            <span>Volver</span>
+          </button>
+        )}
+
+        {/* Light Header (Style A) */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-900 pb-6">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="bg-[#d4fc34]/15 text-[#d4fc34] border border-[#d4fc34]/20 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest font-mono">
+                Cobertura Oficial
+              </span>
+              <span className="bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest font-mono">
+                EN VIVO
+              </span>
+            </div>
+            <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black uppercase tracking-wider text-white flex items-center gap-2.5">
+              <Camera className="w-7 h-7 text-[#d4fc34]" />
+              <span>Galería Oficial</span>
+            </h1>
+            <p className="text-xs text-slate-400 font-normal">
+              Visualizador de fotografías, resúmenes multimedia y momentos decisivos del circuito.
+            </p>
+          </div>
+
+          {userRole === "admin" && (
+            <div className="self-start md:self-center">
+              <button
+                onClick={handleOpenForm}
+                className="bg-[#d4fc34]/15 hover:bg-[#d4fc34] hover:text-slate-950 text-[#d4fc34] text-xs font-black px-5 py-3 rounded-xl border border-[#d4fc34]/20 uppercase tracking-widest flex items-center gap-2 transition-all cursor-pointer shadow-sm hover:shadow-lg hover:shadow-[#d4fc34]/10"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Cargar Multimedia</span>
+              </button>
+            </div>
+          )}
+        </div>
 
       {/* FILTER & STATS BANNER */}
       <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">

@@ -18,7 +18,6 @@ import {
 } from 'lucide-react';
 import { repository } from '../lib/repository';
 import { Tournament, Pair, Match, Player, PlayerPrivateData } from '../types';
-import { PageHeaderBanner, PageHeaderButton } from './ui/PageHeaderBanner';
 
 interface TournamentManagerProps {
   userRole: "admin" | "player";
@@ -926,29 +925,49 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col animate-fade-in">
-      <PageHeaderBanner
-        onBack={onBack}
-        icon={<Trophy className="w-10 h-10 text-[#d4fc34]" />}
-        cornerBadge="TOUR"
-        eyebrow="Circuito Profesional"
-        eyebrowColor="blue"
-        title="Circuitos de Torneos"
-        description="Planificación, llaves automáticas y control reglamentario de competencias."
-        gridPatternId="grid-tournaments"
-        actions={
-          userRole === "admin" ? (
-            <PageHeaderButton
-              variant="primary"
-              onClick={handleOpenCreateForm}
-              icon={<Plus className="w-4 h-4" />}
-            >
-              Crear Torneo
-            </PageHeaderButton>
-          ) : undefined
-        }
-      />
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 w-full flex-1">
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="group text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-[#d4fc34] transition-colors flex items-center gap-1.5 self-start mb-2 cursor-pointer"
+          >
+            <ArrowLeft className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#d4fc34]" />
+            <span>Volver</span>
+          </button>
+        )}
+
+        {/* Light Header (Style A) */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-900 pb-6">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="bg-[#d4fc34]/15 text-[#d4fc34] border border-[#d4fc34]/20 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest font-mono">
+                Circuito Profesional
+              </span>
+              <span className="bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest font-mono">
+                TOUR
+              </span>
+            </div>
+            <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black uppercase tracking-wider text-white flex items-center gap-2.5">
+              <Trophy className="w-7 h-7 text-[#d4fc34]" />
+              <span>Circuitos de Torneos</span>
+            </h1>
+            <p className="text-xs text-slate-400 font-normal">
+              Planificación, llaves automáticas y control reglamentario de competencias.
+            </p>
+          </div>
+
+          {userRole === "admin" && (
+            <div className="self-start md:self-center">
+              <button
+                onClick={handleOpenCreateForm}
+                className="bg-[#d4fc34]/15 hover:bg-[#d4fc34] hover:text-slate-950 text-[#d4fc34] text-xs font-black px-5 py-3 rounded-xl border border-[#d4fc34]/20 uppercase tracking-widest flex items-center gap-2 transition-all cursor-pointer shadow-sm hover:shadow-lg hover:shadow-[#d4fc34]/10"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Crear Torneo</span>
+              </button>
+            </div>
+          )}
+        </div>
       {loading ? (
         <div className="text-center py-10 font-mono text-slate-500 text-xs">
           Comunicando con Firestore...
