@@ -3019,31 +3019,60 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
     <div className="space-y-6">
       
       {viewMode === "isolated" ? (
-        <div className="space-y-6 animate-fade-in w-full">
-          <PageHeaderBanner
-            onBack={() => setViewMode("dashboard")}
-            gridPatternId="isolated-header"
-            cornerBadge={selectedCategory.toUpperCase()}
-            eyebrow={tournament.name.toUpperCase()}
-            eyebrowColor="indigo"
-            title={
-              activeTab === "inscriptions" ? "Inscripciones" :
-              activeTab === "matches" ? "Partidos" :
-              activeTab === "standings" ? "Posiciones" : "Playoffs"
-            }
-            description={
-              activeTab === "inscriptions" ? "Lista oficial de parejas inscritas y cargadas en esta categoría para este torneo." :
-              activeTab === "matches" ? "Cronograma oficial de juego, asignación de pistas y carga de resultados en tiempo real." :
-              activeTab === "standings" ? "Tabla de posiciones oficiales, de zonas y clasificación de la categoría activa." :
-              "Cuadros de llaves principales, cruces directos y fase de eliminación playoffs."
-            }
-            icon={
-              activeTab === "inscriptions" ? <ClipboardList className="w-10 h-10 text-[#d4fc34]" /> :
-              activeTab === "matches" ? <Calendar className="w-10 h-10 text-[#d4fc34]" /> :
-              activeTab === "standings" ? <BarChart2 className="w-10 h-10 text-[#d4fc34]" /> :
-              <GitBranch className="w-10 h-10 text-[#d4fc34]" />
-            }
-            actions={
+        <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 pb-20 animate-fade-in">
+          
+          {/* Back link */}
+          <button
+            onClick={() => setViewMode("dashboard")}
+            className="group text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-[#d4fc34] transition-colors flex items-center gap-1.5 self-start mb-2 cursor-pointer"
+          >
+            <ArrowLeft className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#d4fc34]" />
+            <span>Volver</span>
+          </button>
+
+          {/* Light Header (Style A) */}
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="bg-[#d4fc34]/15 text-[#d4fc34] border border-[#d4fc34]/20 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest font-mono">
+                  OFFICIAL LIVE SHEET
+                </span>
+                <span className="bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest font-mono">
+                  {selectedCategory.toUpperCase()}
+                </span>
+              </div>
+              <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black uppercase tracking-wider text-white flex items-center gap-2.5">
+                {activeTab === "inscriptions" ? (
+                  <>
+                    <ClipboardList className="w-7 h-7 text-[#d4fc34]" />
+                    <span>Inscripciones</span>
+                  </>
+                ) : activeTab === "matches" ? (
+                  <>
+                    <Calendar className="w-7 h-7 text-[#d4fc34]" />
+                    <span>Partidos</span>
+                  </>
+                ) : activeTab === "standings" ? (
+                  <>
+                    <BarChart2 className="w-7 h-7 text-[#d4fc34]" />
+                    <span>Posiciones</span>
+                  </>
+                ) : (
+                  <>
+                    <GitBranch className="w-7 h-7 text-[#d4fc34]" />
+                    <span>Cuadros</span>
+                  </>
+                )}
+              </h1>
+              <p className="text-xs text-slate-400">
+                {activeTab === "inscriptions" ? "Lista oficial de parejas inscritas y cargadas en esta categoría para este torneo." :
+                 activeTab === "matches" ? "Cronograma oficial de juego, asignación de pistas y carga de resultados en tiempo real." :
+                 activeTab === "standings" ? "Tabla de posiciones oficiales, de zonas y clasificación de la categoría activa." :
+                 "Cuadros de llaves principales, cruces directos y fase de eliminación playoffs."}
+              </p>
+            </div>
+
+            <div className="self-start md:self-center">
               <PageHeaderButton
                 variant="primary"
                 onClick={() => handleOpenPrintSheet(activeTab === "inscriptions" ? "inscriptions" : activeTab === "matches" ? "matches" : activeTab === "standings" ? "standings" : "playoffs")}
@@ -3051,10 +3080,8 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
               >
                 Planilla oficial
               </PageHeaderButton>
-            }
-          />
-
-          <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 space-y-6 pb-20 animate-fade-in">
+            </div>
+          </div>
             {/* COMPACT CATEGORY SELECTOR IN ISOLATED VIEW */}
             <div className="flex items-center gap-2 mt-4 overflow-x-auto pb-2 scrollbar-none border-b border-slate-900">
               <span className="text-[9px] font-mono font-black text-slate-500 uppercase tracking-widest shrink-0 mr-1">
@@ -3189,7 +3216,6 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
               )}
             </div>
           </div>
-        </div>
       ) : (
         <TournamentDashboardView
           tournament={tournament}
