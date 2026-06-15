@@ -23,6 +23,7 @@ import {
 import { repository } from '../lib/repository';
 import { Player, PlayerPrivateData } from '../types';
 import { getFIPTop100Males, getFIPTop100Females } from '../lib/fipRankingsData';
+import { PageHeaderBanner, PageHeaderButton } from './ui/PageHeaderBanner';
 
 interface PlayerManagerProps {
   userRole: "admin" | "player";
@@ -384,99 +385,84 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole, onBack }
   });
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 animate-fade-in">
-      
-      {onBack && (
-        <button
-          onClick={onBack}
-          className="group text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-[#d4fc34] transition-colors flex items-center gap-1.5 self-start mb-2"
-        >
-          <ArrowLeft className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#d4fc34]" />
-          <span>Volver</span>
-        </button>
-      )}
-
-      {/* Header section */}
-      <div>
-        <div className="flex items-center gap-2 mb-2">
-          <span className="bg-[#d4fc34]/15 text-[#d4fc34] border border-[#d4fc34]/20 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest font-mono">
-            Base de Atletas
-          </span>
-          <span className="bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest font-mono">
-            JUGADORES
-          </span>
-        </div>
-        <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black uppercase tracking-wider text-white flex items-center gap-2.5">
-          <Users className="w-7 h-7 text-[#d4fc34]" /> Registro de Jugadores
-        </h1>
-        <p className="text-xs text-slate-400 mt-1">
-          Ficha oficial unificada de competidores registrados y acumuladores de ranking anual.
-        </p>
-      </div>
-
-      {/* GENDER / RAMA TABS WITH ALIGNED REGISTRATION BUTTON */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between border-b border-slate-800 pb-px gap-3">
-        <div className="flex flex-wrap gap-1">
-          <button
-            onClick={() => {
-              setGenderFilter("Masculino");
-              setDivisionFilter("all");
-            }}
-            className={`px-5 py-3 text-xs font-black uppercase tracking-wider transition-all relative cursor-pointer ${
-              genderFilter === "Masculino"
-                ? "text-blue-400 border-b-2 border-blue-500 font-extrabold"
-                : "text-slate-400 hover:text-slate-200"
-            }`}
-          >
-            Masculino
-          </button>
-          <button
-            onClick={() => {
-              setGenderFilter("Femenino");
-              setDivisionFilter("all");
-            }}
-            className={`px-5 py-3 text-xs font-black uppercase tracking-wider transition-all relative cursor-pointer ${
-              genderFilter === "Femenino"
-                ? "text-pink-400 border-b-2 border-pink-500 font-extrabold"
-                : "text-slate-400 hover:text-slate-200"
-            }`}
-          >
-            Femenino
-          </button>
-          <button
-            onClick={() => {
-              setGenderFilter("all");
-              setDivisionFilter("all");
-            }}
-            className={`px-5 py-3 text-xs font-black uppercase tracking-wider transition-all relative cursor-pointer ${
-              genderFilter === "all"
-                ? "text-[#d4fc34] border-b-2 border-[#d4fc34] font-extrabold"
-                : "text-slate-400 hover:text-slate-200"
-            }`}
-          >
-            Ver Todos
-          </button>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2 pb-2 lg:pb-0">
-          {userRole === "admin" && (
-            <button
-              onClick={handleImportFIPPlayers}
-              className="bg-indigo-950/40 hover:bg-indigo-950/80 text-indigo-300 hover:text-white border border-indigo-900/40 text-[10px] font-black px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition cursor-pointer uppercase tracking-wider text-center"
-              title="Cargar automáticamente 100 jugadores premium por categoría (700 jugadores en total: 50% de origen FIP real)"
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col animate-fade-in">
+      <PageHeaderBanner
+        onBack={onBack}
+        icon={<Users className="w-10 h-10 text-[#d4fc34]" />}
+        cornerBadge="PLAYER"
+        eyebrow="Base de Atletas"
+        eyebrowColor="emerald"
+        title="Registro de Jugadores"
+        description="Ficha oficial unificada de competidores registrados y acumuladores de ranking anual."
+        gridPatternId="grid-players"
+        actions={
+          <div className="flex flex-wrap items-center gap-2 md:gap-3">
+            {userRole === "admin" && (
+              <PageHeaderButton
+                variant="secondary"
+                onClick={handleImportFIPPlayers}
+                title="Cargar automáticamente 100 jugadores premium por categoría (700 jugadores en total: 50% de origen FIP real)"
+              >
+                🎾 Cargar Ránking FIP
+              </PageHeaderButton>
+            )}
+            <PageHeaderButton
+              variant="primary"
+              onClick={handleOpenCreateForm}
+              icon={<Plus className="w-4 h-4" />}
             >
-              <span>🎾 Cargar Ránking FIP</span>
+              {userRole === "admin" ? "Registrar Jugador" : "Inscribirse como Jugador"}
+            </PageHeaderButton>
+          </div>
+        }
+      />
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 w-full flex-1">
+        
+        {/* GENDER / RAMA TABS WITH ALIGNED REGISTRATION BUTTON */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between border-b border-slate-800 pb-px gap-3">
+          <div className="flex flex-wrap gap-1">
+            <button
+              onClick={() => {
+                setGenderFilter("Masculino");
+                setDivisionFilter("all");
+              }}
+              className={`px-5 py-3 text-xs font-black uppercase tracking-wider transition-all relative cursor-pointer ${
+                genderFilter === "Masculino"
+                  ? "text-blue-400 border-b-2 border-blue-500 font-extrabold"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              Masculino
             </button>
-          )}
-          <button
-            onClick={handleOpenCreateForm}
-            className="bg-[#d4fc34]/15 hover:bg-[#d4fc34] hover:text-slate-950 text-[#d4fc34] text-xs font-extrabold px-4 py-2 rounded-xl flex items-center gap-1.5 transition cursor-pointer border border-[#d4fc34]/20 uppercase tracking-widest"
-          >
-            <Plus className="w-4 h-4 text-[#d4fc34] group-hover:text-slate-950" /> 
-            <span>{userRole === "admin" ? "Registrar Jugador" : "Inscribirse como Jugador"}</span>
-          </button>
+            <button
+              onClick={() => {
+                setGenderFilter("Femenino");
+                setDivisionFilter("all");
+              }}
+              className={`px-5 py-3 text-xs font-black uppercase tracking-wider transition-all relative cursor-pointer ${
+                genderFilter === "Femenino"
+                  ? "text-pink-400 border-b-2 border-pink-500 font-extrabold"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              Femenino
+            </button>
+            <button
+              onClick={() => {
+                setGenderFilter("all");
+                setDivisionFilter("all");
+              }}
+              className={`px-5 py-3 text-xs font-black uppercase tracking-wider transition-all relative cursor-pointer ${
+                genderFilter === "all"
+                  ? "text-[#d4fc34] border-b-2 border-[#d4fc34] font-extrabold"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              Ver Todos
+            </button>
+          </div>
         </div>
-      </div>
 
       {/* SEARCH AND FILTERS */}
       <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl flex flex-col md:flex-row gap-4 items-center">
@@ -1091,6 +1077,7 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole, onBack }
         </div>
       )}
 
+      </div>
     </div>
   );
 };

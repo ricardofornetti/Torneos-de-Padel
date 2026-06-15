@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { repository } from '../lib/repository';
 import { Player } from '../types';
+import { PageHeaderBanner, PageHeaderButton } from './ui/PageHeaderBanner';
 
 interface RankingManagerProps {
   userRole: "admin" | "player";
@@ -217,72 +218,51 @@ export const RankingManager: React.FC<RankingManagerProps> = ({ userRole, onBack
   const top1 = filteredPlayers[0];
   const top2 = filteredPlayers[1];
   const top3 = filteredPlayers[2];
-
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 animate-fade-in">
-      
-      {onBack && (
-        <button
-          onClick={onBack}
-          className="group text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-[#d4fc34] transition-colors flex items-center gap-1.5 self-start mb-2"
-        >
-          <ArrowLeft className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#d4fc34]" />
-          <span>Volver</span>
-        </button>
-      )}
-
-      {/* Header section with inline action buttons */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <span className="bg-[#d4fc34]/15 text-[#d4fc34] border border-[#d4fc34]/20 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest font-mono">
-              Clasificación de la Liga
-            </span>
-            <span className="bg-amber-500/10 text-amber-500 border border-amber-500/20 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest font-mono">
-              RANKING
-            </span>
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col animate-fade-in">
+      <PageHeaderBanner
+        onBack={onBack}
+        icon={<Award className="w-10 h-10 text-[#d4fc34]" />}
+        cornerBadge="RANK"
+        eyebrow="Clasificación de la Liga"
+        eyebrowColor="amber"
+        title="Ranking Oficial"
+        description="Cuadro de Honor y escalafón anual unificado de la liga profesional de pádel."
+        gridPatternId="grid-ranking"
+        actions={
+          <div className="flex flex-wrap items-center gap-2 md:gap-3">
+            <PageHeaderButton
+              variant="secondary"
+              onClick={handleExportCSV}
+              icon={<FileSpreadsheet className="w-3.5 h-3.5 text-[#d4fc34]" />}
+            >
+              Exportar XLS / CSV
+            </PageHeaderButton>
+            {userRole === "admin" && (
+              <>
+                <PageHeaderButton
+                  variant="danger"
+                  onClick={handleResetPoints}
+                  disabled={resetting}
+                  icon={<RotateCcw className={`w-3.5 h-3.5 text-red-500 ${resetting ? 'animate-spin' : ''}`} />}
+                >
+                  {resetting ? 'Reiniciando...' : 'Reiniciar Puntos'}
+                </PageHeaderButton>
+                <PageHeaderButton
+                  variant="danger"
+                  onClick={handleDeleteAllPlayers}
+                  disabled={deletingPlayers}
+                  icon={<Trash2 className="w-3.5 h-3.5 text-red-500" />}
+                >
+                  {deletingPlayers ? 'Eliminando...' : 'Eliminar Jugadores'}
+                </PageHeaderButton>
+              </>
+            )}
           </div>
-          <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black uppercase tracking-wider text-white flex items-center gap-2.5">
-            <Award className="w-7 h-7 text-[#d4fc34]" /> Ranking Oficial
-          </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Cuadro de Honor y escalafón anual unificado de la liga profesional de pádel.
-          </p>
-        </div>
+        }
+      />
 
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={handleExportCSV}
-            className="bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition cursor-pointer uppercase tracking-wider whitespace-nowrap"
-          >
-            <FileSpreadsheet className="w-3.5 h-3.5 text-[#d4fc34]" />
-            <span>Exportar XLS / CSV</span>
-          </button>
-
-          {userRole === "admin" && (
-            <>
-              <button
-                onClick={handleResetPoints}
-                disabled={resetting}
-                className="bg-red-95/20 hover:bg-red-900/40 border border-red-900/50 text-red-300 text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50 uppercase tracking-wider whitespace-nowrap"
-              >
-                <RotateCcw className={`w-3.5 h-3.5 text-red-500 ${resetting ? 'animate-spin' : ''}`} /> 
-                <span>{resetting ? 'Reiniciando...' : 'Reiniciar Puntos'}</span>
-              </button>
-
-              <button
-                onClick={handleDeleteAllPlayers}
-                disabled={deletingPlayers}
-                className="bg-red-95/20 hover:bg-red-900/40 border border-red-900/50 text-red-300 text-[11px] font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50 uppercase tracking-wider whitespace-nowrap"
-                title="Eliminar todos los jugadores cargados"
-              >
-                <Trash2 className="w-3.5 h-3.5 text-red-400" />
-                <span>{deletingPlayers ? 'Eliminando...' : 'Eliminar Jugadores'}</span>
-              </button>
-            </>
-          )}
-        </div>
-      </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 w-full flex-1">
 
       {/* SECCIÓN CATEGORÍAS ORGANIZADAS */}
       <div className="bg-slate-900 border border-slate-800 p-5 rounded-xl space-y-4">
@@ -991,6 +971,7 @@ export const RankingManager: React.FC<RankingManagerProps> = ({ userRole, onBack
         </div>
       )}
 
+      </div>
     </div>
   );
 };
