@@ -12,7 +12,36 @@ import {
   Info
 } from 'lucide-react';
 import { repository } from '../lib/repository';
-import { Tournament, Match, Pair } from '../types';
+import { Tournament, Match, Pair, Player, Court } from '../types';
+
+// Orden de fases dentro de un mismo día/hora:
+// 1) Fase de grupos (group), ordenada alfabéticamente por stageName (Grupo A, Grupo B, ...)
+// 2) Playoffs (playoff), ordenados por roundNumber y luego por stageName
+//    (Ronda 1 < Ronda 2 < Cuartos < Semifinal < Final, según roundNumber creciente)
+const sortMatches = (a: Match, b: Match): number => {
+  // 1. Por fecha (sin fecha al final)
+  if (!a.date && b.date) return 1;
+  if (a.date && !b.date) return -1;
+  if (a.date && b.date && a.date !== b.date) return a.date.localeCompare(b.date);
+
+  // 2. Por hora (sin hora al final)
+  if (!a.time && b.time) return 1;
+  if (a.time && !b.time) return -1;
+  if (a.time && b.time && a.time !== b.time) return a.time.localeCompare(b.time);
+
+  // 3. Fase de grupos antes que playoffs
+  if (a.phase !== b.phase) {
+    return a.phase === "group" ? -1 : 1;
+  }
+
+  // 4. Dentro de la misma fase: por roundNumber
+  if (a.roundNumber !== b.roundNumber) {
+    return (a.roundNumber || 0) - (b.roundNumber || 0);
+  }
+
+  // 5. Por último, por stageName alfabético (Grupo A, Grupo B, Cuartos 1, Cuartos 2, ...)
+  return (a.stageName || "").localeCompare(b.stageName || "");
+};
 
 interface FixtureViewProps {
   onSelectTournament: (id: string) => void;
@@ -23,6 +52,8 @@ export const FixtureView: React.FC<FixtureViewProps> = ({ onSelectTournament, on
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
   const [pairs, setPairs] = useState<Pair[]>([]);
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [courts, setCourts] = useState<Court[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Filters
@@ -34,19 +65,18 @@ export const FixtureView: React.FC<FixtureViewProps> = ({ onSelectTournament, on
   useEffect(() => {
     async function loadData() {
       try {
-        const [t, m, p] = await Promise.all([
+        const [t, m, p, pl, c] = await Promise.all([
           repository.getTournaments(),
           repository.getMatches(),
-          repository.getPairs()
+          repository.getPairs(),
+          repository.getPlayers(),
+          repository.getCourts()
         ]);
         setTournaments(t);
-        // Sort matches by date first
-        setMatches(m.sort((a, b) => {
-          if (!a.date) return 1;
-          if (!b.date) return -1;
-          return a.date.localeCompare(b.date) || a.time.localeCompare(b.time);
-        }));
+        setMatches(m.sort(sortMatches));
         setPairs(p);
+        setPlayers(pl);
+        setCourts(c);
       } catch (err) {
         console.error("Error loading fixture matches:", err);
       } finally {
@@ -72,7 +102,14 @@ export const FixtureView: React.FC<FixtureViewProps> = ({ onSelectTournament, on
     
     const pair = pairs.find(p => p.id === pairId);
     if (!pair) return "Pareja Vacía";
-    return `${pair.player1LastName}/${pair.player2LastName}`;
+
+    const p1 = players.find(pl => pl.id === pair.player1Id);
+    const p2 = players.find(pl => pl.id === pair.player2Id);
+
+    const p1Name = p1?.lastName || "???";
+    const p2Name = p2?.lastName || "???";
+
+    return `${p1Name} / ${p2Name}`;
   };
 
   const getTournamentName = (tId: string): string => {
@@ -247,124 +284,141 @@ export const FixtureView: React.FC<FixtureViewProps> = ({ onSelectTournament, on
                 </h3>
                 <div className="flex-1 h-px bg-slate-850"></div>
                 <span className="text-[10px] text-slate-500 font-mono font-bold uppercase">{dateMatches.length} partidos</span>
-              </div>
-
-              {/* Grid of Matches */}
+                 {/* Grid of Matches */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {dateMatches.map((m) => {
-                  const isCompleted = m.status === 'completed';
-                  const isByeValue = m.pair1Id?.startsWith("bye") || m.pair2Id?.startsWith("bye");
-                  
-                  return (
-                    <div 
-                      key={m.id}
-                      className="bg-slate-900 border border-slate-800/80 rounded-xl p-4 flex flex-col justify-between hover:border-slate-700 transition relative group"
-                    >
-                      {/* Top labels */}
-                      <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono border-b border-slate-850/80 pb-2 mb-3.5">
-                        <span className="bg-slate-950 px-2 py-0.5 rounded border border-slate-850 text-[9px] font-bold uppercase text-cyan-400">
-                          {m.category}
-                        </span>
-                        
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-bold text-slate-350 truncate max-w-[120px]" title={getTournamentName(m.tournamentId)}>
-                            {getTournamentName(m.tournamentId)}
-                          </span>
-                          <span className="text-slate-600">•</span>
-                          <span className="font-medium text-slate-450">
-                            {m.phase === "group" ? "Fase Zonas" : m.stageName || "Playoffs"}
-                          </span>
-                        </div>
-                      </div>
+                {(() => {
+                  let lastStageKey = "";
+                  return dateMatches.map((m) => {
+                    const stageKey = `${m.phase}-${m.roundNumber || 0}-${m.stageName || ""}`;
+                    const showStageHeader = stageKey !== lastStageKey;
+                    lastStageKey = stageKey;
 
-                      {/* Opponents showdown visual block */}
-                      <div className="space-y-2 pt-1 pb-3">
-                        {/* Team A */}
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <span className="text-[9px] bg-slate-800 w-4 h-4 text-slate-400 flex items-center justify-center rounded font-mono font-bold">A</span>
-                            <span className={`text-[12px] font-bold ${isCompleted && m.winnerPairId === m.pair1Id ? 'text-[#d4fc34] font-black' : 'text-slate-150'}`}>
-                              {getPairNames(m.pair1Id)}
+                    const isCompleted = m.status === 'completed';
+
+                    return (
+                      <React.Fragment key={m.id}>
+                        {showStageHeader && (
+                          <div className="col-span-1 md:col-span-2 flex items-center gap-2 mt-2 first:mt-0">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-[#d4fc34] font-mono bg-[#d4fc34]/15 px-2.5 py-1 rounded border border-[#d4fc34]/20">
+                              {m.phase === "group" ? `Fase de Grupos • ${m.stageName}` : m.stageName || "Playoffs"}
                             </span>
+                            <div className="flex-1 h-px bg-slate-800"></div>
+                          </div>
+                        )}
+                        <div 
+                          className="bg-slate-900 border border-slate-800/80 rounded-xl p-4 flex flex-col justify-between hover:border-slate-700 transition relative group"
+                        >
+                          {/* Top labels */}
+                          <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono border-b border-slate-850/80 pb-2 mb-3.5">
+                            <span className="bg-slate-950 px-2 py-0.5 rounded border border-slate-850 text-[9px] font-bold uppercase text-cyan-400">
+                              {m.category}
+                            </span>
+                            
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-bold text-slate-350 truncate max-w-[120px]" title={getTournamentName(m.tournamentId)}>
+                                {getTournamentName(m.tournamentId)}
+                              </span>
+                              <span className="text-slate-600">•</span>
+                              <span className="font-medium text-slate-450">
+                                {m.phase === "group" ? "Fase Zonas" : m.stageName || "Playoffs"}
+                              </span>
+                            </div>
                           </div>
 
-                          {isCompleted && (
-                            <span className="font-mono text-xs font-black text-white bg-slate-950 px-2 py-0.5 rounded border border-slate-850">
-                              {m.winnerPairId === m.pair1Id ? "W" : "L"}
-                            </span>
-                          )}
-                        </div>
+                          {/* Opponents showdown visual block */}
+                          <div className="space-y-2 pt-1 pb-3">
+                            {/* Team A */}
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[9px] bg-slate-800 w-4 h-4 text-slate-400 flex items-center justify-center rounded font-mono font-bold">A</span>
+                                <span className={`text-[12px] font-bold ${isCompleted && m.winnerPairId === m.pair1Id ? 'text-[#d4fc34] font-black' : 'text-slate-150'}`}>
+                                  {getPairNames(m.pair1Id)}
+                                </span>
+                              </div>
 
-                        {/* Team B */}
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <span className="text-[9px] bg-slate-800 w-4 h-4 text-slate-400 flex items-center justify-center rounded font-mono font-bold">B</span>
-                            <span className={`text-[12px] font-bold ${isCompleted && m.winnerPairId === m.pair2Id ? 'text-[#d4fc34] font-black' : 'text-slate-150'}`}>
-                              {getPairNames(m.pair2Id)}
-                            </span>
+                              {isCompleted && (
+                                <span className="font-mono text-xs font-black text-white bg-slate-950 px-2 py-0.5 rounded border border-slate-850">
+                                  {m.winnerPairId === m.pair1Id ? "W" : "L"}
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Team B */}
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[9px] bg-slate-800 w-4 h-4 text-slate-400 flex items-center justify-center rounded font-mono font-bold">B</span>
+                                <span className={`text-[12px] font-bold ${isCompleted && m.winnerPairId === m.pair2Id ? 'text-[#d4fc34] font-black' : 'text-slate-150'}`}>
+                                  {getPairNames(m.pair2Id)}
+                                </span>
+                              </div>
+
+                              {isCompleted && (
+                                <span className="font-mono text-xs font-black text-white bg-slate-950 px-2 py-0.5 rounded border border-slate-850">
+                                  {m.winnerPairId === m.pair2Id ? "W" : "L"}
+                                </span>
+                              )}
+                            </div>
                           </div>
 
-                          {isCompleted && (
-                            <span className="font-mono text-xs font-black text-white bg-slate-950 px-2 py-0.5 rounded border border-slate-850">
-                              {m.winnerPairId === m.pair2Id ? "W" : "L"}
-                            </span>
-                          )}
+                          {/* Score or Status summary */}
+                          <div className="pt-2 px-3 py-2.5 bg-slate-950/80 rounded-xl border border-slate-850 flex items-center justify-between mt-2.5">
+                            
+                            {/* Left Info: Court and clock */}
+                            <div className="flex items-center gap-3.5 text-[10px] text-slate-400 font-mono">
+                              {(() => {
+                                const courtName = courts.find(c => c.id === m.courtId)?.name;
+                                return courtName ? (
+                                  <div className="flex items-center gap-1">
+                                    <MapPin className="w-3.5 h-3.5 text-cyan-400" />
+                                    <span className="font-bold text-slate-200">{courtName}</span>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-1 text-slate-500">
+                                    <MapPin className="w-3.5 h-3.5" />
+                                    <span>Sin Cancha</span>
+                                  </div>
+                                );
+                              })()}
+
+                              {m.time ? (
+                                <div className="flex items-center gap-1 font-bold">
+                                  <Clock className="w-3.5 h-3.5 text-[#d4fc34]" />
+                                  <span>{m.time} h</span>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-1 text-slate-550">
+                                  <Clock className="w-3.5 h-3.5" />
+                                  <span>h?</span>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Right Info: score string or click details shortcut */}
+                            <div className="flex items-center gap-2">
+                              <span className={`text-[11px] font-bold font-mono px-2 py-0.5 rounded ${isCompleted ? 'bg-[#d4fc34]/15 text-[#d4fc34] border border-[#d4fc34]/20' : 'bg-slate-900 border border-slate-800 text-slate-500'}`}>
+                                {m.scoreSummary || "Por jugar"}
+                              </span>
+
+                              <button
+                                onClick={() => {
+                                  onSelectTournament(m.tournamentId);
+                                  onNavigate("tournaments");
+                                }}
+                                className="p-1 hover:text-[#d4fc34] text-slate-400 transition cursor-pointer"
+                                title="Ir al torneo"
+                              >
+                                <ChevronRight className="w-4 h-4" />
+                              </button>
+                            </div>
+
+                          </div>
+
                         </div>
-                      </div>
-
-                      {/* Score or Status summary */}
-                      <div className="pt-2 px-3 py-2.5 bg-slate-950/80 rounded-xl border border-slate-850 flex items-center justify-between mt-2.5">
-                        
-                        {/* Left Info: Court and clock */}
-                        <div className="flex items-center gap-3.5 text-[10px] text-slate-400 font-mono">
-                          {m.courtId ? (
-                            <div className="flex items-center gap-1">
-                              <MapPin className="w-3.5 h-3.5 text-cyan-400" />
-                              <span className="font-bold text-slate-200">Cancha {m.courtId.replace("c", "")}</span>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-1 text-slate-500">
-                              <MapPin className="w-3.5 h-3.5" />
-                              <span>Sin Cancha</span>
-                            </div>
-                          )}
-
-                          {m.time ? (
-                            <div className="flex items-center gap-1 font-bold">
-                              <Clock className="w-3.5 h-3.5 text-[#d4fc34]" />
-                              <span>{m.time} h</span>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-1 text-slate-550">
-                              <Clock className="w-3.5 h-3.5" />
-                              <span>h?</span>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Right Info: score string or click details shortcut */}
-                        <div className="flex items-center gap-2">
-                          <span className={`text-[11px] font-bold font-mono px-2 py-0.5 rounded ${isCompleted ? 'bg-[#d4fc34]/15 text-[#d4fc34] border border-[#d4fc34]/20' : 'bg-slate-900 border border-slate-800 text-slate-500'}`}>
-                            {m.scoreSummary || "Por jugar"}
-                          </span>
-
-                          <button
-                            onClick={() => {
-                              onSelectTournament(m.tournamentId);
-                              onNavigate("tournaments");
-                            }}
-                            className="p-1 hover:text-[#d4fc34] text-slate-400 transition"
-                            title="Ir al torneo"
-                          >
-                            <ChevronRight className="w-4 h-4" />
-                          </button>
-                        </div>
-
-                      </div>
-
-                    </div>
-                  );
-                })}
+                      </React.Fragment>
+                    );
+                  });
+                })()}
+              </div>
               </div>
 
             </div>
