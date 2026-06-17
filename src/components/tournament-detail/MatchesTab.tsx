@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   MapPin, 
   Trophy, 
   Sparkles, 
   Trash2,
-  Calendar 
+  Calendar,
+  Search
 } from 'lucide-react';
 import { Tournament, Pair, Match, Court } from '../../types';
 import { formatDate } from '../TournamentDetail';
@@ -44,6 +45,9 @@ export const MatchesTab: React.FC<MatchesTabProps> = ({
   handleAutoAssignCourts,
   handleResetCategory
 }) => {
+  const [scheduleSearch, setScheduleSearch] = useState("");
+  const [phaseFilter, setPhaseFilter] = useState<"all" | "group" | "playoff">("all");
+
   const currentMatches = matches.filter(m => m.category === selectedCategory);
   const categoryPairs = pairs.filter(p => p.category === selectedCategory);
 
@@ -62,6 +66,26 @@ export const MatchesTab: React.FC<MatchesTabProps> = ({
   }
 
   const matchesToRender = sortedSourceMatches.filter(m => {
+    // 1. Search Query
+    if (scheduleSearch.trim() !== "") {
+      const p1Name = getPairName(m.pair1Id).toLowerCase();
+      const p2Name = getPairName(m.pair2Id).toLowerCase();
+      const q = scheduleSearch.toLowerCase();
+      if (!p1Name.includes(q) && !p2Name.includes(q)) {
+        return false;
+      }
+    }
+
+    // 2. Phase filter
+    if (phaseFilter === "group") {
+      const isGroup = m.phase === "group" || m.stageName.toLowerCase().includes("grupo") || m.stageName.toLowerCase().includes("ronda");
+      if (!isGroup) return false;
+    } else if (phaseFilter === "playoff") {
+      const isPlayoff = m.phase === "playoff" || (!m.stageName.toLowerCase().includes("grupo") && !m.stageName.toLowerCase().includes("ronda"));
+      if (!isPlayoff) return false;
+    }
+
+    // 3. Original fixture filter
     if (fixtureFilter === "all") return true;
 
     if (isSRTC16) {
@@ -590,6 +614,38 @@ export const MatchesTab: React.FC<MatchesTabProps> = ({
         <span className="text-xs text-slate-400 font-mono">
           PJ: {currentMatches.filter(m => m.status !== "pending").length} / Total: {currentMatches.length}
         </span>
+      </div>
+
+      {/* Panel de Filtros de Cronograma */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-900 border border-slate-800 p-4 rounded-xl shadow-md">
+        {/* Buscador de Cronograma */}
+        <div className="space-y-1">
+          <label className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block">Buscador de Cronograma</label>
+          <div className="relative">
+            <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-2.5" />
+            <input 
+              type="text" 
+              placeholder="Buscar por apellido de jugador..."
+              value={scheduleSearch} 
+              onChange={e => setScheduleSearch(e.target.value)}
+              className="w-full bg-slate-950 border border-slate-800 focus:border-[#d4fc34] rounded-lg pl-9 pr-3 py-2 text-xs text-slate-100 placeholder-slate-500 outline-none" 
+            />
+          </div>
+        </div>
+
+        {/* Filtro de Fase */}
+        <div className="space-y-1">
+          <label className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block">Fase del Torneo</label>
+          <select 
+            value={phaseFilter} 
+            onChange={e => setPhaseFilter(e.target.value as any)}
+            className="w-full bg-slate-950 border border-slate-800 focus:border-[#d4fc34] rounded-lg p-2 text-xs text-slate-100 outline-none block appearance-none"
+          >
+            <option value="all">🏆 Todos los Partidos</option>
+            <option value="group">🎾 Fase de Grupos / Zonas</option>
+            <option value="playoff">🎬 Fase Playoffs / Llaves</option>
+          </select>
+        </div>
       </div>
 
       {renderButtonBar()}

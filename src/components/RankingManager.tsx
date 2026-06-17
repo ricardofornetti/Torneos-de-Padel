@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { repository } from '../lib/repository';
 import { Player } from '../types';
+import { motion, AnimatePresence } from 'motion/react';
 
 interface RankingManagerProps {
   userRole: "admin" | "player";
@@ -39,6 +40,7 @@ export const RankingManager: React.FC<RankingManagerProps> = ({ userRole, onBack
   const [resetting, setResetting] = useState(false);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [genderFilter, setGenderFilter] = useState("all");
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [showResetAllModal, setShowResetAllModal] = useState(false);
   const [showResetIndividualModal, setShowResetIndividualModal] = useState<Player | null>(null);
@@ -144,48 +146,27 @@ export const RankingManager: React.FC<RankingManagerProps> = ({ userRole, onBack
       console.error("Error resetting individual player points:", err);
     }
   };
-
-  const handleExportCSV = () => {
-    if (players.length === 0) return;
-    
-    // Create CSV content headers
-    const headers = ["Puesto", "Nombre", "Apellido", "DNI", "Ciudad", "Categoria", "Puntos Ranking", "PJ", "PG", "PP", "Efectividad %"];
-    const rows = filteredPlayers.map((p, idx) => {
-      const winRate = p.matchesPlayed > 0 ? ((p.matchesWon / p.matchesPlayed) * 100).toFixed(0) : "0";
-      return [
-        idx + 1,
-        p.firstName,
-        p.lastName,
-        p.dni,
-        p.city,
-        p.category,
-        p.rankingPoints,
-        p.matchesPlayed,
-        p.matchesWon,
-        p.matchesLost,
-        `${winRate}%`
-      ];
-    });
-
-    const csvContent = 
-      "data:text/csv;charset=utf-8,\uFEFF" + // UTF-8 BOM
-      [headers.join(","), ...rows.map(e => e.map(val => `"${val}"`).join(","))].join("\n");
-
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `Ranking_Anual_Padel_Pro_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link); // Required for FF
-    link.click();
-    document.body.removeChild(link);
-  };
+;
 
   const filteredPlayers = players.filter(p => {
+    // 1. Search Query
     const pFullName = `${p.firstName} ${p.lastName}`.toLowerCase();
     const searchMatch = pFullName.includes(search.toLowerCase()) || p.city.toLowerCase().includes(search.toLowerCase());
+    if (!searchMatch) return false;
     
-    if (categoryFilter === "all") return searchMatch;
-    return searchMatch && p.category.includes(categoryFilter);
+    // 2. Category Filter
+    if (categoryFilter !== "all" && !p.category.includes(categoryFilter)) {
+      return false;
+    }
+
+    // 3. Gender Filter
+    if (genderFilter !== "all") {
+      const isFemale = (p.category || "").toLowerCase().includes("femenina") || p.gender === "female";
+      const expectedFemale = genderFilter === "female";
+      if (isFemale !== expectedFemale) return false;
+    }
+
+    return true;
   });
 
   // Calculate deterministic values for premium indicators
@@ -220,15 +201,6 @@ export const RankingManager: React.FC<RankingManagerProps> = ({ userRole, onBack
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col animate-fade-in">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 w-full flex-1">
-        {onBack && (
-          <button
-            onClick={onBack}
-            className="group text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-[#d4fc34] transition-colors flex items-center gap-1.5 self-start mb-2 cursor-pointer"
-          >
-            <ArrowLeft className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#d4fc34]" />
-            <span>Volver</span>
-          </button>
-        )}
 
         {/* Light Header (Style A) */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-900 pb-6">
@@ -251,14 +223,6 @@ export const RankingManager: React.FC<RankingManagerProps> = ({ userRole, onBack
           </div>
 
           <div className="flex flex-wrap items-center gap-2 md:gap-3">
-            <button
-              onClick={handleExportCSV}
-              className="bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 text-xs font-bold px-4 py-3 rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer uppercase tracking-wider whitespace-nowrap"
-            >
-              <FileSpreadsheet className="w-4 h-4 text-[#d4fc34]" />
-              <span>Exportar XLS / CSV</span>
-            </button>
-
             {userRole === "admin" && (
               <>
                 <button
@@ -282,93 +246,60 @@ export const RankingManager: React.FC<RankingManagerProps> = ({ userRole, onBack
           </div>
         </div>
 
-      {/* SECCIÓN CATEGORÍAS ORGANIZADAS */}
-      <div className="bg-slate-900 border border-slate-800 p-5 rounded-xl space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-850 pb-3.5">
-          <h2 className="text-xs font-mono uppercase tracking-widest text-[#22d3ee] font-bold flex items-center gap-1.5">
-            <Trophy className="w-3.5 h-3.5" /> Selección por Categoría y Género
-          </h2>
-          <button
-            onClick={() => setCategoryFilter("all")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all uppercase cursor-pointer ${
-              categoryFilter === "all"
-                ? "bg-[#d4fc34] text-slate-950 font-black shadow-lg shadow-[#d4fc34]/20"
-                : "bg-slate-950 text-slate-400 hover:text-white border border-slate-800"
-            }`}
-          >
-            Todas las Categorías
-          </button>
+      {/* Panel de Filtros Estilo Fixture/Calendario */}
+      <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-3.5 shadow-md">
+        <div className="flex items-center gap-2 text-xs font-mono font-black text-[#d4fc34] uppercase tracking-wider border-b border-slate-850 pb-2">
+          <Filter className="w-4 h-4" /> Filtros de Visualización de Ranking
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* MASCULINAS */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 text-xs font-bold text-slate-300 font-mono">
-              <span className="w-2 h-2 rounded-full bg-cyan-400"></span>
-              MASCULINO
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {[
-                { label: "Libre", value: "Libre Masculina" },
-                { label: "4ta Cat", value: "4ta Masculina" },
-                { label: "5ta Cat", value: "5ta Masculina" },
-                { label: "6ta Cat", value: "6ta Masculina" },
-                { label: "7ma Cat", value: "7ma Masculina" }
-              ].map(cat => (
-                <button
-                  key={cat.value}
-                  onClick={() => setCategoryFilter(cat.value)}
-                  className={`px-3 py-2 rounded-lg text-xs font-bold tracking-wide transition-all uppercase whitespace-nowrap cursor-pointer border ${
-                    categoryFilter === cat.value
-                      ? "bg-[#d4fc34] text-slate-950 border-[#d4fc34] font-black shadow-lg shadow-[#d4fc34]/15"
-                      : "bg-slate-950 text-slate-400 hover:text-white border-slate-800/80 hover:border-slate-750"
-                  }`}
-                >
-                  {cat.label}
-                </button>
-              ))}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* Buscador por Nombre/Ciudad */}
+          <div className="space-y-1">
+            <label className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block">Buscar Atleta</label>
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-2.5" />
+              <input 
+                type="text" 
+                placeholder="Nombre o ciudad..."
+                value={search} 
+                onChange={e => setSearch(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 focus:border-[#d4fc34] rounded-lg pl-9 pr-3 py-2 text-xs text-slate-100 placeholder-slate-500 outline-none" 
+              />
             </div>
           </div>
 
-          {/* FEMENINAS */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 text-xs font-bold text-slate-300 font-mono">
-              <span className="w-2 h-2 rounded-full bg-rose-400"></span>
-              FEMENINO
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {[
-                { label: "6ta Cat", value: "6ta Femenina" },
-                { label: "7ma Cat", value: "7ma Femenina" }
-              ].map(cat => (
-                <button
-                  key={cat.value}
-                  onClick={() => setCategoryFilter(cat.value)}
-                  className={`px-3 py-2 rounded-lg text-xs font-bold tracking-wide transition-all uppercase whitespace-nowrap cursor-pointer border ${
-                    categoryFilter === cat.value
-                      ? "bg-[#d4fc34] text-slate-950 border-[#d4fc34] font-black shadow-lg shadow-[#d4fc34]/15"
-                      : "bg-slate-950 text-slate-400 hover:text-white border-slate-800/80 hover:border-slate-750"
-                  }`}
-                >
-                  {cat.label}
-                </button>
-              ))}
-            </div>
+          {/* Filtro de Categoría */}
+          <div className="space-y-1">
+            <label className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block">Categoría Base</label>
+            <select 
+              value={categoryFilter} 
+              onChange={e => setCategoryFilter(e.target.value)}
+              className="w-full bg-slate-950 border border-slate-800 focus:border-[#d4fc34] rounded-lg p-2 text-xs text-slate-100 outline-none block appearance-none"
+            >
+              <option value="all">🏆 Todas las Categorías</option>
+              <option value="Libre Masculina">Libre Masculina</option>
+              <option value="4ta Masculina">4ta Masculina</option>
+              <option value="5ta Masculina">5ta Masculina</option>
+              <option value="6ta Masculina">6ta Masculina</option>
+              <option value="7ma Masculina">7ma Masculina</option>
+              <option value="6ta Femenina">6ta Femenina</option>
+              <option value="7ma Femenina">7ma Femenina</option>
+            </select>
           </div>
-        </div>
-      </div>
 
-      {/* FILTER SEARCH CONTROLS */}
-      <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl">
-        <div className="relative">
-          <Search className="w-4 h-4 text-slate-500 absolute left-3 top-2.5" />
-          <input
-            type="text"
-            placeholder="Buscar por nombre, apellido o ciudad en esta categoría..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-slate-950 border border-slate-800 focus:border-[#d4fc34] rounded-lg pl-9 pr-3 py-2 text-xs text-slate-100 placeholder-slate-500 outline-none"
-          />
+          {/* Filtro de Género */}
+          <div className="space-y-1">
+            <label className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block">Rama</label>
+            <select 
+              value={genderFilter} 
+              onChange={e => setGenderFilter(e.target.value)}
+              className="w-full bg-slate-950 border border-slate-800 focus:border-[#d4fc34] rounded-lg p-2 text-xs text-slate-100 outline-none block appearance-none"
+            >
+              <option value="all">👥 Ambos Géneros</option>
+              <option value="male">🚹 Masculino</option>
+              <option value="female">🚺 Femenino</option>
+            </select>
+          </div>
         </div>
       </div>
 

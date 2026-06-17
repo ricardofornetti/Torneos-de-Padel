@@ -1,14 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Trophy, 
   MapPin, 
   Users, 
   Calendar, 
   ChevronRight, 
-  ArrowLeft 
+  ArrowLeft,
+  Search
 } from 'lucide-react';
 import { Tournament, Pair, Match, Court } from '../../types';
 import { ALL_PADEL_CATEGORIES } from '../TournamentDetail';
+import { formatDate } from '../../lib/utils';
 
 interface TournamentDashboardViewProps {
   tournament: Tournament;
@@ -37,23 +39,16 @@ export const TournamentDashboardView: React.FC<TournamentDashboardViewProps> = (
   onBack,
   handleOpenFinishModal
 }) => {
+  const [categorySearch, setCategorySearch] = useState("");
   const categoryPairs = pairs.filter(p => p.category === selectedCategory);
   const categoryMatches = matches.filter(m => m.category === selectedCategory);
   const isNoMatches = categoryMatches.length === 0;
 
   return (
     <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in space-y-6">
-      {/* HEADER DE ACCIÓN Y VOLVER */}
-      <div className="flex items-center justify-between pb-4 border-b border-slate-900">
-        <button
-          onClick={onBack}
-          className="text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-[#d4fc34] transition-colors flex items-center gap-1.5 cursor-pointer"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Volver a Torneos</span>
-        </button>
-
-        {userRole === "admin" && tournament.status === "in_progress" && (
+      {/* HEADER DE ACCIÓN */}
+      {userRole === "admin" && tournament.status === "in_progress" && (
+        <div className="flex items-center justify-end pb-4 border-b border-slate-900">
           <button
             id="finish-tournament-btn"
             onClick={handleOpenFinishModal}
@@ -61,8 +56,8 @@ export const TournamentDashboardView: React.FC<TournamentDashboardViewProps> = (
           >
             🏁 Finalizar Torneo
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* STYLE A HERO BANNER (No full-width gradient, no stickers) */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 w-full pt-2">
@@ -116,7 +111,7 @@ export const TournamentDashboardView: React.FC<TournamentDashboardViewProps> = (
         <div className="shrink-0 bg-slate-900 border border-slate-800 p-4 rounded-xl w-full md:w-auto">
           <span className="block text-[8px] text-[#d4fc34] mb-0.5 font-mono uppercase tracking-widest font-black">📅 CRONOGRAMA</span>
           <span className="block font-bold text-xs text-slate-200">
-            {tournament.startDate} • {tournament.endDate}
+            {formatDate(tournament.startDate)} • {formatDate(tournament.endDate)}
           </span>
           <span className="block text-[10px] text-slate-400 mt-1">
             Zonas: {tournament.numGroups} Zonas • Canchas: {tournament.numCourts} Asignadas
@@ -135,8 +130,23 @@ export const TournamentDashboardView: React.FC<TournamentDashboardViewProps> = (
               Soporte Jerárquico Multicategoría
             </span>
           </div>
+
+          {/* Búsqueda de categoría */}
+          <div className="relative mb-3">
+            <Search className="w-4 h-4 text-slate-500 absolute left-3 top-2.5" />
+            <input 
+              type="text" 
+              placeholder="Buscar categoría..."
+              value={categorySearch} 
+              onChange={e => setCategorySearch(e.target.value)}
+              className="w-full bg-slate-950 border border-slate-800 focus:border-[#d4fc34] rounded-lg pl-9 pr-3 py-2 text-xs text-slate-100 placeholder-slate-500 outline-none" 
+            />
+          </div>
+
           <div className="flex flex-wrap gap-2">
-            {ALL_PADEL_CATEGORIES.map(cat => {
+            {ALL_PADEL_CATEGORIES.filter(cat => 
+              cat.toLowerCase().includes(categorySearch.toLowerCase())
+            ).map(cat => {
               const catPairs = pairs.filter(p => p.category === cat);
               const active = selectedCategory === cat;
               return (
@@ -158,6 +168,11 @@ export const TournamentDashboardView: React.FC<TournamentDashboardViewProps> = (
                 </button>
               );
             })}
+            {ALL_PADEL_CATEGORIES.filter(cat => 
+              cat.toLowerCase().includes(categorySearch.toLowerCase())
+            ).length === 0 && (
+              <span className="text-xs text-slate-500 italic px-2">No se encontraron categorías con ese nombre.</span>
+            )}
           </div>
         </div>
 

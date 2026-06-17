@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Trophy } from 'lucide-react';
+import { Trophy, Filter } from 'lucide-react';
 import { Tournament, Pair, Match, Player } from '../../types';
 
 interface PlayoffsTabProps {
@@ -12,7 +12,7 @@ interface PlayoffsTabProps {
   handleOpenScorer: (m: Match) => void;
 }
 
-type PlayoffFilterType = "all" | "r1" | "r2" | "16avos" | "rc" | "8avos" | "4tos" | "semifinal" | "final";
+type PlayoffFilterType = "all" | "r1" | "r2" | "16avos" | "16vos" | "rc" | "8avos" | "4tos" | "semifinal" | "final";
 
 export const PlayoffsTab: React.FC<PlayoffsTabProps> = ({
   tournament,
@@ -254,120 +254,35 @@ export const PlayoffsTab: React.FC<PlayoffsTabProps> = ({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between pb-2 border-b border-slate-800 gap-4">
+      <div className="flex items-center justify-between pb-2 border-b border-slate-800">
         <h3 className="font-extrabold text-sm text-white flex items-center gap-1.5 border-none">
           <Trophy className="w-4 h-4 text-indigo-400" /> Playoffs Eliminatorios: {selectedCategory}
         </h3>
+      </div>
 
-        {/* Playoff Round Filters */}
-        <div className="flex flex-wrap gap-1 items-center bg-slate-900/60 p-1.5 rounded-lg border border-slate-800 shadow-inner">
-          <span className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-wider px-2">Fase:</span>
-          <button
-            onClick={() => setPlayoffFilter("all")}
-            className={`px-2 py-1 rounded text-[10px] font-mono font-bold leading-none cursor-pointer transition-all ${
-              playoffFilter === "all"
-                ? "bg-indigo-600 text-white shadow"
-                : "bg-slate-800/40 text-slate-400 hover:text-white"
-            }`}
-          >
-            Ver Todo
-          </button>
-          {matches_r1.length > 0 && (
-            <button
-              onClick={() => setPlayoffFilter("r1")}
-              className={`px-2 py-1 rounded text-[10px] font-mono font-bold leading-none cursor-pointer transition-all ${
-                playoffFilter === "r1"
-                  ? "bg-indigo-600 text-white shadow"
-                  : "bg-slate-800/40 text-slate-400 hover:text-white"
-              }`}
+      {/* Panel de Filtros de Playoffs */}
+      <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl shadow-md space-y-3.5">
+        <div className="flex items-center gap-2 text-xs font-mono font-black text-[#d4fc34] uppercase tracking-wider border-b border-slate-850 pb-2">
+          <Filter className="w-4 h-4" /> Filtros de Eliminación Directa
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Filtro de Ronda */}
+          <div className="space-y-1">
+            <label className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block">Fase / Ronda Activa</label>
+            <select 
+              value={playoffFilter} 
+              onChange={e => setPlayoffFilter(e.target.value as any)}
+              className="w-full bg-slate-950 border border-slate-800 focus:border-[#d4fc34] rounded-lg p-2 text-xs text-slate-100 outline-none block appearance-none"
             >
-              Ronda 1
-            </button>
-          )}
-          {matches_r2.length > 0 && (
-            <button
-              onClick={() => setPlayoffFilter("r2")}
-              className={`px-2 py-1 rounded text-[10px] font-mono font-bold leading-none cursor-pointer transition-all ${
-                playoffFilter === "r2"
-                  ? "bg-indigo-600 text-white shadow"
-                  : "bg-slate-800/40 text-slate-400 hover:text-white"
-              }`}
-            >
-              Ronda 2
-            </button>
-          )}
-          {has16 && (
-            <button
-              onClick={() => setPlayoffFilter("16avos")}
-              className={`px-2 py-1 rounded text-[10px] font-mono font-bold leading-none cursor-pointer transition-all ${
-                playoffFilter === "16avos"
-                  ? "bg-indigo-600 text-white shadow"
-                  : "bg-slate-800/40 text-slate-400 hover:text-white"
-              }`}
-            >
-              16avos
-            </button>
-          )}
-          {hasRc && (
-            <button
-              onClick={() => setPlayoffFilter("rc")}
-              className={`px-2 py-1 rounded text-[10px] font-mono font-bold leading-none cursor-pointer transition-all ${
-                playoffFilter === "rc"
-                  ? "bg-indigo-600 text-white shadow"
-                  : "bg-slate-800/40 text-slate-400 hover:text-white"
-              }`}
-            >
-              Clasificatoria
-            </button>
-          )}
-          {has8 && (
-            <button
-              onClick={() => setPlayoffFilter("8avos")}
-              className={`px-2 py-1 rounded text-[10px] font-mono font-bold leading-none cursor-pointer transition-all ${
-                playoffFilter === "8avos"
-                  ? "bg-indigo-600 text-white shadow"
-                  : "bg-slate-800/40 text-slate-400 hover:text-white"
-              }`}
-            >
-              8avos
-            </button>
-          )}
-          {has4 && (
-            <button
-              onClick={() => setPlayoffFilter("4tos")}
-              className={`px-2 py-1 rounded text-[10px] font-mono font-bold leading-none cursor-pointer transition-all ${
-                playoffFilter === "4tos"
-                  ? "bg-indigo-600 text-white shadow"
-                  : "bg-slate-800/40 text-slate-400 hover:text-white"
-              }`}
-            >
-              4tos
-            </button>
-          )}
-          {hasSf && (
-            <button
-              onClick={() => setPlayoffFilter("semifinal")}
-              className={`px-2 py-1 rounded text-[10px] font-mono font-bold leading-none cursor-pointer transition-all ${
-                playoffFilter === "semifinal"
-                  ? "bg-indigo-600 text-white shadow"
-                  : "bg-slate-800/40 text-slate-400 hover:text-white"
-              }`}
-            >
-              Semifinal
-            </button>
-          )}
-          {hasF && (
-            <button
-              onClick={() => setPlayoffFilter("final")}
-              className={`px-2 py-1 rounded text-[10px] font-mono font-bold leading-none cursor-pointer transition-all ${
-                playoffFilter === "final"
-                  ? "bg-indigo-600 text-white shadow"
-                  : "bg-slate-800/40 text-slate-400 hover:text-white"
-              }`}
-            >
-              Final
-            </button>
-          )}
+              <option value="all">🏆 Todas las Llaves</option>
+              <option value="16vos">🛡️ Dieciseisavos (16avos)</option>
+              <option value="8avos">⚡ Octavos de Final (8avos)</option>
+              <option value="4tos">⚔️ Cuartos de Final (4tos)</option>
+              <option value="semifinal">🥈 Semifinales</option>
+              <option value="final">🥇 Gran Final</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -409,7 +324,7 @@ export const PlayoffsTab: React.FC<PlayoffsTabProps> = ({
           )}
 
           {/* 16avos Column */}
-          {matches_16avos.length > 0 && (playoffFilter === "all" || playoffFilter === "16avos") && (
+          {matches_16avos.length > 0 && (playoffFilter === "all" || playoffFilter === "16avos" || playoffFilter === "16vos") && (
             <div className="space-y-6 w-[270px] shrink-0">
               <span className="block text-[10px] text-slate-500 uppercase tracking-widest font-mono text-center font-extrabold bg-slate-900/40 py-1.5 rounded-lg">16avos de Final</span>
               <div className="space-y-4">

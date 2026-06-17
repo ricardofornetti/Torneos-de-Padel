@@ -2239,8 +2239,8 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
         await handlePlayoffProgression(updatedMatch, winnerId);
       }
 
-      // Automatically launch playoffs if this was the last group match
-      if (activeScoreMatch.phase === "group") {
+      // Automatically launch playoffs if this was the last group match and tournament type is "Grupos + Eliminatorias"
+      if (activeScoreMatch.phase === "group" && tournament?.tournamentType === "Grupos + Eliminatorias") {
         const allCategoryMatches = [...matches.filter(m => m.id !== updatedMatch.id), updatedMatch]
           .filter(m => m.category === selectedCategory);
         const remainingGroupMatches = allCategoryMatches.filter(m => m.phase === "group" && m.status === "pending");
@@ -3021,15 +3021,6 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
       {viewMode === "isolated" ? (
         <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 pb-20 animate-fade-in">
           
-          {/* Back link */}
-          <button
-            onClick={() => setViewMode("dashboard")}
-            className="group text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-[#d4fc34] transition-colors flex items-center gap-1.5 self-start mb-2 cursor-pointer"
-          >
-            <ArrowLeft className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#d4fc34]" />
-            <span>Volver</span>
-          </button>
-
           {/* Light Header (Style A) */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="space-y-1">
@@ -3073,13 +3064,6 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
             </div>
 
             <div className="self-start md:self-center">
-              <PageHeaderButton
-                variant="primary"
-                onClick={() => handleOpenPrintSheet(activeTab === "inscriptions" ? "inscriptions" : activeTab === "matches" ? "matches" : activeTab === "standings" ? "standings" : "playoffs")}
-                icon={<Printer className="w-4 h-4" />}
-              >
-                Planilla oficial
-              </PageHeaderButton>
             </div>
           </div>
             {/* COMPACT CATEGORY SELECTOR IN ISOLATED VIEW */}

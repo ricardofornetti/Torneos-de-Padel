@@ -171,15 +171,6 @@ export const Gallery: React.FC<GalleryProps> = ({ userRole, onBack }) => {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col animate-fade-in">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 w-full flex-1">
-        {onBack && (
-          <button
-            onClick={onBack}
-            className="group text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-[#d4fc34] transition-colors flex items-center gap-1.5 self-start mb-2 cursor-pointer"
-          >
-            <ArrowLeft className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#d4fc34]" />
-            <span>Volver</span>
-          </button>
-        )}
 
         {/* Light Header (Style A) */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-900 pb-6">

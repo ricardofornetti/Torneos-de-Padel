@@ -763,8 +763,16 @@ export function calculateDosVidasStandings(
     };
   });
 
+  // Filtrar matches que pertenecen a la categoría y torneo de las parejas provistas
+  const categoryName = pairs[0]?.category;
+  const tId = pairs[0]?.tournamentId;
+  const filteredMatches = matches.filter(m => 
+    (!categoryName || m.category === categoryName) &&
+    (!tId || m.tournamentId === tId)
+  );
+
   // Filtrar partidos de fase preliminaria o fase Dos Vidas (phase === "group")
-  const dvMatches = matches.filter(m => m.phase === "group" && m.status !== "pending");
+  const dvMatches = filteredMatches.filter(m => m.phase === "group" && m.status !== "pending");
 
   dvMatches.forEach(m => {
     const p1 = statsMap[m.pair1Id];
@@ -838,7 +846,7 @@ export function calculateDosVidasStandings(
   });
 
   // Strict SRTC rules: losers of Ronda 2 matches are immediately eliminated (0 lives remaining)
-  const completedR2Matches = matches.filter(
+  const completedR2Matches = filteredMatches.filter(
     m => m.status !== "pending" && 
     (m.stageName.toLowerCase().includes("ronda 2") || m.id.includes("_r2_m"))
   );

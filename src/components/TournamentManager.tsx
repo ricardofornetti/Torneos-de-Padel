@@ -18,6 +18,8 @@ import {
 } from 'lucide-react';
 import { repository } from '../lib/repository';
 import { Tournament, Pair, Match, Player, PlayerPrivateData } from '../types';
+import { formatDate } from '../lib/utils';
+import { motion, AnimatePresence } from 'motion/react';
 
 interface TournamentManagerProps {
   userRole: "admin" | "player";
@@ -34,9 +36,7 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [deleteTConfirm, setDeleteTConfirm] = useState<{ id: string; name: string } | null>(null);
-  
-  // Tabs
-  const [activeTabStatus, setActiveTabStatus] = useState<"active" | "completed">("active");
+  const [statusFilter, setStatusFilter] = useState<"all" | "registration" | "in_progress" | "completed">("all");
 
   // Form State
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -916,26 +916,26 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
 
   // Filter listings
   const filtered = tournaments.filter(t => {
-    // Status filters matches tab selection
-    const isCompleted = t.status === "completed";
-    const matchesTab = activeTabStatus === "completed" ? isCompleted : !isCompleted;
+    // 1. Status Filter
+    if (statusFilter !== "all" && t.status !== statusFilter) {
+      return false;
+    }
 
-    return matchesTab;
+    // 2. Search Query (name, club, city)
+    if (search.trim() !== "") {
+      const q = search.toLowerCase();
+      const nameMatch = t.name?.toLowerCase().includes(q);
+      const clubMatch = t.club?.toLowerCase().includes(q);
+      const cityMatch = t.city?.toLowerCase().includes(q);
+      return nameMatch || clubMatch || cityMatch;
+    }
+
+    return true;
   });
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col animate-fade-in">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 w-full flex-1">
-        {onBack && (
-          <button
-            onClick={onBack}
-            className="group text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-[#d4fc34] transition-colors flex items-center gap-1.5 self-start mb-2 cursor-pointer"
-          >
-            <ArrowLeft className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#d4fc34]" />
-            <span>Volver</span>
-          </button>
-        )}
-
         {/* Light Header (Style A) */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-900 pb-6">
           <div className="space-y-1">
@@ -968,6 +968,46 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
             </div>
           )}
         </div>
+
+        {/* FILTERS PANEL */}
+        <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-3.5 shadow-md">
+          <div className="flex items-center gap-2 text-xs font-mono font-black text-[#d4fc34] uppercase tracking-wider border-b border-slate-850 pb-2">
+            <Filter className="w-4 h-4" /> Búsqueda y Filtros de Torneos
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Search Input */}
+            <div className="space-y-1">
+              <label className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block">Buscar Torneo</label>
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-2.5" />
+                <input
+                  type="text"
+                  placeholder="Buscar por nombre, club o ciudad..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 focus:border-[#d4fc34] rounded-lg pl-9 pr-3 py-2 text-xs text-slate-100 placeholder-slate-500 outline-none"
+                />
+              </div>
+            </div>
+
+            {/* Status Dropdown */}
+            <div className="space-y-1">
+              <label className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block">Estado de Gestión</label>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as any)}
+                className="w-full bg-slate-950 border border-slate-800 focus:border-[#d4fc34] rounded-lg p-2 text-xs text-slate-100 outline-none block appearance-none"
+              >
+                <option value="all">🏆 Todos los Estados</option>
+                <option value="registration">📝 Inscripciones Abiertas</option>
+                <option value="in_progress">🎾 En Juego / En Curso</option>
+                <option value="completed">🎬 Finalizados / Cerrados</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
       {loading ? (
         <div className="text-center py-10 font-mono text-slate-500 text-xs">
           Comunicando con Firestore...
@@ -977,11 +1017,18 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
           No se encontraron torneos vigentes para esta sección.
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filtered.map(t => (
-            <div 
+        <motion.div 
+          layout
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+        >
+          {filtered.map((t, idx) => (
+            <motion.div 
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.05, duration: 0.3 }}
+              whileHover={{ y: -4, transition: { duration: 0.15 } }}
               key={t.id}
-              className="bg-slate-900 border border-slate-800 hover:border-slate-700 transition rounded-xl flex flex-col justify-between group overflow-hidden"
+              className="bg-slate-900 border border-slate-800 hover:border-slate-700 transition rounded-xl flex flex-col justify-between group overflow-hidden shadow-md"
               id={`t-card-${t.id}`}
             >
               {/* Header card body */}
@@ -1016,7 +1063,7 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
 
                     <div className="flex items-center gap-1.5">
                       <Calendar className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                      <span className="font-mono text-[11px]">{t.startDate} al {t.endDate}</span>
+                      <span className="font-mono text-[11px]">{formatDate(t.startDate)} al {formatDate(t.endDate)}</span>
                     </div>
 
 
@@ -1054,34 +1101,12 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
                 </button>
               </div>
 
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       )}
 
-      {/* TABS STATUS NAVIGATION - MOVED TO THE BOTTOM */}
-      <div className="flex border-b border-slate-850 gap-2 justify-center pt-6 mt-8">
-        <button
-          onClick={() => setActiveTabStatus("active")}
-          className={`pb-2.5 px-6 text-xs font-black uppercase tracking-wider transition ${
-            activeTabStatus === "active"
-              ? "border-b-2 border-blue-500 text-blue-400 font-black"
-              : "text-slate-400 hover:text-slate-200"
-          }`}
-        >
-          🏆 Ligas y Torneos Vigentes
-        </button>
-        <button
-          onClick={() => setActiveTabStatus("completed")}
-          className={`pb-2.5 px-6 text-xs font-black uppercase tracking-wider transition ${
-            activeTabStatus === "completed"
-              ? "border-b-2 border-[#d4fc34] text-[#d4fc34]"
-              : "text-slate-400 hover:text-slate-200"
-          }`}
-        >
-          📜 Historial de Torneos Cerrados
-        </button>
-      </div>
+
 
       {/* MODAL CREATOR DIALOG FOR INTERACTIVE FORMS */}
       {isFormOpen && (

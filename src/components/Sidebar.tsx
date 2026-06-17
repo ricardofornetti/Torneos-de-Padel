@@ -18,7 +18,8 @@ import {
   ChevronRight,
   Shield,
   Zap,
-  Award
+  Award,
+  AlertTriangle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { repository } from '../lib/repository';
@@ -52,6 +53,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [regError, setRegError] = useState("");
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [showManualForm, setShowManualForm] = useState(false);
   const [regForm, setRegForm] = useState({
     email: "",
     firstName: "",
@@ -144,19 +146,37 @@ export const Sidebar: React.FC<SidebarProps> = ({
       }
     } catch (error: any) {
       console.error("Google sign-in error in Sidebar UI:", error);
-      const isUnauthorizedDomain = error.message && (
-        error.message.includes("auth/unauthorized-domain") || 
-        error.message.includes("unauthorized-domain")
-      );
+      const errorCode = error.code;
       
-      if (isUnauthorizedDomain) {
-        setRegError(
-          `⚠️ Dominio No Autorizado en Firebase Auth.\n\nPara solucionarlo e ingresar con Google:\n1. Abre la consola de Firebase en:\nhttps://console.firebase.google.com/project/silken-concept-wsjh2/authentication/settings\n2. Ve a la pestaña "Ajustes" -> "Dominios autorizados" -> "Agregar dominio".\n3. Registra este dominio actual: ${window.location.host}\n\nMientras tanto, puedes registrarte usando el "Registro Manual Directo" de abajo.`
-        );
+      if (errorCode === "auth/popup-closed-by-user") {
+        setRegError("");
+        return;
+      }
+      
+      if (errorCode === "auth/network-request-failed") {
+        setRegError("Error de conexión. Verificá tu internet e intentá de nuevo.");
+      } else if (errorCode === "auth/popup-blocked") {
+        setRegError("El navegador bloqueó la ventana de login. Permitir popups para este sitio.");
       } else {
-        setRegError(
-          `Error de autenticación Google: ${error.message || 'Error general'}. Puede intentar con el formulario manual.`
+        const isUnauthorizedDomain = error.message && (
+          error.message.includes("auth/unauthorized-domain") || 
+          error.message.includes("unauthorized-domain") ||
+          errorCode === "auth/unauthorized-domain"
         );
+        
+        if (isUnauthorizedDomain) {
+          setRegError(
+            `⚠️ Dominio No Autorizado en Firebase Auth.\n\nPara solucionarlo e ingresar con Google:\n1. Abre la consola de Firebase en:\nhttps://console.firebase.google.com/project/silken-concept-wsjh2/authentication/settings\n2. Ve a la pestaña "Ajustes" -> "Dominios autorizados" -> "Agregar dominio".\n3. Registra este dominio actual: ${window.location.host}\n\nMientras tanto, puedes registrarte usando el "Registro Manual Directo" de abajo.`
+          );
+        } else {
+          let cleanMsg = error.message || "Error general de autenticación.";
+          if (cleanMsg.includes("{")) {
+            try {
+              cleanMsg = cleanMsg.split("{")[0].trim();
+            } catch (e) {}
+          }
+          setRegError(cleanMsg);
+        }
       }
     } finally {
       setGoogleLoading(false);
@@ -666,11 +686,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </div>
 
               <div className="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
-                {regError && (
-                  <div className="p-3 bg-red-950/45 border border-red-900/60 rounded-xl text-[11px] text-red-400 font-medium whitespace-pre-wrap leading-relaxed">
-                    {regError}
-                  </div>
-                )}
+                <AnimatePresence mode="popLayout">
+                  {regError && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: -8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      className="p-3.5 bg-red-950/45 border border-red-900/60 rounded-xl text-[11px] text-red-300 font-medium whitespace-pre-wrap leading-relaxed flex flex-col gap-2.5"
+                    >
+                      <div className="flex items-start gap-2">
+                        <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                        <span className="flex-1">{regError}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleGoogleLogin()}
+                        className="self-start text-[10px] font-bold uppercase tracking-wider text-white hover:text-[#d4fc34] bg-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-850 transition cursor-pointer font-mono"
+                      >
+                        Reintentar
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
                 <div className="space-y-1.5">
                   <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest font-mono block">MÉTODO AUTOMÁTICO RECOMENDADO:</span>
@@ -689,118 +726,136 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   </button>
                 </div>
 
-                <div className="relative flex py-2 items-center">
-                  <div className="flex-grow border-t border-slate-800"></div>
-                  <span className="flex-shrink mx-3 text-[9px] text-slate-500 font-mono uppercase tracking-widest leading-none">ó Registro Manual Directo</span>
-                  <div className="flex-grow border-t border-slate-800"></div>
-                </div>
-
-                <form onSubmit={handleLocalRegisterSubmit} className="space-y-4 text-left">
-                  <div className="p-3 bg-[#d4fc34]/10 border border-[#d4fc34]/20 rounded-xl text-[10px] text-slate-300 leading-normal font-mono flex items-start gap-2">
-                    <Sparkles className="w-3.5 h-3.5 text-[#d4fc34] shrink-0 mt-0.5 animate-pulse" />
-                    <span>
-                      Si Google Sign-In presenta un error debido a la API Key, puedes completar este registro de resguardo con cualquier cuenta <strong>@gmail.com</strong>.
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-bold text-slate-400 uppercase font-mono block">Email de Gmail *</label>
-                      <input
-                        type="email"
-                        required
-                        placeholder="ejemplo@gmail.com"
-                        value={regForm.email}
-                        onChange={e => setRegForm({...regForm, email: e.target.value})}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#d4fc34]/50 font-mono"
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-bold text-slate-400 uppercase font-mono block">DNI *</label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="Documento único"
-                        value={regForm.dni}
-                        onChange={e => setRegForm({...regForm, dni: e.target.value})}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#d4fc34]/50 font-mono"
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-bold text-slate-400 uppercase font-mono block">Nombre *</label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="Nombre completo"
-                        value={regForm.firstName}
-                        onChange={e => setRegForm({...regForm, firstName: e.target.value})}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#d4fc34]/50"
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-bold text-slate-400 uppercase font-mono block">Apellido *</label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="Apellido registrado"
-                        value={regForm.lastName}
-                        onChange={e => setRegForm({...regForm, lastName: e.target.value})}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#d4fc34]/50"
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-bold text-slate-400 uppercase font-mono block">WhatsApp</label>
-                      <input
-                        type="tel"
-                        placeholder="Tel de contacto"
-                        value={regForm.phone}
-                        onChange={e => setRegForm({...regForm, phone: e.target.value})}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#d4fc34]/50 font-mono"
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-bold text-slate-400 uppercase font-mono block">Ciudad de Residencia</label>
-                      <input
-                        type="text"
-                        placeholder="Localidad"
-                        value={regForm.city}
-                        onChange={e => setRegForm({...regForm, city: e.target.value})}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#d4fc34]/50"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-1 pt-1">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase font-mono block">Categoría de Inscripción Oficial *</label>
-                    <select
-                      required
-                      value={regForm.category}
-                      onChange={e => setRegForm({...regForm, category: e.target.value})}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#d4fc34]/55 block appearance-none"
+                {!showManualForm ? (
+                  <div className="text-center pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowManualForm(true)}
+                      className="text-xs text-slate-400 hover:text-[#d4fc34] underline transition font-medium cursor-pointer"
                     >
-                      <option value="Libre Masculina">Libre Masculina</option>
-                      <option value="4ta Masculina">4ta Masculina</option>
-                      <option value="5ta Masculina">5ta Masculina</option>
-                      <option value="6ta Masculina">6ta Masculina</option>
-                      <option value="7ma Masculina">7ma Masculina</option>
-                      <option value="6ta Femenina">6ta Femenina</option>
-                      <option value="7ma Femenina">7ma Femenina</option>
-                    </select>
+                      ¿Problemas con Google? Registrate manualmente
+                    </button>
                   </div>
-
-                  <button
-                    type="submit"
-                    className="btn-padel-primary w-full py-3 text-slate-950 font-black text-xs rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 shadow-lg uppercase tracking-wider mt-4"
+                ) : (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    className="space-y-4 pt-1"
                   >
-                    <Sparkles className="w-4 h-4 text-slate-950 shrink-0" />
-                    <span>Matricularse y Acceder</span>
-                  </button>
-                </form>
+                    <div className="relative flex py-2 items-center">
+                      <div className="flex-grow border-t border-slate-800"></div>
+                      <span className="flex-shrink mx-3 text-[9px] text-slate-500 font-mono uppercase tracking-widest leading-none">Registro Alternativo</span>
+                      <div className="flex-grow border-t border-slate-800"></div>
+                    </div>
+
+                    <form onSubmit={handleLocalRegisterSubmit} className="space-y-4 text-left">
+                      <div className="p-3 bg-[#d4fc34]/10 border border-[#d4fc34]/20 rounded-xl text-[10px] text-slate-300 leading-normal font-mono flex items-start gap-2">
+                        <Sparkles className="w-3.5 h-3.5 text-[#d4fc34] shrink-0 mt-0.5 animate-pulse" />
+                        <span>
+                          Registro alternativo: completá tus datos para crear tu ficha de competidor sin cuenta Google.
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-bold text-slate-400 uppercase font-mono block">Email de Gmail *</label>
+                          <input
+                            type="email"
+                            required
+                            placeholder="ejemplo@gmail.com"
+                            value={regForm.email}
+                            onChange={e => setRegForm({...regForm, email: e.target.value})}
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#d4fc34]/50 font-mono"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-bold text-slate-400 uppercase font-mono block">DNI *</label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="Documento único"
+                            value={regForm.dni}
+                            onChange={e => setRegForm({...regForm, dni: e.target.value})}
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#d4fc34]/50 font-mono"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-bold text-slate-400 uppercase font-mono block">Nombre *</label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="Nombre completo"
+                            value={regForm.firstName}
+                            onChange={e => setRegForm({...regForm, firstName: e.target.value})}
+                            className="w-full bg-slate-950 border border-slate-850 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#d4fc34]/50"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-bold text-slate-400 uppercase font-mono block">Apellido *</label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="Apellido registrado"
+                            value={regForm.lastName}
+                            onChange={e => setRegForm({...regForm, lastName: e.target.value})}
+                            className="w-full bg-slate-950 border border-slate-850 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#d4fc34]/50"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-bold text-slate-400 uppercase font-mono block">WhatsApp</label>
+                          <input
+                            type="tel"
+                            placeholder="Tel de contacto"
+                            value={regForm.phone}
+                            onChange={e => setRegForm({...regForm, phone: e.target.value})}
+                            className="w-full bg-slate-950 border border-[#d4fc34]/20 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#d4fc34]/50 font-mono"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-bold text-slate-400 uppercase font-mono block">Ciudad de Residencia</label>
+                          <input
+                            type="text"
+                            placeholder="Localidad"
+                            value={regForm.city}
+                            onChange={e => setRegForm({...regForm, city: e.target.value})}
+                            className="w-full bg-slate-950 border border-[#d4fc34]/20 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#d4fc34]/50"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-1 pt-1">
+                        <label className="text-[9px] font-bold text-slate-400 uppercase font-mono block">Categoría de Inscripción Oficial *</label>
+                        <select
+                          required
+                          value={regForm.category}
+                          onChange={e => setRegForm({...regForm, category: e.target.value})}
+                          className="w-full bg-slate-950 border border-[#d4fc34]/20 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#d4fc34]/55 block appearance-none"
+                        >
+                          <option value="Libre Masculina">Libre Masculina</option>
+                          <option value="4ta Masculina">4ta Masculina</option>
+                          <option value="5ta Masculina">5ta Masculina</option>
+                          <option value="6ta Masculina">6ta Masculina</option>
+                          <option value="7ma Masculina">7ma Masculina</option>
+                          <option value="6ta Femenina">6ta Femenina</option>
+                          <option value="7ma Femenina">7ma Femenina</option>
+                        </select>
+                      </div>
+
+                      <button
+                        type="submit"
+                        className="btn-padel-primary w-full py-3 text-slate-950 font-black text-xs rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 shadow-lg uppercase tracking-wider mt-4"
+                      >
+                        <Sparkles className="w-4 h-4 text-slate-950 shrink-0" />
+                        <span>Matricularse y Acceder</span>
+                      </button>
+                    </form>
+                  </motion.div>
+                )}
               </div>
             </motion.div>
           </div>
