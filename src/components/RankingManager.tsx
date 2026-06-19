@@ -202,10 +202,22 @@ export const RankingManager: React.FC<RankingManagerProps> = ({ userRole, onBack
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col animate-fade-in">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 w-full flex-1">
 
-        {/* Light Header (Style A) */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-900 pb-6">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 mb-1.5">
+        {/* Banner de Pantalla de Ranking */}
+        <div className="relative rounded-3xl overflow-hidden border border-slate-800/80 p-6 sm:p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-6 min-h-[160px] shadow-2xl">
+          {/* Background Image */}
+          <div className="absolute inset-0 z-0">
+            <img 
+              src="/src/assets/images/ranking_banner_1781910979930.jpg" 
+              alt="Ranking de Pádel" 
+              className="w-full h-full object-cover blur-[0.5px]"
+              referrerPolicy="no-referrer"
+            />
+            {/* Dark overlay for readability */}
+            <div className="absolute inset-0 bg-slate-950/85"></div>
+          </div>
+
+          <div className="space-y-1 relative z-10">
+            <div className="flex items-center gap-2 mb-1.5 animate-fade-in">
               <span className="bg-[#d4fc34]/15 text-[#d4fc34] border border-[#d4fc34]/20 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest font-mono">
                 Clasificación de la Liga
               </span>
@@ -213,16 +225,16 @@ export const RankingManager: React.FC<RankingManagerProps> = ({ userRole, onBack
                 RANKING
               </span>
             </div>
-            <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black uppercase tracking-wider text-white flex items-center gap-2.5">
-              <Award className="w-7 h-7 text-[#d4fc34]" />
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-black uppercase tracking-wider text-white flex items-center gap-2.5">
+              <Award className="w-6 h-6 text-[#d4fc34]" />
               <span>Ranking Oficial</span>
             </h1>
-            <p className="text-xs text-slate-400 font-normal">
-              Cuadro de Honor y escalafón anual unificado de la liga profesional de pádel.
+            <p className="text-xs text-slate-350 font-normal max-w-xl">
+              Cuadro de Honor y escalafón anual unificado de la liga profesional de pádel de primer nivel.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 md:gap-3">
+          <div className="flex flex-wrap items-center gap-2 md:gap-3 relative z-10">
             {userRole === "admin" && (
               <>
                 <button
@@ -247,14 +259,14 @@ export const RankingManager: React.FC<RankingManagerProps> = ({ userRole, onBack
         </div>
 
       {/* Panel de Filtros Estilo Fixture/Calendario */}
-      <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-3.5 shadow-md">
-        <div className="flex items-center gap-2 text-xs font-mono font-black text-[#d4fc34] uppercase tracking-wider border-b border-slate-850 pb-2">
+      <div className="bg-slate-900 border border-slate-800 p-5 rounded-xl space-y-5 shadow-md">
+        <div className="flex items-center gap-2 text-xs font-mono font-black text-[#d4fc34] uppercase tracking-wider border-b border-slate-850 pb-2.5">
           <Filter className="w-4 h-4" /> Filtros de Visualización de Ranking
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {/* Buscador por Nombre/Ciudad */}
-          <div className="space-y-1">
+        <div className="space-y-4">
+          {/* Buscador de Atleta */}
+          <div className="space-y-1 w-full max-w-md">
             <label className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block">Buscar Atleta</label>
             <div className="relative">
               <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-2.5" />
@@ -263,42 +275,66 @@ export const RankingManager: React.FC<RankingManagerProps> = ({ userRole, onBack
                 placeholder="Nombre o ciudad..."
                 value={search} 
                 onChange={e => setSearch(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 focus:border-[#d4fc34] rounded-lg pl-9 pr-3 py-2 text-xs text-slate-100 placeholder-slate-500 outline-none" 
+                className="w-full bg-slate-950 border border-slate-850 focus:border-[#d4fc34] rounded-lg pl-9 pr-3 py-2 text-xs text-slate-100 placeholder-slate-500 outline-none transition" 
               />
             </div>
           </div>
 
-          {/* Filtro de Categoría */}
-          <div className="space-y-1">
-            <label className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block">Categoría Base</label>
-            <select 
-              value={categoryFilter} 
-              onChange={e => setCategoryFilter(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 focus:border-[#d4fc34] rounded-lg p-2 text-xs text-slate-100 outline-none block appearance-none"
-            >
-              <option value="all">🏆 Todas las Categorías</option>
-              <option value="Libre Masculina">Libre Masculina</option>
-              <option value="4ta Masculina">4ta Masculina</option>
-              <option value="5ta Masculina">5ta Masculina</option>
-              <option value="6ta Masculina">6ta Masculina</option>
-              <option value="7ma Masculina">7ma Masculina</option>
-              <option value="6ta Femenina">6ta Femenina</option>
-              <option value="7ma Femenina">7ma Femenina</option>
-            </select>
-          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 pt-2">
+            {/* Categorías como chips horizontales */}
+            <div className="space-y-2 lg:col-span-8">
+              <label className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block">Categoría Base</label>
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  { id: "all", label: "🎾 Todas" },
+                  { id: "Libre Masculina", label: "Libre Masc" },
+                  { id: "4ta Masculina", label: "4ta Masc" },
+                  { id: "5ta Masculina", label: "5ta Masc" },
+                  { id: "6ta Masculina", label: "6ta Masc" },
+                  { id: "7ma Masculina", label: "7ma Masc" },
+                  { id: "6ta Femenina", label: "6ta Fem" },
+                  { id: "7ma Femenina", label: "7ma Fem" }
+                ].map(cat => (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => setCategoryFilter(cat.id)}
+                    className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-all uppercase cursor-pointer ${
+                      categoryFilter === cat.id
+                        ? "bg-[#d4fc34] text-slate-950 shadow-md font-extrabold"
+                        : "bg-slate-950 text-slate-400 border border-slate-850 hover:text-white"
+                    }`}
+                  >
+                    {cat.label}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-          {/* Filtro de Género */}
-          <div className="space-y-1">
-            <label className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block">Rama</label>
-            <select 
-              value={genderFilter} 
-              onChange={e => setGenderFilter(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 focus:border-[#d4fc34] rounded-lg p-2 text-xs text-slate-100 outline-none block appearance-none"
-            >
-              <option value="all">👥 Ambos Géneros</option>
-              <option value="male">🚹 Masculino</option>
-              <option value="female">🚺 Femenino</option>
-            </select>
+            {/* Géneros como chips horizontales */}
+            <div className="space-y-2 lg:col-span-4">
+              <label className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block">Rama / Género</label>
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  { id: "all", label: "👥 Ambos" },
+                  { id: "male", label: "🚹 Masc" },
+                  { id: "female", label: "🚺 Fem" }
+                ].map(gen => (
+                  <button
+                    key={gen.id}
+                    type="button"
+                    onClick={() => setGenderFilter(gen.id)}
+                    className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all uppercase cursor-pointer ${
+                      genderFilter === gen.id
+                        ? "bg-[#d4fc34] text-slate-950 shadow-md font-extrabold"
+                        : "bg-slate-950 text-slate-400 border border-slate-850 hover:text-white"
+                    }`}
+                  >
+                    {gen.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </div>

@@ -387,10 +387,22 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole, onBack }
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col animate-fade-in">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 w-full flex-1">
 
-        {/* Light Header (Style A) */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-900 pb-6">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 mb-1.5">
+        {/* Banner de Pantalla de Jugadores */}
+        <div className="relative rounded-3xl overflow-hidden border border-slate-800/80 p-6 sm:p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-6 min-h-[160px] shadow-2xl">
+          {/* Background Image */}
+          <div className="absolute inset-0 z-0">
+            <img 
+              src="/src/assets/images/players_banner_1781910992573.jpg" 
+              alt="Jugadores de Pádel" 
+              className="w-full h-full object-cover blur-[0.5px]"
+              referrerPolicy="no-referrer"
+            />
+            {/* dark overlay to keep it readable */}
+            <div className="absolute inset-0 bg-slate-950/85"></div>
+          </div>
+
+          <div className="space-y-1 relative z-10">
+            <div className="flex items-center gap-2 mb-1.5 animate-fade-in">
               <span className="bg-[#d4fc34]/15 text-[#d4fc34] border border-[#d4fc34]/20 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest font-mono">
                 Base de Atletas
               </span>
@@ -398,20 +410,20 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole, onBack }
                 JUGADORES
               </span>
             </div>
-            <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black uppercase tracking-wider text-white flex items-center gap-2.5">
-              <Users className="w-7 h-7 text-[#d4fc34]" />
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-black uppercase tracking-wider text-white flex items-center gap-2.5">
+              <Users className="w-6 h-6 text-[#d4fc34]" />
               <span>Registro de Jugadores</span>
             </h1>
-            <p className="text-xs text-slate-400 font-normal">
-              Ficha oficial unificada de competidores registrados y acumuladores de ranking anual.
+            <p className="text-xs text-slate-350 font-normal max-w-xl">
+              Ficha oficial unificada de competidores registrados y acumuladores de ranking anual en la liga.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 md:gap-3">
+          <div className="flex flex-wrap items-center gap-2 md:gap-3 relative z-10">
             {userRole === "admin" && (
               <button
                 onClick={handleImportFIPPlayers}
-                className="bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 text-xs font-bold px-4 py-3 rounded-xl flex items-center gap-1.5 transition cursor-pointer uppercase tracking-wider text-center"
+                className="bg-slate-900/90 hover:bg-slate-800 border border-slate-800 text-slate-300 text-xs font-bold px-4 py-3 rounded-xl flex items-center gap-1.5 transition cursor-pointer uppercase tracking-wider text-center backdrop-blur-md"
                 title="Cargar automáticamente 100 jugadores premium por categoría (700 jugadores en total: 50% de origen FIP real)"
               >
                 <span>🎾 Cargar Ránking FIP</span>
@@ -419,9 +431,9 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole, onBack }
             )}
             <button
               onClick={handleOpenCreateForm}
-              className="bg-[#d4fc34]/15 hover:bg-[#d4fc34] hover:text-slate-950 text-[#d4fc34] text-xs font-black px-5 py-3 rounded-xl border border-[#d4fc34]/20 uppercase tracking-widest flex items-center gap-2 transition-all cursor-pointer shadow-sm hover:shadow-lg hover:shadow-[#d4fc34]/10"
+              className="bg-[#d4fc34] hover:bg-[#cbf528] text-slate-950 text-xs font-black px-5 py-3 rounded-xl uppercase tracking-widest flex items-center gap-2 transition-all cursor-pointer shadow-lg shadow-[#d4fc34]/10"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-4 h-4 text-slate-950" />
               <span>{userRole === "admin" ? "Registrar Jugador" : "Inscribirse como Jugador"}</span>
             </button>
           </div>

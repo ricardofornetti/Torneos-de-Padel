@@ -267,22 +267,34 @@ export const PlayoffsTab: React.FC<PlayoffsTabProps> = ({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Filtro de Ronda */}
-          <div className="space-y-1">
-            <label className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block">Fase / Ronda Activa</label>
-            <select 
-              value={playoffFilter} 
-              onChange={e => setPlayoffFilter(e.target.value as any)}
-              className="w-full bg-slate-950 border border-slate-800 focus:border-[#d4fc34] rounded-lg p-2 text-xs text-slate-100 outline-none block appearance-none"
-            >
-              <option value="all">🏆 Todas las Llaves</option>
-              <option value="16vos">🛡️ Dieciseisavos (16avos)</option>
-              <option value="8avos">⚡ Octavos de Final (8avos)</option>
-              <option value="4tos">⚔️ Cuartos de Final (4tos)</option>
-              <option value="semifinal">🥈 Semifinales</option>
-              <option value="final">🥇 Gran Final</option>
-            </select>
+        <div className="space-y-2">
+          <label className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block">Fase / Ronda Activa</label>
+          <div className="flex flex-wrap gap-1.5">
+            {[
+              { id: "all", label: "🏆 Todas las Llaves" },
+              ...(matches_r1.length > 0 ? [{ id: "r1", label: "🌱 Ronda 1" }] : []),
+              ...(matches_r2.length > 0 ? [{ id: "r2", label: "📈 Ronda 2" }] : []),
+              ...(has16 ? [{ id: "16vos", label: "🛡️ Dieciseisavos" }] : []),
+              ...(has8 ? [{ id: "8avos", label: "⚡ Octavos" }] : []),
+              ...(has4 ? [{ id: "4tos", label: "⚔️ Cuartos" }] : []),
+              ...(hasSf ? [{ id: "semifinal", label: "🥈 Semifinales" }] : []),
+              ...(hasF ? [{ id: "final", label: "🥇 Gran Final" }] : [])
+            ].map(r => (
+              <button
+                key={r.id}
+                type="button"
+                onClick={() => setPlayoffFilter(r.id as any)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all uppercase cursor-pointer ${
+                  playoffFilter === r.id
+                    ? "bg-[#d4fc34] text-slate-950 shadow-md font-extrabold"
+                    : "bg-slate-950 text-slate-400 border border-slate-850 hover:text-white"
+                }`}
+              >
+                {r.label}
+              </button>
+            ))}
           </div>
+        </div>
         </div>
       </div>
 

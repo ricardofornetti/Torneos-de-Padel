@@ -141,11 +141,21 @@ export const Dashboard: React.FC<DashboardProps> = ({
       {/* Title & Banner HERO */}
       <motion.div 
         variants={itemVariants}
-        className="relative rounded-3xl overflow-hidden border border-slate-800/80 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950/60 p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 min-h-[220px] shadow-2xl"
+        className="relative rounded-3xl overflow-hidden border border-slate-800/80 p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 min-h-[220px] shadow-2xl"
       >
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#0f172a_1px,transparent_1px),linear-gradient(to_bottom,#0f172a_1px,transparent_1px)] bg-[size:16px_16px] opacity-10 pointer-events-none"></div>
+        {/* Background Image of the court at night */}
+        <div className="absolute inset-0 z-0">
+          <img 
+            src="/src/assets/images/dashboard_hero_1781910955942.jpg" 
+            alt="Pista de Pádel SRTC" 
+            className="w-full h-full object-cover blur-[1px]"
+            referrerPolicy="no-referrer"
+          />
+          {/* Post-procesamiento overlay oscuro */}
+          <div className="absolute inset-0 bg-slate-950/80 bg-gradient-to-r from-slate-950 via-slate-950/90 to-slate-950/70"></div>
+        </div>
         <div className="absolute -top-12 -left-12 w-64 h-64 bg-[#d4fc34]/5 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="absolute -bottom-16 -right-16 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="absolute -bottom-16 -right-16 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none text-right"></div>
 
         {/* Hero Info Columns */}
         <div className="max-w-3xl relative z-10 flex flex-col sm:flex-row items-center gap-6 text-center sm:text-left">
@@ -419,11 +429,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
               </div>
 
               {/* Custom Padel Equipment Profile Card */}
-              <div className="bg-slate-950 rounded-2xl overflow-hidden border border-slate-900/80 flex flex-col justify-between p-4 space-y-4 select-none">
+              <div className="bg-slate-950 rounded-2xl overflow-hidden border border-slate-800/60 flex flex-col justify-between p-4 space-y-4 select-none">
                 <span className="text-[9px] text-[#d4fc34] uppercase tracking-widest font-mono font-black block">Reglamentación Oficial Srtc</span>
                 <div className="flex gap-4 items-center">
                   <img 
-                    src="/src/assets/images/padel_gear_badge_1780152189724.png" 
+                    src="/src/assets/images/gear_showcase_1781911001400.jpg" 
                     alt="Paleta y Pelota de Padel" 
                     className="w-14 h-14 rounded-2xl object-cover border border-slate-800 shadow-md shrink-0"
                     referrerPolicy="no-referrer"

@@ -175,16 +175,9 @@ export const preGeneratePlayoffsHelper = (tId: string, cat: string, pairCount?: 
   return list;
 };
 
-export const formatDate = (dateStr?: string): string => {
-  if (!dateStr) return "Sin fecha";
-  if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) return dateStr;
-  const parts = dateStr.split("-");
-  if (parts.length === 3) {
-    const [year, month, day] = parts;
-    return `${day}/${month}/${year}`;
-  }
-  return dateStr;
-};
+import { formatDate as utilsFormatDate } from '../lib/utils';
+
+export const formatDate = utilsFormatDate;
 
 interface TournamentDetailProps {
   tournamentId: string;

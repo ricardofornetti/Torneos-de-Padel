@@ -24,33 +24,18 @@ export default function App() {
   useEffect(() => {
     const checkRole = () => {
       const user = auth.currentUser;
-      const localUserJson = localStorage.getItem("padel_mgr_mock_user");
-      if (user) {
-        if (user.email === 'fornettiricardo@gmail.com') {
-          setUserRole("admin");
-          return;
-        }
-      } else if (localUserJson) {
-        try {
-          const localUser = JSON.parse(localUserJson);
-          if (localUser.email === 'fornettiricardo@gmail.com') {
-            setUserRole("admin");
-            return;
-          }
-        } catch (e) {}
+      if (user && user.email === 'fornettiricardo@gmail.com') {
+        setUserRole("admin");
+      } else {
+        setUserRole("player");
       }
-      setUserRole("player");
     };
 
     checkRole();
     const unsubscribe = auth.onAuthStateChanged(checkRole);
-    window.addEventListener("storage", checkRole);
-    const interval = setInterval(checkRole, 1000);
 
     return () => {
       unsubscribe();
-      window.removeEventListener("storage", checkRole);
-      clearInterval(interval);
     };
   }, []);
 
@@ -96,16 +81,14 @@ export default function App() {
     <div className="min-h-screen flex flex-col lg:flex-row bg-slate-950 text-slate-100 selection:bg-blue-500 selection:text-white">
       
       {/* Visual Navigation Sidebar */}
-      {!isIsolatedInscriptions && (
-        <Sidebar 
-          userRole={userRole} 
-          onNavigate={handleSidebarNavigation}
-          activeView={selectedTournamentId ? "tournaments" : activeView}
-          notifications={notifications}
-          onClearNotifications={handleClearAlerts}
-          onMarkAllRead={handleMarkAllRead}
-        />
-      )}
+      <Sidebar 
+        userRole={userRole} 
+        onNavigate={handleSidebarNavigation}
+        activeView={selectedTournamentId ? "tournaments" : activeView}
+        notifications={notifications}
+        onClearNotifications={handleClearAlerts}
+        onMarkAllRead={handleMarkAllRead}
+      />
 
       {/* Main Core View Area */}
       <main className="flex-1 w-full min-w-0 flex flex-col bg-slate-950">

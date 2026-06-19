@@ -634,17 +634,28 @@ export const MatchesTab: React.FC<MatchesTabProps> = ({
         </div>
 
         {/* Filtro de Fase */}
-        <div className="space-y-1">
+        <div className="space-y-2">
           <label className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block">Fase del Torneo</label>
-          <select 
-            value={phaseFilter} 
-            onChange={e => setPhaseFilter(e.target.value as any)}
-            className="w-full bg-slate-950 border border-slate-800 focus:border-[#d4fc34] rounded-lg p-2 text-xs text-slate-100 outline-none block appearance-none"
-          >
-            <option value="all">🏆 Todos los Partidos</option>
-            <option value="group">🎾 Fase de Grupos / Zonas</option>
-            <option value="playoff">🎬 Fase Playoffs / Llaves</option>
-          </select>
+          <div className="flex flex-wrap gap-1.5">
+            {[
+              { id: "all", label: "🏆 Todos los Partidos" },
+              { id: "group", label: "🎾 Fase de Grupos / Zonas" },
+              { id: "playoff", label: "🎬 Fase Playoffs / Llaves" }
+            ].map(phase => (
+              <button
+                key={phase.id}
+                type="button"
+                onClick={() => setPhaseFilter(phase.id as any)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all uppercase cursor-pointer ${
+                  phaseFilter === phase.id
+                    ? "bg-[#d4fc34] text-slate-950 shadow-md font-extrabold"
+                    : "bg-slate-950 text-slate-400 border border-slate-850 hover:text-white"
+                }`}
+              >
+                {phase.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

@@ -936,10 +936,22 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col animate-fade-in">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 w-full flex-1">
-        {/* Light Header (Style A) */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-900 pb-6">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 mb-1.5">
+        {/* Banner de Pantalla de Torneos */}
+        <div className="relative rounded-3xl overflow-hidden border border-slate-800/80 p-6 sm:p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-6 min-h-[160px] shadow-2xl">
+          {/* Background Image */}
+          <div className="absolute inset-0 z-0">
+            <img 
+              src="/src/assets/images/tournaments_banner_1781910969256.jpg" 
+              alt="Torneos de Pádel" 
+              className="w-full h-full object-cover blur-[0.5px]"
+              referrerPolicy="no-referrer"
+            />
+            {/* dark overlay to keep it readable */}
+            <div className="absolute inset-0 bg-slate-950/85"></div>
+          </div>
+
+          <div className="space-y-1 relative z-10">
+            <div className="flex items-center gap-2 mb-1.5 animate-fade-in">
               <span className="bg-[#d4fc34]/15 text-[#d4fc34] border border-[#d4fc34]/20 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest font-mono">
                 Circuito Profesional
               </span>
@@ -947,22 +959,22 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
                 TOUR
               </span>
             </div>
-            <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black uppercase tracking-wider text-white flex items-center gap-2.5">
-              <Trophy className="w-7 h-7 text-[#d4fc34]" />
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-black uppercase tracking-wider text-white flex items-center gap-2.5">
+              <Trophy className="w-6 h-6 text-[#d4fc34]" />
               <span>Circuitos de Torneos</span>
             </h1>
-            <p className="text-xs text-slate-400 font-normal">
-              Planificación, llaves automáticas y control reglamentario de competencias.
+            <p className="text-xs text-slate-350 font-normal max-w-xl">
+              Planificación, llaves automáticas y control reglamentario de competencias oficiales de la liga.
             </p>
           </div>
 
           {userRole === "admin" && (
-            <div className="self-start md:self-center">
+            <div className="self-start md:self-center relative z-10">
               <button
                 onClick={handleOpenCreateForm}
-                className="bg-[#d4fc34]/15 hover:bg-[#d4fc34] hover:text-slate-950 text-[#d4fc34] text-xs font-black px-5 py-3 rounded-xl border border-[#d4fc34]/20 uppercase tracking-widest flex items-center gap-2 transition-all cursor-pointer shadow-sm hover:shadow-lg hover:shadow-[#d4fc34]/10"
+                className="bg-[#d4fc34] hover:bg-[#cbf528] text-slate-950 text-xs font-black px-5 py-3 rounded-xl uppercase tracking-widest flex items-center gap-2 transition-all cursor-pointer shadow-lg shadow-[#d4fc34]/10"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-4 h-4 text-slate-950" />
                 <span>Crear Torneo</span>
               </button>
             </div>

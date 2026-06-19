@@ -297,6 +297,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onClick={() => setIsMobileOpen(true)}
             className="p-2 -ml-2 text-slate-400 hover:text-white rounded-xl transition cursor-pointer"
             id="mobile-menu-trigger"
+            aria-label="Menú de Navegación"
           >
             <Menu className="w-5 h-5 text-[#d4fc34]" />
           </button>
@@ -315,6 +316,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <button 
               onClick={() => setShowNotifications(!showNotifications)}
               className="p-2 hover:bg-slate-900 text-slate-400 hover:text-white rounded-xl transition relative cursor-pointer"
+              aria-label="Ver notificaciones"
             >
               <Bell className="w-4.5 h-4.5" />
               {unreadCount > 0 && (
@@ -405,6 +407,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <button 
             onClick={() => setIsCollapsed(!isCollapsed)}
             className="p-1.5 hover:bg-slate-900 rounded-lg text-slate-500 hover:text-white transition cursor-pointer"
+            aria-label={isCollapsed ? "Expandir panel lateral" : "Contraer panel lateral"}
           >
             {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
           </button>
@@ -466,6 +469,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   onClick={handleLogout}
                   className="p-1 hover:text-red-400 text-slate-500 transition shrink-0 cursor-pointer"
                   title="Cerrar Sesión"
+                  aria-label="Cerrar sesión"
                 >
                   <LogOut className="w-3.5 h-3.5" />
                 </button>
@@ -516,6 +520,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <button 
                   onClick={() => setIsMobileOpen(false)}
                   className="p-1.5 hover:bg-slate-900 text-slate-400 hover:text-white rounded-lg cursor-pointer"
+                  aria-label="Cerrar panel"
                 >
                   <X className="w-4.5 h-4.5" />
                 </button>
@@ -617,6 +622,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <button 
                     onClick={() => setShowNotifications(false)} 
                     className="text-slate-400 hover:text-white cursor-pointer"
+                    aria-label="Cerrar notificaciones"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -680,6 +686,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   type="button"
                   onClick={() => setShowRegisterModal(false)}
                   className="p-1.5 hover:bg-slate-800 text-slate-400 hover:text-white rounded-lg transition cursor-pointer"
+                  aria-label="Cerrar modal"
                 >
                   <X className="w-4.5 h-4.5" />
                 </button>

@@ -169,22 +169,37 @@ export const FixtureView: React.FC<FixtureViewProps> = ({ onSelectTournament, on
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 animate-fade-in">
       
-      {/* Header section */}
-      <div>
-        <div className="flex items-center gap-2 mb-2">
-          <span className="bg-[#d4fc34]/15 text-[#d4fc34] border border-[#d4fc34]/20 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest font-mono">
-            MATCH CENTER
-          </span>
-          <span className="bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest font-mono">
-            FIP OFFICIAL RULES
-          </span>
+      {/* Banner de Pantalla de Fixture */}
+      <div className="relative rounded-3xl overflow-hidden border border-slate-800/80 p-6 sm:p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-6 min-h-[160px] shadow-2xl">
+        {/* Background Image */}
+        <div className="absolute inset-0 z-0">
+          <img 
+            src="/src/assets/images/fixture_banner_1781911650810.jpg" 
+            alt="Fixture de Pádel" 
+            className="w-full h-full object-cover blur-[0.5px]"
+            referrerPolicy="no-referrer"
+          />
+          {/* dark overlay to keep it readable */}
+          <div className="absolute inset-0 bg-slate-950/85"></div>
         </div>
-        <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black uppercase tracking-wider text-white flex items-center gap-2.5">
-          <CalendarIcon className="w-7 h-7 text-[#d4fc34]" /> Fixture & Calendario
-        </h1>
-        <p className="text-xs text-slate-400">
-          Cronograma general de partidos día a día, marcadores oficiales y llaves de eliminación.
-        </p>
+
+        <div className="space-y-1 relative z-10">
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="bg-[#d4fc34]/15 text-[#d4fc34] border border-[#d4fc34]/20 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest font-mono">
+              MATCH CENTER
+            </span>
+            <span className="bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest font-mono">
+              FIP OFFICIAL RULES
+            </span>
+          </div>
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-black uppercase tracking-wider text-white flex items-center gap-2.5">
+            <CalendarIcon className="w-6 h-6 text-[#d4fc34]" />
+            <span>Fixture & Calendario</span>
+          </h1>
+          <p className="text-xs text-slate-355 font-normal max-w-xl">
+            Cronograma general de partidos día a día, marcadores oficiales y llaves de eliminación de la liga.
+          </p>
+        </div>
       </div>
 
       {/* FILTER PANEL SHEET */}
