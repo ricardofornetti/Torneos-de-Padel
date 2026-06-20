@@ -5,7 +5,15 @@ import {
   Sparkles, 
   Trash2,
   Calendar,
-  Search
+  Search,
+  Activity,
+  Award,
+  Zap,
+  TrendingUp,
+  Target,
+  Shield,
+  Swords,
+  Tag
 } from 'lucide-react';
 import { Tournament, Pair, Match, Court } from '../../types';
 import { formatDate } from '../TournamentDetail';
@@ -178,16 +186,16 @@ export const MatchesTab: React.FC<MatchesTabProps> = ({
   };
 
   const getGroupIcon = (label: string) => {
-    if (label.includes("Grupos") || label.includes("Grupo")) return "🎾";
-    if (label === "Ronda 1") return "📈";
-    if (label === "Ronda 2") return "📊";
-    if (label.includes("Clasificatoria")) return "🎯";
-    if (label.includes("16avos")) return "🛡️";
-    if (label.includes("Octavos") || label.includes("8avos")) return "⚡";
-    if (label.includes("Cuartos") || label.includes("4tos")) return "⚔️";
-    if (label.includes("Semifinales") || label.includes("Semifinal")) return "🥈";
-    if (label.includes("Gran Final") || label.includes("Final")) return "🏆";
-    return "📌";
+    if (label.includes("Grupos") || label.includes("Grupo")) return <Award className="w-4 h-4 text-[#d4fc34]" />;
+    if (label === "Ronda 1") return <TrendingUp className="w-4 h-4 text-[#d4fc34]" />;
+    if (label === "Ronda 2") return <Activity className="w-4 h-4 text-[#d4fc34]" />;
+    if (label.includes("Clasificatoria")) return <Target className="w-4 h-4 text-[#d4fc34]" />;
+    if (label.includes("16avos")) return <Shield className="w-4 h-4 text-[#d4fc34]" />;
+    if (label.includes("Octavos") || label.includes("8avos")) return <Zap className="w-4 h-4 text-[#d4fc34]" />;
+    if (label.includes("Cuartos") || label.includes("4tos")) return <Swords className="w-4 h-4 text-[#d4fc34]" />;
+    if (label.includes("Semifinales") || label.includes("Semifinal")) return <Award className="w-4 h-4 text-[#d4fc34]" />;
+    if (label.includes("Gran Final") || label.includes("Final")) return <Trophy className="w-4 h-4 text-[#d4fc34]" />;
+    return <Tag className="w-4 h-4 text-[#d4fc34]" />;
   };
 
   interface GroupedMatches {
@@ -638,9 +646,9 @@ export const MatchesTab: React.FC<MatchesTabProps> = ({
           <label className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block">Fase del Torneo</label>
           <div className="flex flex-wrap gap-1.5">
             {[
-              { id: "all", label: "🏆 Todos los Partidos" },
-              { id: "group", label: "🎾 Fase de Grupos / Zonas" },
-              { id: "playoff", label: "🎬 Fase Playoffs / Llaves" }
+              { id: "all", label: "Todos los Partidos" },
+              { id: "group", label: "Fase de Grupos / Zonas" },
+              { id: "playoff", label: "Fase Playoffs / Llaves" }
             ].map(phase => (
               <button
                 key={phase.id}
@@ -691,7 +699,7 @@ export const MatchesTab: React.FC<MatchesTabProps> = ({
               return (
                 <div key={groupKey} className="space-y-4">
                   <div className="flex items-center gap-2.5 border-b border-slate-800/80 pb-2.5 ml-1">
-                    <span className="text-lg select-none">{groupIcon}</span>
+                    <div className="flex items-center justify-center shrink-0">{groupIcon}</div>
                     <h3 className="text-sm font-black uppercase tracking-wider text-[#d4fc34] drop-shadow-[0_1px_6px_rgba(212,252,52,0.1)]">
                       {groupKey}
                     </h3>
@@ -723,7 +731,7 @@ export const MatchesTab: React.FC<MatchesTabProps> = ({
             return (
               <div key={groupKey} className="space-y-3">
                 <div className="flex items-center gap-2.5 border-b border-slate-800/80 pb-2.5 ml-1">
-                  <span className="text-lg select-none">{groupIcon}</span>
+                  <div className="flex items-center justify-center shrink-0">{groupIcon}</div>
                   <h3 className="text-sm font-black uppercase tracking-wider text-[#d4fc34] drop-shadow-[0_1px_6px_rgba(212,252,52,0.1)]">
                     {groupKey}
                   </h3>

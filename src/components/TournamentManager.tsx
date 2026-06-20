@@ -941,8 +941,8 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
           {/* Background Image */}
           <div className="absolute inset-0 z-0">
             <img 
-              src="/src/assets/images/tournaments_banner_1781910969256.jpg" 
-              alt="Torneos de Pádel" 
+              src="/src/assets/images/tournaments_banner_1781910969256.webp" 
+              alt="Jugadores compitiendo en cancha de pádel del complejo" 
               className="w-full h-full object-cover"
               referrerPolicy="no-referrer"
             />
@@ -1011,10 +1011,10 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
                 onChange={(e) => setStatusFilter(e.target.value as any)}
                 className="w-full bg-slate-950 border border-slate-800 focus:border-[#d4fc34] rounded-lg p-2 text-xs text-slate-100 outline-none block appearance-none"
               >
-                <option value="all">🏆 Todos los Estados</option>
-                <option value="registration">📝 Inscripciones Abiertas</option>
-                <option value="in_progress">🎾 En Juego / En Curso</option>
-                <option value="completed">🎬 Finalizados / Cerrados</option>
+                <option value="all">Todos los Estados</option>
+                <option value="registration">Inscripciones Abiertas</option>
+                <option value="in_progress">En Juego / En Curso</option>
+                <option value="completed">Finalizados / Cerrados</option>
               </select>
             </div>
           </div>

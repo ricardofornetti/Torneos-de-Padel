@@ -8,7 +8,10 @@ import {
   deleteDoc, 
   getDoc,
   query,
-  where
+  where,
+  writeBatch,
+  orderBy,
+  limit
 } from 'firebase/firestore';
 import { Tournament, Player, PlayerPrivateData, Pair, Match, Court, AppNotification, GalleryMedia } from '../types';
 
@@ -750,20 +753,29 @@ class PadelRepository {
   }
 
   async deleteTournament(id: string): Promise<void> {
+    const orphanedMatches = this.cache.matches.filter(item => item.tournamentId === id);
+    const orphanedPairs = this.cache.pairs.filter(item => item.tournamentId === id);
+
     this.cache.tournaments = this.cache.tournaments.filter(item => item.id !== id);
     this.cache.matches = this.cache.matches.filter(item => item.tournamentId !== id);
     this.cache.pairs = this.cache.pairs.filter(item => item.tournamentId !== id);
     this.saveAllToStorage();
 
     if (isRealFirebase) {
-      deleteDoc(doc(db, "tournaments", id)).catch((err) => {
+      try {
+        const batch = writeBatch(db);
+        batch.delete(doc(db, "tournaments", id));
+        orphanedMatches.forEach(m => batch.delete(doc(db, "matches", m.id)));
+        orphanedPairs.forEach(p => batch.delete(doc(db, "pairs", p.id)));
+        await batch.commit();
+      } catch (err) {
         handleFirestoreError(err, OperationType.DELETE, `tournaments/${id}`);
         this.addNotification(
           "Eliminado en Sandbox Local",
           "Torneo removido localmente del navegador. Sincronización cloud limitada sin login.",
           "warning"
         );
-      });
+      }
     }
   }
 
@@ -1085,7 +1097,25 @@ class PadelRepository {
   }
 
   // NOTIFICATIONS
-  getNotifications(): AppNotification[] {
+  async getNotifications(): Promise<AppNotification[]> {
+    if (isRealFirebase) {
+      try {
+        const q = query(
+          collection(db, "notifications"),
+          orderBy("timestamp", "desc"),
+          limit(50)
+        );
+        const snap = await withTimeout(getDocs(q), 5000);
+        const list: AppNotification[] = [];
+        snap.forEach(docSnap => list.push(docSnap.data() as AppNotification));
+        this.cache.notifications = list;
+        this.saveAllToStorage();
+        return list;
+      } catch (err) {
+        // Si falla la lectura remota, devolver el caché local como fallback
+        return this.cache.notifications;
+      }
+    }
     return this.cache.notifications;
   }
 

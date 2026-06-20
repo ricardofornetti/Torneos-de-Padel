@@ -132,8 +132,8 @@ export const StatsView: React.FC = () => {
         {/* Background Image */}
         <div className="absolute inset-0 z-0">
           <img 
-            src="/src/assets/images/stats_banner_1781911640088.jpg" 
-            alt="Estadísticas de Pádel" 
+            src="/src/assets/images/stats_banner_1781911640088.webp" 
+            alt="Jugador de pádel rematando en el aire durante un partido" 
             className="w-full h-full object-cover"
             referrerPolicy="no-referrer"
           />
@@ -338,7 +338,7 @@ export const StatsView: React.FC = () => {
                     <div className="relative">
                       <img 
                         src={player.photoUrl} 
-                        alt={player.firstName} 
+                        alt={`Foto de perfil de ${player.firstName} ${player.lastName}`}
                         className="w-8 h-8 rounded-full border border-slate-700 object-cover" 
                       />
                       <span className="absolute -bottom-1 -right-1 bg-amber-500 text-slate-950 font-black text-[8px] w-4 h-4 rounded-full flex items-center justify-center border border-slate-950">

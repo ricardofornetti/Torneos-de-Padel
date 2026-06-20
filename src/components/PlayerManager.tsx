@@ -392,8 +392,8 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole, onBack }
           {/* Background Image */}
           <div className="absolute inset-0 z-0">
             <img 
-              src="/src/assets/images/players_banner_1781910992573.jpg" 
-              alt="Jugadores de Pádel" 
+              src="/src/assets/images/players_banner_1781910992573.webp" 
+              alt="Grupo de jugadores ingresando a la cancha" 
               className="w-full h-full object-cover"
               referrerPolicy="no-referrer"
             />
@@ -426,7 +426,7 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole, onBack }
                 className="bg-slate-900/90 hover:bg-slate-800 border border-slate-800 text-slate-300 text-xs font-bold px-4 py-3 rounded-xl flex items-center gap-1.5 transition cursor-pointer uppercase tracking-wider text-center backdrop-blur-md"
                 title="Cargar automáticamente 100 jugadores premium por categoría (700 jugadores en total: 50% de origen FIP real)"
               >
-                <span>🎾 Cargar Ránking FIP</span>
+                <span>Cargar Ránking FIP</span>
               </button>
             )}
             <button
@@ -602,7 +602,7 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole, onBack }
                                 <div className="flex items-center gap-3">
                                   <img
                                     src={p.photoUrl}
-                                    alt={`${p.firstName} ${p.lastName}`}
+                                    alt={`Foto de perfil de ${p.firstName} ${p.lastName}`}
                                     className="w-12 h-12 rounded-full object-cover border border-slate-700 shadow-md"
                                     referrerPolicy="no-referrer"
                                   />
@@ -740,7 +740,7 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole, onBack }
                               <div className="flex items-center gap-3">
                                 <img
                                   src={p.photoUrl}
-                                  alt={`${p.firstName} ${p.lastName}`}
+                                  alt={`Foto de perfil de ${p.firstName} ${p.lastName}`}
                                   className="w-12 h-12 rounded-full object-cover border border-slate-700 shadow-md"
                                   referrerPolicy="no-referrer"
                                 />
@@ -872,8 +872,9 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole, onBack }
             
             {/* Header */}
             <div className="p-4 border-b border-slate-800 flex items-center justify-between">
-              <span className="font-extrabold text-sm text-white">
-                {editingPlayer ? "✏️ Editar Ficha Jugador" : "➕ Registrar Nuevo Jugador"}
+              <span className="font-extrabold text-sm text-white flex items-center gap-1.5 font-display uppercase tracking-wider">
+                {editingPlayer ? <Edit3 className="w-4 h-4 text-[#d4fc34]" /> : <Plus className="w-4 h-4 text-[#d4fc34]" />}
+                {editingPlayer ? "Editar Ficha Jugador" : "Registrar Nuevo Jugador"}
               </span>
               <button
                 onClick={handleCloseForm}
@@ -1004,7 +1005,7 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole, onBack }
                     {newPlayer.photoUrl ? (
                       <img 
                         src={newPlayer.photoUrl} 
-                        alt="Avatar Preview" 
+                        alt="Vista previa del avatar de perfil" 
                         referrerPolicy="no-referrer"
                         className="w-full h-full object-cover"
                       />

@@ -167,7 +167,7 @@ export const PlayoffsTab: React.FC<PlayoffsTabProps> = ({
             })() : (
               <span className="text-slate-500 italic text-[11px] font-medium pl-1">Esperando...</span>
             )}
-            {m.winnerPairId === m.pair1Id && <span className="text-xs text-[#d4fc34] font-black shrink-0 ml-auto pr-0.5">👑</span>}
+            {m.winnerPairId === m.pair1Id && <Trophy className="w-3.5 h-3.5 text-[#d4fc34] shrink-0 fill-[#d4fc34]/20 ml-auto pr-0.5" />}
           </div>
           
           {/* Pair 2 info with avatars */}
@@ -227,7 +227,7 @@ export const PlayoffsTab: React.FC<PlayoffsTabProps> = ({
             })() : (
               <span className="text-slate-500 italic text-[11px] font-medium pl-1">Esperando...</span>
             )}
-            {m.winnerPairId === m.pair2Id && <span className="text-xs text-[#d4fc34] font-black shrink-0 ml-auto pr-0.5">👑</span>}
+            {m.winnerPairId === m.pair2Id && <Trophy className="w-3.5 h-3.5 text-[#d4fc34] shrink-0 fill-[#d4fc34]/20 ml-auto pr-0.5" />}
           </div>
 
           {m.status !== "pending" && m.scoreSummary && (
@@ -271,14 +271,14 @@ export const PlayoffsTab: React.FC<PlayoffsTabProps> = ({
           <label className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block">Fase / Ronda Activa</label>
           <div className="flex flex-wrap gap-1.5">
             {[
-              { id: "all", label: "🏆 Todas las Llaves" },
-              ...(matches_r1.length > 0 ? [{ id: "r1", label: "🌱 Ronda 1" }] : []),
-              ...(matches_r2.length > 0 ? [{ id: "r2", label: "📈 Ronda 2" }] : []),
-              ...(has16 ? [{ id: "16vos", label: "🛡️ Dieciseisavos" }] : []),
-              ...(has8 ? [{ id: "8avos", label: "⚡ Octavos" }] : []),
-              ...(has4 ? [{ id: "4tos", label: "⚔️ Cuartos" }] : []),
-              ...(hasSf ? [{ id: "semifinal", label: "🥈 Semifinales" }] : []),
-              ...(hasF ? [{ id: "final", label: "🥇 Gran Final" }] : [])
+              { id: "all", label: "Todas las Llaves" },
+              ...(matches_r1.length > 0 ? [{ id: "r1", label: "Ronda 1" }] : []),
+              ...(matches_r2.length > 0 ? [{ id: "r2", label: "Ronda 2" }] : []),
+              ...(has16 ? [{ id: "16vos", label: "Dieciseisavos" }] : []),
+              ...(has8 ? [{ id: "8avos", label: "Octavos" }] : []),
+              ...(has4 ? [{ id: "4tos", label: "Cuartos" }] : []),
+              ...(hasSf ? [{ id: "semifinal", label: "Semifinales" }] : []),
+              ...(hasF ? [{ id: "final", label: "Gran Final" }] : [])
             ].map(r => (
               <button
                 key={r.id}
@@ -477,7 +477,7 @@ export const PlayoffsTab: React.FC<PlayoffsTabProps> = ({
                         })() : (
                           <span className="text-slate-500 italic text-[11px] pl-1">Por clasificar</span>
                         )}
-                        {m.winnerPairId === m.pair1Id && <span className="text-xs shrink-0">👑</span>}
+                        {m.winnerPairId === m.pair1Id && <Trophy className="w-3.5 h-3.5 text-indigo-400 shrink-0 fill-indigo-400/20" />}
                       </div>
 
                       <div className="flex items-center justify-between gap-1.5 min-h-[1.75rem] border-t border-slate-800/60 pt-3">
@@ -532,7 +532,7 @@ export const PlayoffsTab: React.FC<PlayoffsTabProps> = ({
                         })() : (
                           <span className="text-slate-500 italic text-[11px] pl-1">Por clasificar</span>
                         )}
-                        {m.winnerPairId === m.pair2Id && <span className="text-xs shrink-0">👑</span>}
+                        {m.winnerPairId === m.pair2Id && <Trophy className="w-3.5 h-3.5 text-indigo-400 shrink-0 fill-indigo-400/20" />}
                       </div>
 
                       {m.status !== "pending" && m.scoreSummary && (

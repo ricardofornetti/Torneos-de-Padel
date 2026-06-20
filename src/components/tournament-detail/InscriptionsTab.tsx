@@ -88,7 +88,7 @@ export const InscriptionsTab: React.FC<InscriptionsTabProps> = ({
                   onClick={() => handleAutoPairRemaining()}
                   className="bg-gradient-to-r from-[#d4fc34] to-[#b8df11] hover:shadow-lg hover:shadow-[#d4fc34]/20 text-slate-950 text-xs font-black px-5 py-3 rounded-xl transition-all flex items-center gap-2 cursor-pointer uppercase tracking-wider shadow-sm"
                 >
-                  <Sparkles className="w-4 h-4 text-slate-950" /> ⚡ Auto-Emparejar e Inscribir Jugadores Libres ({unregisteredCategoryPlayers.length})
+                  <Sparkles className="w-4 h-4 text-slate-950" /> Auto-Emparejar e Inscribir Jugadores Libres ({unregisteredCategoryPlayers.length})
                 </button>
               </div>
             )}
@@ -199,7 +199,7 @@ export const InscriptionsTab: React.FC<InscriptionsTabProps> = ({
                     className="bg-slate-950 hover:bg-slate-850 hover:text-white text-[10px] text-slate-350 font-bold py-2 px-1 rounded-lg transition border border-slate-800 text-center cursor-pointer"
                     title="Auto-Empareja hasta tener 16 parejas en total"
                   >
-                    🎯 Pre-llenar 16
+                    Pre-llenar 16
                   </button>
                   <button
                     type="button"
@@ -207,7 +207,7 @@ export const InscriptionsTab: React.FC<InscriptionsTabProps> = ({
                     className="bg-slate-950 hover:bg-slate-850 hover:text-white text-[10px] text-slate-350 font-bold py-2 px-1 rounded-lg transition border border-slate-800 text-center cursor-pointer"
                     title="Auto-Empareja hasta tener 24 parejas en total"
                   >
-                    🧬 Pre-llenar 24
+                    Pre-llenar 24
                   </button>
                   <button
                     type="button"
@@ -215,7 +215,7 @@ export const InscriptionsTab: React.FC<InscriptionsTabProps> = ({
                     className="bg-slate-950 hover:bg-slate-850 hover:text-white text-[10px] text-slate-350 font-bold py-2 px-1 rounded-lg transition border border-slate-800 text-center cursor-pointer"
                     title="Auto-Empareja hasta tener 32 parejas en total"
                   >
-                    🏆 Pre-llenar 32
+                    Pre-llenar 32
                   </button>
                   <button
                     type="button"
@@ -223,7 +223,7 @@ export const InscriptionsTab: React.FC<InscriptionsTabProps> = ({
                     className="bg-[#d4fc34]/10 hover:bg-[#d4fc34]/20 text-[#d4fc34] hover:text-slate-100 text-[10px] font-black py-2 px-1 rounded-lg transition border border-[#d4fc34]/20 text-center cursor-pointer"
                     title="Inscribe a todos los jugadores libres disponibles"
                   >
-                    ⚡ Llenar Todos
+                    Llenar Todos
                   </button>
                 </div>
               </div>

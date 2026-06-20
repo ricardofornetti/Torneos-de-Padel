@@ -1,16 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Dashboard } from './components/Dashboard';
-import { TournamentManager } from './components/TournamentManager';
-import { TournamentDetail } from './components/TournamentDetail';
-import { PlayerManager } from './components/PlayerManager';
-import { RankingManager } from './components/RankingManager';
-import { CourtManager } from './components/CourtManager';
-import { Gallery } from './components/Gallery';
-import { StatsView } from './components/StatsView';
-import { FixtureView } from './components/FixtureView';
 import { repository } from './lib/repository';
 import { auth } from './lib/firebase';
+
+const TournamentManager = lazy(() => import('./components/TournamentManager').then(m => ({ default: m.TournamentManager })));
+const TournamentDetail = lazy(() => import('./components/TournamentDetail').then(m => ({ default: m.TournamentDetail })));
+const PlayerManager = lazy(() => import('./components/PlayerManager').then(m => ({ default: m.PlayerManager })));
+const RankingManager = lazy(() => import('./components/RankingManager').then(m => ({ default: m.RankingManager })));
+const CourtManager = lazy(() => import('./components/CourtManager').then(m => ({ default: m.CourtManager })));
+const Gallery = lazy(() => import('./components/Gallery').then(m => ({ default: m.Gallery })));
+const StatsView = lazy(() => import('./components/StatsView').then(m => ({ default: m.StatsView })));
+const FixtureView = lazy(() => import('./components/FixtureView').then(m => ({ default: m.FixtureView })));
+
+function AppLoadingFallback() {
+  return (
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="flex flex-col items-center gap-3">
+        <div className="w-8 h-8 border-2 border-slate-700 border-t-[#d4fc34] rounded-full animate-spin" />
+        <p className="text-xs text-slate-500 uppercase tracking-wider">Cargando...</p>
+      </div>
+    </div>
+  );
+}
 
 export default function App() {
   const [activeView, setActiveView] = useState<"dashboard" | "tournaments" | "players" | "rankings" | "courts" | "gallery" | "stats" | "fixture">("dashboard");
@@ -94,78 +106,80 @@ export default function App() {
       <main className="flex-1 w-full min-w-0 flex flex-col bg-slate-950">
         
         <div className="flex-1">
-          {selectedTournamentId ? (
-            <TournamentDetail 
-              tournamentId={selectedTournamentId}
-              userRole={userRole}
-              onBack={() => {
-                setSelectedTournamentId(null);
-                setIsIsolatedInscriptions(false);
-              }}
-              onIsolateModeChange={(isolated) => {
-                setIsIsolatedInscriptions(isolated);
-              }}
-            />
-          ) : (
-            <>
-              {activeView === "dashboard" && (
-                <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                  <Dashboard 
+          <Suspense fallback={<AppLoadingFallback />}>
+            {selectedTournamentId ? (
+              <TournamentDetail 
+                tournamentId={selectedTournamentId}
+                userRole={userRole}
+                onBack={() => {
+                  setSelectedTournamentId(null);
+                  setIsIsolatedInscriptions(false);
+                }}
+                onIsolateModeChange={(isolated) => {
+                  setIsIsolatedInscriptions(isolated);
+                }}
+              />
+            ) : (
+              <>
+                {activeView === "dashboard" && (
+                  <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    <Dashboard 
+                      userRole={userRole}
+                      onNavigateToTournament={(id) => setSelectedTournamentId(id)}
+                      onNavigate={(view) => setActiveView(view as any)}
+                    />
+                  </div>
+                )}
+
+                {activeView === "tournaments" && (
+                  <TournamentManager 
                     userRole={userRole}
-                    onNavigateToTournament={(id) => setSelectedTournamentId(id)}
-                    onNavigate={(view) => setActiveView(view as any)}
+                    onSelectTournament={(id) => setSelectedTournamentId(id)}
+                    onBack={() => handleSidebarNavigation("dashboard")}
                   />
-                </div>
-              )}
+                )}
 
-              {activeView === "tournaments" && (
-                <TournamentManager 
-                  userRole={userRole}
-                  onSelectTournament={(id) => setSelectedTournamentId(id)}
-                  onBack={() => handleSidebarNavigation("dashboard")}
-                />
-              )}
+                {activeView === "players" && (
+                  <PlayerManager 
+                    userRole={userRole}
+                    onBack={() => handleSidebarNavigation("dashboard")}
+                  />
+                )}
 
-              {activeView === "players" && (
-                <PlayerManager 
-                  userRole={userRole}
-                  onBack={() => handleSidebarNavigation("dashboard")}
-                />
-              )}
+                {activeView === "rankings" && (
+                  <RankingManager 
+                    userRole={userRole} 
+                    onBack={() => handleSidebarNavigation("dashboard")}
+                  />
+                )}
 
-              {activeView === "rankings" && (
-                <RankingManager 
-                  userRole={userRole} 
-                  onBack={() => handleSidebarNavigation("dashboard")}
-                />
-              )}
+                {activeView === "courts" && (
+                  <CourtManager 
+                    userRole={userRole}
+                    onBack={() => handleSidebarNavigation("dashboard")}
+                  />
+                )}
 
-              {activeView === "courts" && (
-                <CourtManager 
-                  userRole={userRole}
-                  onBack={() => handleSidebarNavigation("dashboard")}
-                />
-              )}
+                {activeView === "gallery" && (
+                  <Gallery 
+                    userRole={userRole}
+                    onBack={() => handleSidebarNavigation("dashboard")}
+                  />
+                )}
 
-              {activeView === "gallery" && (
-                <Gallery 
-                  userRole={userRole}
-                  onBack={() => handleSidebarNavigation("dashboard")}
-                />
-              )}
+                {activeView === "stats" && (
+                  <StatsView />
+                )}
 
-              {activeView === "stats" && (
-                <StatsView />
-              )}
-
-              {activeView === "fixture" && (
-                <FixtureView 
-                  onSelectTournament={(id) => setSelectedTournamentId(id)}
-                  onNavigate={handleSidebarNavigation}
-                />
-              )}
-            </>
-          )}
+                {activeView === "fixture" && (
+                  <FixtureView 
+                    onSelectTournament={(id) => setSelectedTournamentId(id)}
+                    onNavigate={handleSidebarNavigation}
+                  />
+                )}
+              </>
+            )}
+          </Suspense>
         </div>
 
         {/* Clean Responsive Footer */}

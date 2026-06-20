@@ -207,8 +207,8 @@ export const RankingManager: React.FC<RankingManagerProps> = ({ userRole, onBack
           {/* Background Image */}
           <div className="absolute inset-0 z-0">
             <img 
-              src="/src/assets/images/ranking_banner_1781910979930.jpg" 
-              alt="Ranking de Pádel" 
+              src="/src/assets/images/ranking_banner_1781910979930.webp" 
+              alt="Ranking oficial acumulado de jugadores de la liga" 
               className="w-full h-full object-cover"
               referrerPolicy="no-referrer"
             />
@@ -286,7 +286,7 @@ export const RankingManager: React.FC<RankingManagerProps> = ({ userRole, onBack
               <label className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block">Categoría Base</label>
               <div className="flex flex-wrap gap-1.5">
                 {[
-                  { id: "all", label: "🎾 Todas" },
+                  { id: "all", label: "Todas" },
                   { id: "Libre Masculina", label: "Libre Masc" },
                   { id: "4ta Masculina", label: "4ta Masc" },
                   { id: "5ta Masculina", label: "5ta Masc" },
@@ -354,10 +354,10 @@ export const RankingManager: React.FC<RankingManagerProps> = ({ userRole, onBack
               <div className="relative inline-block mx-auto">
                 <img 
                   src={top2.photoUrl} 
-                  alt={top2.firstName} 
+                  alt={`Foto de perfil de podio de ${top2.firstName} ${top2.lastName}`} 
                   className="w-16 h-16 rounded-full mx-auto object-cover border-2 border-slate-350 shadow-md"
                 />
-                <span className="absolute -bottom-1 -right-1 text-base">🥈</span>
+                <span className="absolute -bottom-1 -right-1 text-[10px] bg-slate-800 border border-slate-700 px-1 py-0.5 rounded text-slate-300 font-mono font-bold leading-none">2º</span>
               </div>
               
               <div>
@@ -390,7 +390,9 @@ export const RankingManager: React.FC<RankingManagerProps> = ({ userRole, onBack
             <div className="absolute top-0 inset-x-0 h-1.5 bg-[#d4fc34] pointer-events-none"></div>
             
             {/* Crown decoration top center */}
-            <div className="absolute top-3 left-1/2 -translate-x-1/2 text-orange-400 text-lg animate-pulse">👑</div>
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 text-orange-400 animate-pulse">
+              <Trophy className="w-5 h-5 text-[#d4fc34] fill-[#d4fc34]/20" />
+            </div>
             
             <div className="absolute top-3 left-3 bg-[#d4fc34] text-slate-950 text-xs font-black w-7 h-7 rounded-full flex items-center justify-center font-mono shadow-md">
               #1
@@ -400,10 +402,10 @@ export const RankingManager: React.FC<RankingManagerProps> = ({ userRole, onBack
               <div className="relative inline-block mx-auto">
                 <img 
                   src={top1.photoUrl} 
-                  alt={top1.firstName} 
+                  alt={`Foto de perfil de podio de ${top1.firstName} ${top1.lastName}`} 
                   className="w-20 h-20 rounded-full mx-auto object-cover border-3 border-[#d4fc34] shadow-xl shadow-[#d4fc34]/10"
                 />
-                <span className="absolute -bottom-1 -right-1 text-lg">🏆</span>
+                <span className="absolute -bottom-1 -right-1 text-[10px] bg-slate-800 border border-[#d4fc34] px-1 py-0.5 rounded text-[#d4fc34] font-mono font-bold leading-none">1º</span>
               </div>
               
               <div>
@@ -442,10 +444,10 @@ export const RankingManager: React.FC<RankingManagerProps> = ({ userRole, onBack
               <div className="relative inline-block mx-auto">
                 <img 
                   src={top3.photoUrl} 
-                  alt={top3.firstName} 
+                  alt={`Foto de perfil de podio de ${top3.firstName} ${top3.lastName}`} 
                   className="w-16 h-16 rounded-full mx-auto object-cover border-2 border-amber-800 shadow-md"
                 />
-                <span className="absolute -bottom-1 -right-1 text-base">🥉</span>
+                <span className="absolute -bottom-1 -right-1 text-[10px] bg-slate-800 border border-amber-800 px-1 py-0.5 rounded text-amber-600 font-mono font-bold leading-none">3º</span>
               </div>
               
               <div>
@@ -538,13 +540,13 @@ export const RankingManager: React.FC<RankingManagerProps> = ({ userRole, onBack
 
                   if (index === 0) {
                     rowStyles = "bg-[#d4fc34]/5 hover:bg-[#d4fc34]/10 border-l-2 border-[#d4fc34]";
-                    rankIndicator = <span className="text-sm font-black text-[#d4fc34]">1 🏆</span>;
+                    rankIndicator = <span className="text-sm font-black text-[#d4fc34] flex items-center gap-1">1 <Trophy className="w-3.5 h-3.5 text-[#d4fc34]" /></span>;
                   } else if (index === 1) {
                     rowStyles = "bg-slate-350/5 hover:bg-slate-350/10 border-l-2 border-slate-350";
-                    rankIndicator = <span className="text-sm font-black text-slate-300">2 🥈</span>;
+                    rankIndicator = <span className="text-sm font-black text-slate-300 flex items-center gap-1">2 <Award className="w-3.5 h-3.5 text-slate-400" /></span>;
                   } else if (index === 2) {
                     rowStyles = "bg-amber-800/5 hover:bg-amber-800/10 border-l-2 border-amber-800";
-                    rankIndicator = <span className="text-sm font-black text-amber-600">3 🥉</span>;
+                    rankIndicator = <span className="text-sm font-black text-amber-600 flex items-center gap-1">3 <Award className="w-3.5 h-3.5 text-amber-700" /></span>;
                   }
 
                   // Form indicators (circles)
@@ -572,7 +574,7 @@ export const RankingManager: React.FC<RankingManagerProps> = ({ userRole, onBack
                         <div className="flex items-center gap-3">
                           <img 
                             src={p.photoUrl} 
-                            alt={`${p.firstName} ${p.lastName}`} 
+                            alt={`Foto de perfil de ${p.firstName} ${p.lastName}`} 
                             className="w-8.5 h-8.5 rounded-full object-cover border border-slate-750 shrink-0" 
                           />
                           <div>
@@ -580,7 +582,7 @@ export const RankingManager: React.FC<RankingManagerProps> = ({ userRole, onBack
                               <span className="font-bold text-slate-100 text-[12px]">{p.lastName}, {p.firstName}</span>
                               {getPlayerStreak(p) >= 3 && (
                                 <span className="inline-flex items-center gap-0.5 text-[#d4fc34] bg-[#d4fc34]/10 text-[8px] font-mono px-1 py-0.2 rounded font-black uppercase tracking-wider" title="¡En Racha de Victorias!">
-                                  🔥 {getPlayerStreak(p)}
+                                  <Flame className="w-2.5 h-2.5 text-[#d4fc34] shrink-0 fill-[#d4fc34]/30" /> {getPlayerStreak(p)}
                                 </span>
                               )}
                             </div>
@@ -671,19 +673,19 @@ export const RankingManager: React.FC<RankingManagerProps> = ({ userRole, onBack
         </p>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 text-xs font-mono">
           <div className="p-2.5 rounded bg-slate-950 border border-slate-800 flex items-center justify-between">
-            <span className="text-slate-400">🏆 Campeón:</span>
+            <span className="text-slate-400 flex items-center gap-1"><Trophy className="w-3.5 h-3.5 text-[#d4fc34]" /> Campeón:</span>
             <span className="font-bold text-[#d4fc34]">100 Pts</span>
           </div>
           <div className="p-2.5 rounded bg-slate-950 border border-slate-800 flex items-center justify-between">
-            <span className="text-slate-400">🥈 Subcampeón:</span>
+            <span className="text-slate-400 flex items-center gap-1"><Award className="w-3.5 h-3.5 text-slate-400" /> Subcampeón:</span>
             <span className="font-bold text-slate-350">75 Pts</span>
           </div>
           <div className="p-2.5 rounded bg-slate-950 border border-slate-800 flex items-center justify-between">
-            <span className="text-slate-400">⚡ Semifinalista:</span>
+            <span className="text-slate-400 flex items-center gap-1"><Zap className="w-3.5 h-3.5 text-cyan-400" /> Semifinalista:</span>
             <span className="font-bold text-cyan-400">50 Pts</span>
           </div>
           <div className="p-2.5 rounded bg-slate-950 border border-slate-800 flex items-center justify-between">
-            <span className="text-slate-400">🛡️ Cuartos:</span>
+            <span className="text-slate-400 flex items-center gap-1"><Activity className="w-3.5 h-3.5 text-indigo-400" /> Cuartos:</span>
             <span className="font-bold text-indigo-400">25 Pts</span>
           </div>
         </div>
@@ -717,7 +719,7 @@ export const RankingManager: React.FC<RankingManagerProps> = ({ userRole, onBack
               <div className="flex items-center gap-4 bg-slate-950 p-4 rounded-xl border border-slate-850">
                 <img 
                   src={selectedPlayer.photoUrl} 
-                  alt={`${selectedPlayer.firstName} ${selectedPlayer.lastName}`} 
+                  alt={`Foto de perfil detallada de ${selectedPlayer.firstName} ${selectedPlayer.lastName}`} 
                   className="w-14 h-14 rounded-full object-cover border-2 border-[#d4fc34] shrink-0 shadow-lg shadow-[#d4fc34]/10" 
                   referrerPolicy="no-referrer"
                 />

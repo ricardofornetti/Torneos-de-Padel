@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trophy } from 'lucide-react';
+import { Trophy, Award, Shield, BarChart2, Settings } from 'lucide-react';
 import { Tournament, Pair, Match } from '../../types';
 import { calculateGroupStandings, calculateDosVidasStandings } from '../../lib/tournamentEngine';
 
@@ -48,7 +48,7 @@ export const StandingsTab: React.FC<StandingsTabProps> = ({
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-sm">
           <div>
             <h3 className="font-extrabold text-white text-md flex items-center gap-2 font-display">
-              🥇 Tablas por Zonas: <span className="text-[#d4fc34]">Formato Oficial SRTC 24</span>
+              <Trophy className="w-4.5 h-4.5 text-[#d4fc34]" /> Tablas por Zonas: <span className="text-[#d4fc34]">Formato Oficial SRTC 24</span>
             </h3>
             <p className="text-xs text-slate-400 mt-1">
               Cada zona cuenta con 3 parejas disputando el formato todos contra todos. Avanzan los 2 mejores de cada zona.
@@ -76,7 +76,7 @@ export const StandingsTab: React.FC<StandingsTabProps> = ({
               <div key={letter} className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl animate-fade-in">
                 <div className="bg-slate-950 px-4 py-3 border-b border-slate-800/80 flex items-center justify-between">
                   <span className="font-extrabold text-[#d4fc34] text-xs font-mono uppercase tracking-widest flex items-center gap-1.5 leading-none">
-                    🎾 ZONA GRUPO {letter}
+                    <Award className="w-3.5 h-3.5 text-[#d4fc34]" /> ZONA GRUPO {letter}
                   </span>
                   <span className="text-[10px] text-slate-500 font-mono font-bold uppercase leading-none">Oficial</span>
                 </div>
@@ -149,7 +149,7 @@ export const StandingsTab: React.FC<StandingsTabProps> = ({
       <div className="space-y-6 animate-fade-in">
         <div>
           <h4 className="font-extrabold text-sm text-[#d4fc34] flex items-center gap-1.5 uppercase tracking-wider font-mono">
-            📊 Tablas de Posiciones por Etapas
+            <BarChart2 className="w-4 h-4 text-[#d4fc34]" /> Tablas de Posiciones por Etapas
           </h4>
           <p className="text-xs text-slate-400 mt-1">
             Estadísticas en formato de tabla de rendimiento para cada fase disputada del torneo.
@@ -241,7 +241,7 @@ export const StandingsTab: React.FC<StandingsTabProps> = ({
                 <div key={title} className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl animate-fade-in">
                   <div className="bg-slate-950 px-4 py-3 border-b border-slate-800/80 flex items-center justify-between">
                     <span className="font-extrabold text-[#d4fc34] text-xs font-mono uppercase tracking-widest flex items-center gap-1.5 leading-none">
-                      🎾 ETAPA: {title.toUpperCase()}
+                      <Award className="w-3.5 h-3.5 text-[#d4fc34]" /> ETAPA: {title.toUpperCase()}
                     </span>
                     <span className="text-[10px] text-slate-500 font-mono font-bold uppercase leading-none">
                       {stageMatches.filter(m => m.status !== "pending").length} / {stageMatches.length} Jugados
@@ -330,7 +330,7 @@ export const StandingsTab: React.FC<StandingsTabProps> = ({
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-5 rounded-2xl">
               <div>
                 <h3 className="font-extrabold text-white text-md flex items-center gap-2">
-                  🥇 Tabla Unificada: <span className="text-[#d4fc34]">{formatTitle}</span>
+                  <Trophy className="w-4.5 h-4.5 text-[#d4fc34]" /> Tabla Unificada: <span className="text-[#d4fc34]">{formatTitle}</span>
                 </h3>
                 <p className="text-xs text-slate-400 mt-1">
                   {formatDesc}
@@ -422,14 +422,14 @@ export const StandingsTab: React.FC<StandingsTabProps> = ({
           return (
             <div className="bg-slate-950 border border-indigo-500/30 rounded-2xl p-6 shadow-xl space-y-4">
               <h4 className="font-extrabold text-sm text-indigo-400 flex items-center gap-1.5 uppercase tracking-wider">
-                🛡️ Sistema Oficial SRTC 16 Activo
+                <Shield className="w-4 h-4 text-indigo-400" /> Sistema Oficial SRTC 16 Activo
               </h4>
               <p className="text-xs text-slate-300 leading-relaxed font-sans">
                 Esta categoría está jugando el formato oficial **SRTC 16** de 16 parejas. El fixture completo ya se encuentra pre-generado. 
                 Las parejas derrotadas en **Ronda 1** juegan en la ronda de repechaje (**Ronda 2 - Partidos 10, 11, 13, 15**), mientras que los ganadores de Ronda 1 juegan sus respectivos partidos de ganadores (**Ronda 2 - Partidos 9, 12, 14, 16**).
               </p>
               <div className="p-3 bg-indigo-500/10 border border-indigo-550/20 text-indigo-300 text-xs rounded-xl font-medium leading-relaxed font-sans">
-                🎯 Los ganadores de los partidos de Ronda 2 avanzan automáticamente a los **Cuartos de Final**. La progresión de llaves es completamente automática al registrar de forma manual o automática los marcadores de cada partido. No requieres realizar sorteos adicionales.
+                Los ganadores de los partidos de Ronda 2 avanzan automáticamente a los **Cuartos de Final**. La progresión de llaves es completamente automática al registrar de forma manual o automática los marcadores de cada partido. No requieres realizar sorteos adicionales.
               </div>
             </div>
           );
@@ -439,7 +439,7 @@ export const StandingsTab: React.FC<StandingsTabProps> = ({
           <div className="bg-slate-950 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
             <div className="border-b border-slate-850 pb-3">
               <h4 className="font-extrabold text-sm text-white flex items-center gap-1.5 uppercase tracking-wider text-[#d4fc34]">
-                ⚙️ Panel de Gestión de Rondas y Playoffs
+                <Settings className="w-4 h-4 text-[#d4fc34]" /> Panel de Gestión de Rondas y Playoffs
               </h4>
               <p className="text-[11px] text-slate-400 mt-1">
                 Como organizador oficial de SRTC, tienes el control de las transiciones de rondas del torneo.

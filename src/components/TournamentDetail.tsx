@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   Trophy, 
   Calendar, 
@@ -293,6 +294,14 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
   const [finishModalPayload, setFinishModalPayload] = useState<{ completedCategories: string[] } | null>(null);
   const [finishModalError, setFinishModalError] = useState<string | null>(null);
 
+  const [showFinishPreview, setShowFinishPreview] = useState(false);
+  const [finishPreviewData, setFinishPreviewData] = useState<Array<{
+    pairName: string;
+    category: string;
+    stage: string;
+    points: number;
+  }> | null>(null);
+
   // Group drawing assignments (In-memory grouping display)
   const [groupsMap, setGroupsMap] = useState<{ [gName: string]: Pair[] }>({});
 
@@ -579,7 +588,7 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
       const isSRTC24 = catPairs.length === 24;
       if (isSRTC24) {
         const letters = ["A", "B", "C", "D", "E", "F", "G", "H"];
-        standingsContent += `<div class="section-title">📊 Tablas por Zonas (Formato Oficial SRTC 24)</div>`;
+        standingsContent += `<div class="section-title">Tablas por Zonas (Formato Oficial SRTC 24)</div>`;
         letters.forEach(letter => {
           const groupMatches = catMatches.filter(m => m.stageName === `Grupo ${letter}`);
           const groupPairIds = new Set<string>();
@@ -656,7 +665,7 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
           });
         }
 
-        standingsContent += `<div class="section-title">📊 Tablas por Etapas (Rendimiento por Fase)</div>`;
+        standingsContent += `<div class="section-title">Tablas por Etapas (Rendimiento por Fase)</div>`;
         let stagesAdded = 0;
         stagesToRender.forEach(stage => {
           const pairIds = new Set<string>();
@@ -748,7 +757,7 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
         });
 
         standingsContent += `
-          <div class="section-title">🥇 Tabla Unificada General: Sistema Dos Vidas SRTC</div>
+          <div class="section-title">Tabla Unificada General: Sistema Dos Vidas SRTC</div>
           <table>
             <thead>
               <tr>
@@ -804,12 +813,12 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
                 <div class="bracket-game-title">Partido ${idx + 1}</div>
                 <div class="bracket-game-team ${isP1Winner ? 'winner' : (isCompleted ? 'loser' : '')}">
                   <span>${p1Name}</span>
-                  <span>${isCompleted && isP1Winner ? '🏆' : ''}</span>
+                  <span>${isCompleted && isP1Winner ? ' (Ganador)' : ''}</span>
                 </div>
                 <div style="border-top: 1px dashed #cbd5e1; margin: 6px 0;"></div>
                 <div class="bracket-game-team ${isP2Winner ? 'winner' : (isCompleted ? 'loser' : '')}">
                   <span>${p2Name}</span>
-                  <span>${isCompleted && isP2Winner ? '🏆' : ''}</span>
+                  <span>${isCompleted && isP2Winner ? ' (Ganador)' : ''}</span>
                 </div>
                 <div style="margin-top: 10px; font-size: 11px; color: #0f172a; font-weight: bold; background-color: #f1f5f9; padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px; display: flex; justify-content: space-between;">
                   <span>Marcador:</span> <strong>${m.scoreSummary || 'Por jugar'}</strong>
@@ -986,7 +995,7 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
         </style>
       </head>
       <body>
-        <button class="btn-print" onclick="window.print()">🖨️ Imprimir Planilla</button>
+        <button class="btn-print" onclick="window.print()">Imprimir Planilla</button>
 
         <div class="header">
           <h1>Planilla Oficial de Competencia</h1>
@@ -2834,6 +2843,94 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
     }
   };
 
+  // Pure function to calculate ranking points distribution preview
+  const calculateRankingPreview = (completedCats?: string[]) => {
+    const list: Array<{
+      pairName: string;
+      category: string;
+      stage: string;
+      points: number;
+    }> = [];
+
+    const catsToCalculate = completedCats || (finishModalPayload?.completedCategories) || [];
+
+    for (const cat of catsToCalculate) {
+      const finalMatch = matches.find(m => m.category === cat && m.stageName === "Final");
+      if (!finalMatch) continue;
+
+      const champPairId = finalMatch.winnerPairId;
+      const runnerPairId = finalMatch.pair1Id === champPairId ? finalMatch.pair2Id : finalMatch.pair1Id;
+
+      const catPairs = pairs.filter(p => p.category === cat);
+      const champPair = catPairs.find(p => p.id === champPairId);
+      const runnerPair = catPairs.find(p => p.id === runnerPairId);
+
+      // Semifinalists (the losers of semifinal matches)
+      const sfMatches = matches.filter(m => m.category === cat && m.stageName.startsWith("Semifinal"));
+      const sfPairIds = sfMatches.map(m => m.winnerPairId === m.pair1Id ? m.pair2Id : m.pair1Id).filter(Boolean);
+
+      // Quarterfinalists (the losers of quarterfinal matches)
+      const qfMatches = matches.filter(m => m.category === cat && (m.stageName.startsWith("Cuartos") || m.stageName.startsWith("Cuartos de Final")));
+      const qfPairIds = qfMatches.map(m => m.winnerPairId === m.pair1Id ? m.pair2Id : m.pair1Id).filter(Boolean);
+
+      if (champPair) {
+        list.push({
+          pairName: champPair.name,
+          category: cat,
+          stage: "Campeón de Oro",
+          points: 100
+        });
+      }
+      if (runnerPair) {
+        list.push({
+          pairName: runnerPair.name,
+          category: cat,
+          stage: "Subcampeón / Finalista",
+          points: 75
+        });
+      }
+      for (const sfId of sfPairIds) {
+        const pr = catPairs.find(p => p.id === sfId);
+        if (pr) {
+          list.push({
+            pairName: pr.name,
+            category: cat,
+            stage: "Semifinalistas",
+            points: 50
+          });
+        }
+      }
+      for (const qfId of qfPairIds) {
+        const pr = catPairs.find(p => p.id === qfId);
+        if (pr) {
+          list.push({
+            pairName: pr.name,
+            category: cat,
+            stage: "Cuartos de Final ⚔️",
+            points: 25
+          });
+        }
+      }
+    }
+
+    return list;
+  };
+
+  // Open ranking points preview modal before final execution
+  const handleOpenFinishPreview = () => {
+    const completedCategories = finishModalPayload?.completedCategories || [];
+    const preview = calculateRankingPreview(completedCategories);
+    setFinishPreviewData(preview);
+    setShowFinishModal(false);
+    setShowFinishPreview(true);
+  };
+
+  // Confirm and execute actual database persistence
+  const handleConfirmFinishTournament = async () => {
+    await executeFinishTournament();
+    setShowFinishPreview(false);
+  };
+
   // Open Tourney Finish interactive modal
   const handleOpenFinishModal = () => {
     if (!tournament) return;
@@ -2872,7 +2969,7 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
         `Atención: Las siguientes categorías aún no tienen su partido Final definido o concluido: ${pendingCategories.join(", ")}.`
       );
     } else {
-      setFinishModalTitle("🏆 Finalizar Torneo");
+      setFinishModalTitle("Finalizar Torneo");
       setFinishModalWarning(null);
     }
     setShowFinishModal(true);
@@ -3214,7 +3311,9 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl">
             <div className="p-4 border-b border-slate-800 flex items-center justify-between">
-              <span className="font-extrabold text-sm text-white">⚙️ Carga de Resultado Oficial</span>
+              <span className="font-extrabold text-sm text-white flex items-center gap-1.5 font-display uppercase tracking-wider">
+                <CheckCircle className="w-5 h-5 text-[#d4fc34]" /> Carga de Resultado Oficial
+              </span>
               <button onClick={() => setActiveScoreMatch(null)} className="text-slate-400 hover:text-white">
                 <X className="w-4 h-4" />
               </button>
@@ -3258,11 +3357,11 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
                 <div className="space-y-4">
                   {isGroupOrEarlyPlayoff(activeScoreMatch) ? (
                     <div className="p-2.5 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-[10px] text-indigo-300 leading-normal">
-                      💡 <strong>Fase de Grupos / Octavos:</strong> Al mejor de 2 sets con <strong>Super Tiebreak a 11 puntos</strong> si hay empate (1-1) en el 3º Set.
+                      <strong>Fase de Grupos / Octavos:</strong> Al mejor de 2 sets con <strong>Super Tiebreak a 11 puntos</strong> si hay empate (1-1) en el 3º Set.
                     </div>
                   ) : (
                     <div className="p-2.5 bg-amber-500/10 border border-amber-500/25 rounded-xl text-[10px] text-amber-300 leading-normal">
-                      🔥 <strong>Cuartos de final a Final:</strong> Se juega a <strong>3 sets completos</strong> tradicionales. No hay Super Tiebreak.
+                      <strong>Cuartos de final a Final:</strong> Se juega a <strong>3 sets completos</strong> tradicionales. No hay Super Tiebreak.
                     </div>
                   )}
 
@@ -3367,7 +3466,7 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
           <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-150">
             <div className="p-4 border-b border-slate-800 flex items-center justify-between">
               <span className="font-extrabold text-sm text-white flex items-center gap-1.5 font-display uppercase tracking-wider">
-                ⚙️ Asignar Cancha y Horario
+                <Calendar className="w-4 h-4 text-[#d4fc34]" /> Asignar Cancha y Horario
               </span>
               <button 
                 onClick={() => setActiveAssignCourtMatch(null)} 
@@ -3446,7 +3545,7 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
           <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-150">
             <div className="p-4 border-b border-slate-800 flex items-center justify-between">
               <span className="font-extrabold text-sm text-white flex items-center gap-1.5 font-display uppercase tracking-wider">
-                🏆 Disponer Cantidad de Canchas
+                <Trophy className="w-4 h-4 text-[#d4fc34]" /> Disponer Cantidad de Canchas
               </span>
               <button 
                 onClick={() => setIsEditNumCourtsOpen(false)} 
@@ -3538,7 +3637,7 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
           <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-150">
             <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950">
               <span className="font-extrabold text-sm text-white flex items-center gap-1.5 font-display uppercase tracking-wider">
-                {finishModalTitle || "🏆 Finalizar Torneo"}
+                <Trophy className="w-4 h-4 text-[#d4fc34]" /> {finishModalTitle?.replace("🏆 ", "") || "Finalizar Torneo"}
               </span>
               <button 
                 onClick={() => setShowFinishModal(false)} 
@@ -3600,7 +3699,7 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
                 {!finishModalError && (
                   <button
                     type="button"
-                    onClick={executeFinishTournament}
+                    onClick={handleOpenFinishPreview}
                     className="flex-1 bg-[#d4fc34] hover:bg-[#c5f015] text-slate-950 py-2.5 rounded-xl font-black uppercase tracking-wider cursor-pointer font-sans"
                   >
                     Confirmar y Finalizar
@@ -3611,6 +3710,63 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
           </div>
         </div>
       )}
+
+      {/* FINALIZAR TORNEO PREVIEW MODAL */}
+      <AnimatePresence>
+        {showFinishPreview && finishPreviewData && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto shadow-2xl"
+            >
+              <h2 className="text-lg font-black uppercase text-white mb-1">Confirmar Cierre de Torneo</h2>
+              <p className="text-xs text-slate-400 mb-4">
+                Esta acción es irreversible. Se otorgarán los siguientes puntos de ranking:
+              </p>
+
+              {finishPreviewData.length === 0 ? (
+                <p className="text-xs text-amber-400 font-mono bg-amber-950/15 border border-amber-900/20 p-3 rounded-lg mb-6 leading-relaxed">
+                  ⚠️ Ninguna categoría tiene su Final concluida, por lo que no se otorgarán puntos de ranking para ningún jugador.
+                </p>
+              ) : (
+                <div className="space-y-2 mb-6">
+                  {finishPreviewData.map((row, i) => (
+                    <div key={i} className="flex items-center justify-between bg-slate-950 border border-slate-800 rounded-lg p-3">
+                      <div>
+                        <p className="text-sm font-bold text-white">{row.pairName}</p>
+                        <p className="text-[10px] text-slate-500 uppercase">{row.category} · {row.stage}</p>
+                      </div>
+                      <span className="text-[#d4fc34] font-black text-sm">+{row.points} pts</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowFinishPreview(false)}
+                  className="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-bold py-2.5 rounded-lg text-sm transition cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleConfirmFinishTournament}
+                  className="flex-1 bg-[#d4fc34] hover:bg-[#c2ea22] text-slate-950 font-black py-2.5 rounded-lg text-sm transition cursor-pointer"
+                >
+                  Confirmar y Cerrar Torneo
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* CUSTOM FLOATING TOAST NOTIFICATION */}
       {inAppAlert && inAppAlert.visible && (

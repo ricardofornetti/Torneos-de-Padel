@@ -146,8 +146,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
         {/* Background Image of the court at night */}
         <div className="absolute inset-0 z-0">
           <img 
-            src="/src/assets/images/dashboard_hero_1781910955942.jpg" 
-            alt="Pista de Pádel SRTC" 
+            src="/src/assets/images/dashboard_hero_1781910955942.webp" 
+            alt="Cancha de pádel iluminada del complejo deportivo" 
             className="w-full h-full object-cover blur-[1px]"
             referrerPolicy="no-referrer"
           />
@@ -433,8 +433,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <span className="text-[9px] text-[#d4fc34] uppercase tracking-widest font-mono font-black block">Reglamentación Oficial Srtc</span>
                 <div className="flex gap-4 items-center">
                   <img 
-                    src="/src/assets/images/gear_showcase_1781911001400.jpg" 
-                    alt="Paleta y Pelota de Padel" 
+                    src="/src/assets/images/gear_showcase_1781911001400.webp" 
+                    alt="Paleta de carbono y pelota de pádel Srtc oficial homologada" 
                     className="w-14 h-14 rounded-2xl object-cover border border-slate-800 shadow-md shrink-0"
                     referrerPolicy="no-referrer"
                   />
@@ -482,8 +482,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
                 if (recentMatches.length === 0) {
                   return (
-                    <div className="p-6 text-center text-slate-500 text-xs font-mono border border-dashed border-slate-800 rounded-xl bg-slate-950/20">
-                      ⚡ No hay partidos recientes programados de momento. Comienza a definir el cronograma en los torneos para visualizarlos aquí.
+                    <div className="p-6 text-center text-slate-500 text-xs font-mono border border-dashed border-slate-800 rounded-xl bg-slate-950/20 flex items-center justify-center gap-1.5">
+                      <Zap className="w-4 h-4 text-[#d4fc34] shrink-0" /> No hay partidos recientes programados de momento. Comienza a definir el cronograma en los torneos para visualizarlos aquí.
                     </div>
                   );
                 }
@@ -560,7 +560,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
             <div className="space-y-3">
               {topPlayers.map((p, index) => {
-                const medals = ["🥇", "🥈", "🥉", "🏅"];
+                const medals = ["1º", "2º", "3º", "4º"];
                 return (
                   <div 
                     key={p.id}
@@ -572,7 +572,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       </span>
                       <img 
                         src={p.photoUrl} 
-                        alt={`${p.firstName} ${p.lastName}`} 
+                        alt={`Foto de perfil de ${p.firstName} ${p.lastName}`} 
                         className="w-8 h-8 rounded-full object-cover border border-slate-900 shrink-0" 
                       />
                       <div className="min-w-0">

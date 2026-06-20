@@ -171,7 +171,7 @@ export const CourtManager: React.FC<CourtManagerProps> = ({ userRole, onBack }) 
 
       // Overlap logic: A intersection B
       if (checkStart < mEnd && checkEnd > mStart) {
-        return `⚠️ CONFLICTO DE RESERVA: Pista saturada. Existe un partido programado entre ${m.time} y ${Math.floor(mEnd/60)}:${mEnd%60 === 0 ? '00' : mEnd%60} de ese mismo día en esta cancha.`;
+        return `CONFLICTO DE RESERVA: Pista saturada. Existe un partido programado entre ${m.time} y ${Math.floor(mEnd/60)}:${mEnd%60 === 0 ? '00' : mEnd%60} de ese mismo día en esta cancha.`;
       }
     }
     return null;
@@ -249,8 +249,8 @@ export const CourtManager: React.FC<CourtManagerProps> = ({ userRole, onBack }) 
           {/* Background Image */}
           <div className="absolute inset-0 z-0">
             <img 
-              src="/src/assets/images/courts_banner_1781911663177.jpg" 
-              alt="Canchas de Pádel" 
+              src="/src/assets/images/courts_banner_1781911663177.webp" 
+              alt="Vista de canchas de pádel del complejo" 
               className="w-full h-full object-cover"
               referrerPolicy="no-referrer"
             />
@@ -467,7 +467,9 @@ export const CourtManager: React.FC<CourtManagerProps> = ({ userRole, onBack }) 
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl">
             <div className="p-4 border-b border-slate-800 flex items-center justify-between">
-              <span className="font-extrabold text-sm text-white">⚙️ Registrar Pista</span>
+              <span className="font-extrabold text-sm text-white flex items-center gap-1.5 font-display uppercase tracking-wider">
+                <Plus className="w-4 h-4 text-[#d4fc34]" /> Registrar Pista
+              </span>
               <button onClick={() => setIsCourtFormOpen(false)} className="text-slate-400 hover:text-white">
                 <X className="w-4 h-4" />
               </button>
@@ -523,7 +525,10 @@ export const CourtManager: React.FC<CourtManagerProps> = ({ userRole, onBack }) 
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
             <div className="p-4 border-b border-slate-800 flex items-center justify-between">
-              <span className="font-extrabold text-sm text-white">📅 Programar Turno de Juego</span>
+              <span className="font-extrabold text-sm text-white flex items-center gap-1.5">
+                <Calendar className="w-4 h-4 text-[#d4fc34]" />
+                Programar Turno de Juego
+              </span>
               <button onClick={() => setIsScheduleModalOpen(false)} className="text-slate-400 hover:text-white">
                 <X className="w-4 h-4" />
               </button>

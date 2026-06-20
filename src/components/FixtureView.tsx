@@ -174,8 +174,8 @@ export const FixtureView: React.FC<FixtureViewProps> = ({ onSelectTournament, on
         {/* Background Image */}
         <div className="absolute inset-0 z-0">
           <img 
-            src="/src/assets/images/fixture_banner_1781911650810.jpg" 
-            alt="Fixture de Pádel" 
+            src="/src/assets/images/fixture_banner_1781911650810.webp" 
+            alt="Fixture de partidos de pádel" 
             className="w-full h-full object-cover"
             referrerPolicy="no-referrer"
           />
@@ -219,7 +219,7 @@ export const FixtureView: React.FC<FixtureViewProps> = ({ onSelectTournament, on
               onChange={(e) => setSelectedTournamentId(e.target.value)}
               className="w-full bg-slate-950 border border-slate-800 focus:border-[#d4fc34] rounded-lg p-2 text-xs text-slate-100 outline-none"
             >
-              <option value="all">🏆 Todos los Torneos</option>
+              <option value="all">Todos los Torneos</option>
               {tournaments.map(t => (
                 <option key={t.id} value={t.id}>{t.name} ({t.status === "completed" ? "Cerrado" : "Activo"})</option>
               ))}
@@ -234,7 +234,7 @@ export const FixtureView: React.FC<FixtureViewProps> = ({ onSelectTournament, on
               onChange={(e) => setCategoryFilter(e.target.value)}
               className="w-full bg-slate-950 border border-slate-800 focus:border-[#d4fc34] rounded-lg p-2 text-xs text-slate-100 outline-none"
             >
-              <option value="all">🎾 Todas las Categorías</option>
+              <option value="all">Todas las Categorías</option>
               {categoriesList.map(cat => (
                 <option key={cat} value={cat}>{cat}</option>
               ))}

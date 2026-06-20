@@ -177,8 +177,8 @@ export const Gallery: React.FC<GalleryProps> = ({ userRole, onBack }) => {
           {/* Background Image */}
           <div className="absolute inset-0 z-0">
             <img 
-              src="/src/assets/images/gallery_banner_1781911673086.jpg" 
-              alt="Galería de Pádel" 
+              src="/src/assets/images/gallery_banner_1781911673086.webp" 
+              alt="Galería de fotos de torneos y premiaciones" 
               className="w-full h-full object-cover"
               referrerPolicy="no-referrer"
             />
@@ -286,7 +286,7 @@ export const Gallery: React.FC<GalleryProps> = ({ userRole, onBack }) => {
                   ) : (
                     <img 
                       src={item.url} 
-                      alt={item.title} 
+                      alt={`Imagen de galería: ${item.title}`} 
                       className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
                       referrerPolicy="no-referrer"
                     />
