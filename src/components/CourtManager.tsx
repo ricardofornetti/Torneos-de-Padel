@@ -251,11 +251,11 @@ export const CourtManager: React.FC<CourtManagerProps> = ({ userRole, onBack }) 
             <img 
               src="/src/assets/images/courts_banner_1781911663177.jpg" 
               alt="Canchas de Pádel" 
-              className="w-full h-full object-cover blur-[0.5px]"
+              className="w-full h-full object-cover"
               referrerPolicy="no-referrer"
             />
-            {/* Dark overlay for readability */}
-            <div className="absolute inset-0 bg-slate-950/85"></div>
+            {/* dark overlay to keep it readable, lighter on the right where there's no text */}
+            <div className="absolute inset-0 bg-slate-950/55 bg-gradient-to-r from-slate-950 via-slate-950/75 to-slate-950/35"></div>
           </div>
 
           <div className="space-y-1 relative z-10">

@@ -394,11 +394,11 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole, onBack }
             <img 
               src="/src/assets/images/players_banner_1781910992573.jpg" 
               alt="Jugadores de Pádel" 
-              className="w-full h-full object-cover blur-[0.5px]"
+              className="w-full h-full object-cover"
               referrerPolicy="no-referrer"
             />
-            {/* dark overlay to keep it readable */}
-            <div className="absolute inset-0 bg-slate-950/85"></div>
+            {/* dark overlay to keep it readable, lighter on the right where there's no text */}
+            <div className="absolute inset-0 bg-slate-950/55 bg-gradient-to-r from-slate-950 via-slate-950/75 to-slate-950/35"></div>
           </div>
 
           <div className="space-y-1 relative z-10">
