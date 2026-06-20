@@ -197,15 +197,11 @@ service cloud.firestore {
     match /matches/{matchId} {
       allow read: if true;
       allow create: if isAdmin() && isValidId(matchId) && isValidMatch(incoming());
-      // Prevent double scoring: settled matches can only be modified by admins.
-      // Prevent score poisoning, path poisoning and invalid game status jumps.
-      allow update: if (isAdmin() || (isSignedIn() && existing().status == 'pending' && isTournamentOpen(incoming().tournamentId)))
+      // Only admins can modify matches: results, scores, status and rescheduling
+      // are all administrative actions. Non-admin writes are rejected entirely.
+      allow update: if isAdmin()
         && isValidMatch(incoming())
-        && incoming().id == existing().id 
-        && (
-          isAdmin() || 
-          incoming().diff(existing()).affectedKeys().hasOnly(['winnerPairId', 'scoreSummary', 'status', 'settledAt', 'date', 'time', 'courtId'])
-        );
+        && incoming().id == existing().id;
       allow delete: if isAdmin();
     }
 

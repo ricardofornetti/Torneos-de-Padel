@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { repository } from '../lib/repository';
 import { Tournament, Match, Pair, Player, Court } from '../types';
+import { AppView } from '../lib/uiTypes';
 
 // Orden de fases dentro de un mismo día/hora:
 // 1) Fase de grupos (group), ordenada alfabéticamente por stageName (Grupo A, Grupo B, ...)
@@ -45,7 +46,7 @@ const sortMatches = (a: Match, b: Match): number => {
 
 interface FixtureViewProps {
   onSelectTournament: (id: string) => void;
-  onNavigate: (view: any) => void;
+  onNavigate: (view: AppView) => void;
 }
 
 export const FixtureView: React.FC<FixtureViewProps> = ({ onSelectTournament, onNavigate }) => {

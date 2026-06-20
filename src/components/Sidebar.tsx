@@ -26,11 +26,12 @@ import { repository } from '../lib/repository';
 import { AppNotification, Player, PlayerPrivateData } from '../types';
 import { auth, isRealFirebase } from '../lib/firebase';
 import { signInWithPopup, GoogleAuthProvider, signOut, User as FirebaseUser } from 'firebase/auth';
+import { AppView } from '../lib/uiTypes';
 
 interface SidebarProps {
   userRole: "admin" | "player";
-  onNavigate: (view: "dashboard" | "tournaments" | "players" | "rankings" | "courts" | "gallery" | "stats" | "fixture") => void;
-  activeView: string;
+  onNavigate: (view: AppView) => void;
+  activeView: AppView;
   notifications?: AppNotification[];
   onClearNotifications?: () => void;
   onMarkAllRead?: () => void;
@@ -64,6 +65,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     category: "6ta Masculina",
   });
 
+  const [isMockSession, setIsMockSession] = useState(false);
+
   useEffect(() => {
     // Check mock login session
     const localUserJson = localStorage.getItem("padel_mgr_mock_user");
@@ -71,6 +74,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       try {
         const localUser = JSON.parse(localUserJson);
         setCurrentUser(localUser);
+        setIsMockSession(!localUser.isGoogle);
       } catch (e) {
         console.error("Error reading localUserJson in Sidebar:", e);
       }
@@ -81,6 +85,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
         const hasLocal = !!localStorage.getItem("padel_mgr_mock_user");
         if (!hasLocal) {
           setCurrentUser(user);
+          setIsMockSession(false);
+        } else {
+          try {
+            const localUser = JSON.parse(localStorage.getItem("padel_mgr_mock_user") || "{}");
+            setIsMockSession(!localUser.isGoogle);
+          } catch (e) {}
         }
       });
       return () => unsubscribe();
@@ -137,16 +147,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
           uid: user.uid,
           email: user.email,
           displayName: user.displayName || "Usuario Gmail",
-          photoURL: user.photoURL
+          photoURL: user.photoURL,
+          isGoogle: true
         };
         localStorage.setItem("padel_mgr_mock_user", JSON.stringify(mockUser));
         setCurrentUser(mockUser as any);
+        setIsMockSession(false);
         
         setShowRegisterModal(false);
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Google sign-in error in Sidebar UI:", error);
-      const errorCode = error.code;
+      const firebaseError = error as { code?: string; message?: string };
+      const errorCode = firebaseError.code;
       
       if (errorCode === "auth/popup-closed-by-user") {
         setRegError("");
@@ -232,11 +245,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
         uid: newPlayerId,
         email: emailSanitized,
         displayName: `${playerProfile.firstName} ${playerProfile.lastName}`,
-        photoURL: playerProfile.photoUrl
+        photoURL: playerProfile.photoUrl,
+        isGoogle: false
       };
       
       localStorage.setItem("padel_mgr_mock_user", JSON.stringify(mockUser));
       setCurrentUser(mockUser as any);
+      setIsMockSession(true);
       
       await repository.addNotification(
         "Registro Exitoso",
@@ -246,14 +261,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
       
       window.dispatchEvent(new Event("storage"));
       setShowRegisterModal(false);
-    } catch (err: any) {
-      setRegError(`Error al guardar jugador: ${err.message || err.toString()}`);
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      setRegError(`Error al guardar jugador: ${errorMsg}`);
     }
   };
 
   const handleLogout = async () => {
     localStorage.removeItem("padel_mgr_mock_user");
     setCurrentUser(null);
+    setIsMockSession(false);
     window.dispatchEvent(new Event("storage"));
     if (isRealFirebase && auth) {
       try {
@@ -266,7 +283,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
-  const navItems = [
+  const navItems: { id: AppView; label: string; icon: React.ComponentType<any> }[] = [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
     { id: "tournaments", label: "Torneos", icon: Trophy },
     { id: "fixture", label: "Calendario", icon: Calendar },
@@ -277,11 +294,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: "gallery", label: "Fotos", icon: ImageIcon }
   ];
 
-  function AwardTrophyIcon(props: any) {
-    return <Trophy {...props} className={props.className + " text-[#d4fc34] shrink-0"} />;
+  function AwardTrophyIcon(props: React.ComponentProps<typeof Trophy>) {
+    return <Trophy {...props} className={(props.className || "") + " text-[#d4fc34] shrink-0"} />;
   }
 
-  const handleNavItemClick = (id: any) => {
+  const handleNavItemClick = (id: AppView) => {
     onNavigate(id);
     setIsMobileOpen(false);
   };
@@ -459,9 +476,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <span className="block text-[10px] font-black text-white leading-none truncate font-display">
                     {currentUser.displayName || 'Usuario'}
                   </span>
-                  <span className="block text-[8px] text-slate-500 font-mono leading-none truncate mt-1">
-                    {currentUser.email}
-                  </span>
+                  <div className="flex items-center gap-1.5 mt-1 min-w-0">
+                    <span className="block text-[8px] text-slate-500 font-mono leading-none truncate">
+                      {currentUser.email}
+                    </span>
+                    {isMockSession && (
+                      <span className="bg-amber-500/15 text-amber-400 border border-amber-500/30 px-1 py-0.5 rounded text-[7px] font-black uppercase tracking-wide shrink-0">
+                        Sandbox
+                      </span>
+                    )}
+                  </div>
                 </div>
               )}
               {!isCollapsed && (
@@ -563,7 +587,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       />
                       <div className="min-w-0">
                         <span className="block text-xs font-bold text-white truncate font-display">{currentUser.displayName}</span>
-                        <span className="block text-[9px] text-slate-550 font-mono truncate mt-0.5">{currentUser.email}</span>
+                        <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
+                          <span className="block text-[9px] text-slate-550 font-mono truncate">{currentUser.email}</span>
+                          {isMockSession && (
+                            <span className="bg-amber-500/15 text-amber-400 border border-amber-500/30 px-1.5 py-0.5 rounded text-[7px] font-black uppercase tracking-wide shrink-0">
+                              Sandbox
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                     
@@ -852,6 +883,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           <option value="7ma Femenina">7ma Femenina</option>
                         </select>
                       </div>
+
+                      <p className="text-[10px] text-slate-500 mb-3 leading-relaxed">
+                        Este acceso crea una sesión local de prueba (sandbox) en este navegador, sin sincronización en la nube. Para una cuenta real con Google, usá el botón de arriba.
+                      </p>
 
                       <button
                         type="submit"

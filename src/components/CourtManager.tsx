@@ -396,12 +396,14 @@ export const CourtManager: React.FC<CourtManagerProps> = ({ userRole, onBack }) 
                     </span>
                   </div>
 
-                  <button
-                    onClick={() => handleOpenScheduleModal(m)}
-                    className="w-full bg-slate-800 hover:bg-slate-700 hover:text-blue-400 text-slate-350 text-xs font-bold py-2 rounded-lg transition text-center cursor-pointer"
-                  >
-                    Asignar Cancha / Hora
-                  </button>
+                  {userRole === "admin" && (
+                    <button
+                      onClick={() => handleOpenScheduleModal(m)}
+                      className="w-full bg-slate-800 hover:bg-slate-700 hover:text-blue-400 text-slate-350 text-xs font-bold py-2 rounded-lg transition text-center cursor-pointer"
+                    >
+                      Asignar Cancha / Hora
+                    </button>
+                  )}
                 </div>
               ))
             )}

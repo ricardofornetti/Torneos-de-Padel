@@ -1719,9 +1719,10 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
 
       loadAllData();
       setActiveTab("matches");
-    } catch (err: any) {
+    } catch (err) {
       console.error("Error executing draw:", err);
-      alert("Ocurrió un error en el sorteo: " + (err?.message || String(err)));
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      alert("Ocurrió un error en el sorteo: " + errorMsg);
       await repository.addNotification(
         "Error en Sorteo",
         "Ocurrió un error al procesar o guardar el sorteo. Intenta nuevamente.",
@@ -2088,9 +2089,10 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
 
       loadAllData();
       setActiveTab("matches");
-    } catch (err: any) {
+    } catch (err) {
       console.error("Error generating next round:", err);
-      alert("Ocurrió un error al generar la siguiente ronda. Revisa los datos y vuelve a intentarlo.");
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      alert("Ocurrió un error al generar la siguiente ronda: " + errorMsg);
     }
   };
 
@@ -3198,11 +3200,12 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
                   <button
                     key={tab.id}
                     title={isDisabled ? "Disponible después del sorteo" : ""}
+                    disabled={isDisabled}
                     onClick={() => {
                       if (isDisabled) return;
                       setActiveTab(tab.id as any);
                     }}
-                    className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold uppercase tracking-wider rounded-t-lg transition border-b-2 shrink-0 ${
+                    className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold uppercase tracking-wider rounded-t-lg transition border-b-2 shrink-0 relative ${
                       isDisabled
                         ? "text-slate-600 border-transparent opacity-40 cursor-not-allowed select-none"
                         : activeTab === tab.id
@@ -3212,6 +3215,11 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
                   >
                     <tab.icon className="w-4 h-4" />
                     <span>{tab.label}</span>
+                    {isDisabled && (
+                      <span className="absolute -top-1.5 -right-1 bg-slate-800 text-slate-300 text-[8px] font-bold uppercase px-1.5 py-0.5 rounded-full border border-slate-600 whitespace-nowrap shadow-sm">
+                        Requiere sorteo
+                      </span>
+                    )}
                   </button>
                 );
               })}

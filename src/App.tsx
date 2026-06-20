@@ -3,6 +3,7 @@ import { Sidebar } from './components/Sidebar';
 import { Dashboard } from './components/Dashboard';
 import { repository } from './lib/repository';
 import { auth } from './lib/firebase';
+import { AppView } from './lib/uiTypes';
 
 const TournamentManager = lazy(() => import('./components/TournamentManager').then(m => ({ default: m.TournamentManager })));
 const TournamentDetail = lazy(() => import('./components/TournamentDetail').then(m => ({ default: m.TournamentDetail })));
@@ -25,9 +26,59 @@ function AppLoadingFallback() {
 }
 
 export default function App() {
-  const [activeView, setActiveView] = useState<"dashboard" | "tournaments" | "players" | "rankings" | "courts" | "gallery" | "stats" | "fixture">("dashboard");
+  const [activeView, setActiveView] = useState<AppView>("dashboard");
   const [selectedTournamentId, setSelectedTournamentId] = useState<string | null>(null);
   const [isIsolatedInscriptions, setIsIsolatedInscriptions] = useState(false);
+
+  const navigateTo = (view: AppView, tournamentId: string | null = null, pushToHistory = true) => {
+    setActiveView(view);
+    setSelectedTournamentId(tournamentId);
+    if (tournamentId === null) {
+      setIsIsolatedInscriptions(false);
+    }
+    
+    if (pushToHistory) {
+      const params = new URLSearchParams();
+      params.set('view', view);
+      if (tournamentId) {
+        params.set('tournament', tournamentId);
+      }
+      const newUrl = `${window.location.pathname}?${params.toString()}`;
+      window.history.pushState({ view, tournamentId }, '', newUrl);
+    }
+  };
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const view = (params.get('view') as AppView) || 'dashboard';
+    const tournamentId = params.get('tournament');
+    
+    navigateTo(view, tournamentId, false);
+    
+    const urlParams = new URLSearchParams();
+    urlParams.set('view', view);
+    if (tournamentId) {
+      urlParams.set('tournament', tournamentId);
+    }
+    window.history.replaceState({ view, tournamentId }, '', `${window.location.pathname}?${urlParams.toString()}`);
+  }, []);
+
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      if (event.state && typeof event.state === 'object' && 'view' in event.state) {
+        const view = event.state.view as AppView;
+        const tournamentId = event.state.tournamentId as string | null;
+        navigateTo(view, tournamentId, false);
+      } else {
+        const params = new URLSearchParams(window.location.search);
+        const view = (params.get('view') as AppView) || 'dashboard';
+        const tournamentId = params.get('tournament');
+        navigateTo(view, tournamentId, false);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
   
   // High fidelity roles (Admin has creation/draw powers, Player has read-only exploration powers)
   const [userRole, setUserRole] = useState<"admin" | "player">("player");
@@ -84,9 +135,7 @@ export default function App() {
   };
 
   const handleSidebarNavigation = (view: typeof activeView) => {
-    setSelectedTournamentId(null);
-    setIsIsolatedInscriptions(false);
-    setActiveView(view);
+    navigateTo(view, null);
   };
 
   return (
@@ -112,8 +161,7 @@ export default function App() {
                 tournamentId={selectedTournamentId}
                 userRole={userRole}
                 onBack={() => {
-                  setSelectedTournamentId(null);
-                  setIsIsolatedInscriptions(false);
+                  navigateTo("tournaments", null);
                 }}
                 onIsolateModeChange={(isolated) => {
                   setIsIsolatedInscriptions(isolated);
@@ -125,8 +173,8 @@ export default function App() {
                   <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     <Dashboard 
                       userRole={userRole}
-                      onNavigateToTournament={(id) => setSelectedTournamentId(id)}
-                      onNavigate={(view) => setActiveView(view as any)}
+                      onNavigateToTournament={(id) => navigateTo("tournaments", id)}
+                      onNavigate={(view) => navigateTo(view as any, null)}
                     />
                   </div>
                 )}
@@ -134,7 +182,7 @@ export default function App() {
                 {activeView === "tournaments" && (
                   <TournamentManager 
                     userRole={userRole}
-                    onSelectTournament={(id) => setSelectedTournamentId(id)}
+                    onSelectTournament={(id) => navigateTo("tournaments", id)}
                     onBack={() => handleSidebarNavigation("dashboard")}
                   />
                 )}
@@ -173,7 +221,7 @@ export default function App() {
 
                 {activeView === "fixture" && (
                   <FixtureView 
-                    onSelectTournament={(id) => setSelectedTournamentId(id)}
+                    onSelectTournament={(id) => navigateTo("tournaments", id)}
                     onNavigate={handleSidebarNavigation}
                   />
                 )}
