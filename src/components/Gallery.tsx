@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { repository } from '../lib/repository';
 import { GalleryMedia, Tournament, Match } from '../types';
+import { formatDate } from '../lib/utils';
 
 interface GalleryProps {
   userRole: "admin" | "player";
@@ -341,7 +342,7 @@ export const Gallery: React.FC<GalleryProps> = ({ userRole, onBack }) => {
                       </div>
                     )}
                     <div className="text-[8px] text-slate-600 font-mono text-right mt-1">
-                      {new Date(item.createdAt).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' })}
+                      {formatDate(item.createdAt?.split('T')[0])}
                     </div>
                   </div>
 

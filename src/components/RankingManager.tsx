@@ -28,6 +28,7 @@ import {
 import { repository } from '../lib/repository';
 import { Player } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
+import { SkeletonCard } from './ui/SkeletonCard';
 
 interface RankingManagerProps {
   userRole: "admin" | "player";
@@ -480,8 +481,8 @@ export const RankingManager: React.FC<RankingManagerProps> = ({ userRole, onBack
 
       {/* RANKING LIST TABLE */}
       {loading ? (
-        <div className="text-center py-10 font-mono text-xs text-slate-500">
-          Obteniendo escalafón oficial de la liga...
+        <div className="space-y-3">
+          {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}
         </div>
       ) : filteredPlayers.length === 0 ? (
         <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-8 text-center text-slate-500 text-xs">

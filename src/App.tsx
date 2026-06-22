@@ -1,9 +1,65 @@
-import React, { useState, useEffect, Suspense, lazy } from 'react';
+import React, { useState, useEffect, Suspense, lazy, Component } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Dashboard } from './components/Dashboard';
 import { repository } from './lib/repository';
 import { auth } from './lib/firebase';
 import { AppView } from './lib/uiTypes';
+
+// ── Error Boundary ────────────────────────────────────────────────────────────
+// Captura errores en el árbol de componentes hijos y muestra una UI de
+// recuperación en vez de crashear toda la app.
+class ErrorBoundary extends Component<
+  { children: React.ReactNode; fallbackView?: string },
+  { hasError: boolean; error: Error | null }
+> {
+  constructor(props: any) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    // Solo log técnico en consola — nunca mostrar stack trace al usuario
+    console.error('ErrorBoundary caught:', error, info.componentStack);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="max-w-lg mx-auto mt-20 px-6 text-center space-y-4">
+          <div className="w-16 h-16 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center justify-center mx-auto">
+            <span className="text-3xl">⚠️</span>
+          </div>
+          <h2 className="text-white font-black text-xl uppercase tracking-wider">
+            Algo salió mal
+          </h2>
+          <p className="text-slate-400 text-sm leading-relaxed">
+            Ocurrió un error inesperado en esta sección. Podés intentar recargar
+            o volver al inicio.
+          </p>
+          <div className="flex gap-3 justify-center pt-2">
+            <button
+              onClick={() => this.setState({ hasError: false, error: null })}
+              className="bg-[#d4fc34] text-slate-950 text-xs font-black px-5 py-2.5 rounded-xl uppercase tracking-wider hover:bg-[#bde61f] transition"
+            >
+              Reintentar
+            </button>
+            <button
+              onClick={() => { this.setState({ hasError: false, error: null }); window.location.search = ''; }}
+              className="bg-slate-800 text-slate-200 text-xs font-black px-5 py-2.5 rounded-xl uppercase tracking-wider hover:bg-slate-700 transition"
+            >
+              Ir al inicio
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const TournamentManager = lazy(() => import('./components/TournamentManager').then(m => ({ default: m.TournamentManager })));
 const TournamentDetail = lazy(() => import('./components/TournamentDetail').then(m => ({ default: m.TournamentDetail })));
@@ -155,7 +211,8 @@ export default function App() {
       <main className="flex-1 w-full min-w-0 flex flex-col bg-slate-950">
         
         <div className="flex-1">
-          <Suspense fallback={<AppLoadingFallback />}>
+          <ErrorBoundary>
+            <Suspense fallback={<AppLoadingFallback />}>
             {selectedTournamentId ? (
               <TournamentDetail 
                 tournamentId={selectedTournamentId}
@@ -228,6 +285,7 @@ export default function App() {
               </>
             )}
           </Suspense>
+        </ErrorBoundary>
         </div>
 
         {/* Clean Responsive Footer */}

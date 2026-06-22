@@ -14,6 +14,7 @@ import {
 import { repository } from '../lib/repository';
 import { Tournament, Match, Pair, Player, Court } from '../types';
 import { AppView } from '../lib/uiTypes';
+import { SkeletonCard } from './ui/SkeletonCard';
 
 // Orden de fases dentro de un mismo día/hora:
 // 1) Fase de grupos (group), ordenada alfabéticamente por stageName (Grupo A, Grupo B, ...)
@@ -89,9 +90,10 @@ export const FixtureView: React.FC<FixtureViewProps> = ({ onSelectTournament, on
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px] text-xs font-mono text-slate-500">
-        <Activity className="w-4 h-4 animate-spin text-[#d4fc34] mr-2" />
-        Sincronizando fixture oficial...
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
+        </div>
       </div>
     );
   }
@@ -151,7 +153,9 @@ export const FixtureView: React.FC<FixtureViewProps> = ({ onSelectTournament, on
       const parts = dateStr.split("-");
       if (parts.length !== 3) return dateStr;
       const date = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
-      return date.toLocaleDateString("es-ES", { weekday: 'long', day: 'numeric', month: 'long' });
+      const weekday = date.toLocaleDateString("es-ES", { weekday: 'long' });
+      const weekdayCapitalized = weekday.charAt(0).toUpperCase() + weekday.slice(1);
+      return `${weekdayCapitalized} · ${parts[2]}/${parts[1]}/${parts[0]}`;
     } catch (e) {
       return dateStr;
     }

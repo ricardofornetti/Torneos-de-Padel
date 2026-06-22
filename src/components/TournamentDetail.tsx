@@ -46,6 +46,7 @@ import { InscriptionsTab } from './tournament-detail/InscriptionsTab';
 import { MatchesTab } from './tournament-detail/MatchesTab';
 import { StandingsTab } from './tournament-detail/StandingsTab';
 import { PlayoffsTab } from './tournament-detail/PlayoffsTab';
+import { useTournamentActions } from '../lib/useTournamentActions';
 
 // Generates placeholder empty matches for all playoff phases
 export const preGeneratePlayoffsHelper = (tId: string, cat: string, pairCount?: number): Match[] => {
@@ -301,6 +302,21 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
     stage: string;
     points: number;
   }> | null>(null);
+
+  // Integración del hook useTournamentActions para encapsular acciones del admin
+  const { isProcessing, handleAssignCourt, handleSaveResult } = useTournamentActions({
+    tournament,
+    players,
+    pairs,
+    matches,
+    courts,
+    selectedCategory,
+    setMatches,
+    setPairs,
+    showToast: (msg, type) => {
+      triggerInAppAlert(type === 'error' ? 'error' : 'success', type === 'error' ? 'Error' : 'Notificación', msg);
+    },
+  });
 
   // Group drawing assignments (In-memory grouping display)
   const [groupsMap, setGroupsMap] = useState<{ [gName: string]: Pair[] }>({});

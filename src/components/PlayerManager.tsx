@@ -23,6 +23,7 @@ import {
 import { repository } from '../lib/repository';
 import { Player, PlayerPrivateData } from '../types';
 import { getFIPTop100Males, getFIPTop100Females } from '../lib/fipRankingsData';
+import { SkeletonCard } from './ui/SkeletonCard';
 
 interface PlayerManagerProps {
   userRole: "admin" | "player";
@@ -517,8 +518,8 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole, onBack }
 
       {/* PLAYERS Bento LISTING SECTION */}
       {loading ? (
-        <div className="text-center py-10 font-mono text-xs text-slate-500 animate-pulse">
-          Sincronizando jugadores...
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 9 }).map((_, i) => <SkeletonCard key={i} />)}
         </div>
       ) : filteredPlayers.length === 0 ? (
         <div className="text-center py-12 bg-slate-900/50 border border-slate-800 rounded-xl text-slate-500 text-xs font-medium">

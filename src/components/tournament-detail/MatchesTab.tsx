@@ -222,94 +222,116 @@ export const MatchesTab: React.FC<MatchesTabProps> = ({
     return null;
   };
 
-  const renderMatchRow = (m: Match) => {
+  const renderMatchCard = (m: Match) => {
     const finished = m.status === "completed" || m.status === "wo";
     return (
       <div 
         key={m.id}
-        className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-slate-950/40 transition"
+        className="bg-slate-900 border border-slate-800/80 rounded-xl p-4 flex flex-col justify-between hover:border-slate-700 transition relative group"
       >
-        {/* Metadata column */}
-        <div className="space-y-1">
-          <span className="bg-slate-950 text-slate-400 border border-slate-800 px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase block w-fit">
+        {/* Top labels */}
+        <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono border-b border-slate-850/80 pb-2 mb-3.5">
+          <span className="bg-slate-950 px-2 py-0.5 rounded border border-slate-850 text-[9px] font-bold uppercase text-cyan-400">
             {m.stageName} • Ronda {m.roundNumber}
-            {m.date ? ` • Fecha: ${formatDate(m.date)} - ${m.time}h` : " • Fecha: Sin asignar"}
-            {` • Cancha: ${courts.find(c => c.id === m.courtId)?.name || 'Sin asignar'}`}
           </span>
-          <div className="flex flex-col gap-1.5 text-xs text-slate-400 mt-1">
-            <div className="flex items-center gap-1">
-              <MapPin className="w-3.5 h-3.5 text-slate-500 shadow-sm" />
-              <span className={m.courtId ? "text-slate-200" : "text-amber-400 font-bold"}>
-                {courts.find(c => c.id === m.courtId)?.name || "Pista por asignar"}
+          <span className="font-medium text-slate-450">
+            {m.phase === "group" ? "Fase Zonas" : "Eliminación"}
+          </span>
+        </div>
+
+        {/* Opponents showdown visual block */}
+        <div className="space-y-2 pt-1 pb-3">
+          {/* Team A */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-[9px] bg-slate-800 w-4 h-4 text-slate-400 flex items-center justify-center rounded font-mono font-bold">A</span>
+              <span className={`text-[12px] font-bold ${finished && m.winnerPairId === m.pair1Id ? 'text-[#d4fc34] font-black' : 'text-slate-150'}`}>
+                {getPairName(m.pair1Id)}
               </span>
-              {m.date && (
-                <span className="font-mono text-[11px] text-slate-500 ml-1">
-                  ({formatDate(m.date)} • {m.time} h)
-                </span>
-              )}
             </div>
-            {userRole === "admin" && (
-              <button
-                type="button"
-                onClick={() => handleOpenCourtAssigner(m)}
-                className="bg-[#d4fc34]/15 hover:bg-[#d4fc34] text-[#d4fc34] hover:text-slate-950 text-[10px] font-black px-2.5 py-1 rounded-lg border border-[#d4fc34]/25 hover:border-transparent transition-all flex items-center gap-1 cursor-pointer uppercase tracking-wider text-center w-fit mt-1"
-              >
-                <Calendar className="w-3 h-3" /> Asignar Cancha / Hora
-              </button>
+            {finished && (
+              <span className={`font-mono text-xs font-black px-2 py-0.5 rounded border ${m.winnerPairId === m.pair1Id ? 'bg-[#d4fc34]/15 text-[#d4fc34] border-[#d4fc34]/20' : 'bg-slate-950 text-slate-600 border-slate-850'}`}>
+                {m.winnerPairId === m.pair1Id ? "W" : "L"}
+              </span>
+            )}
+          </div>
+
+          {/* Team B */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-[9px] bg-slate-800 w-4 h-4 text-slate-400 flex items-center justify-center rounded font-mono font-bold">B</span>
+              <span className={`text-[12px] font-bold ${finished && m.winnerPairId === m.pair2Id ? 'text-[#d4fc34] font-black' : 'text-slate-150'}`}>
+                {getPairName(m.pair2Id)}
+              </span>
+            </div>
+            {finished && (
+              <span className={`font-mono text-xs font-black px-2 py-0.5 rounded border ${m.winnerPairId === m.pair2Id ? 'bg-[#d4fc34]/15 text-[#d4fc34] border-[#d4fc34]/20' : 'bg-slate-950 text-slate-600 border-slate-850'}`}>
+                {m.winnerPairId === m.pair2Id ? "W" : "L"}
+              </span>
             )}
           </div>
         </div>
 
-        {/* Team versus */}
-        <div className="flex-1 max-w-lg">
-          <div className="grid grid-cols-2 gap-4 items-center">
-            <div className="text-right">
-              <span className={`block text-xs font-bold ${finished && m.winnerPairId === m.pair1Id ? 'text-blue-400' : 'text-slate-200'}`}>
-                {getPairName(m.pair1Id)}
-              </span>
-              {finished && m.winnerPairId === m.pair1Id && <span className="text-[10px] text-green-400 font-bold uppercase">WIN</span>}
-            </div>
-            <div className="border-l border-slate-800 pl-4">
-              <span className={`block text-xs font-bold ${finished && m.winnerPairId === m.pair2Id ? 'text-blue-400' : 'text-slate-200'}`}>
-                {getPairName(m.pair2Id)}
-              </span>
-              {finished && m.winnerPairId === m.pair2Id && <span className="text-[10px] text-green-400 font-bold uppercase">WIN</span>}
-            </div>
+        {/* Score or Status summary details block */}
+        <div className="pt-2 px-3 py-2.5 bg-slate-950/80 rounded-xl border border-slate-850 flex items-center justify-between mt-2.5">
+          {/* Left Info: Court and clock */}
+          <div className="flex items-center gap-3.5 text-[10px] text-slate-400 font-mono">
+            {(() => {
+              const courtName = courts.find(c => c.id === m.courtId)?.name;
+              return courtName ? (
+                <div className="flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+                  <span className="font-bold text-slate-200">{courtName}</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1 text-slate-550">
+                  <span className="w-1.5 h-1.5 rounded-full bg-slate-600"></span>
+                  <span>Sin Cancha</span>
+                </div>
+              );
+            })()}
+
+            {m.date ? (
+              <div className="flex items-center gap-1 font-bold">
+                <span>{formatDate(m.date)}</span>
+                {m.time && <span className="text-slate-500">@{m.time}h</span>}
+              </div>
+            ) : (
+              <div className="text-slate-550">
+                <span>Sin hora</span>
+              </div>
+            )}
+          </div>
+
+          {/* Right Info: score summary */}
+          <div className="flex items-center gap-2">
+            <span className={`text-[11px] font-bold font-mono px-2 py-0.5 rounded ${finished ? 'bg-blue-600/15 text-blue-400 border border-blue-500/20' : 'bg-slate-900 border border-slate-800 text-slate-500'}`}>
+              {m.scoreSummary || "Por jugar"}
+            </span>
           </div>
         </div>
 
-        {/* Actions and Score */}
-        <div className="flex items-center md:justify-end gap-3 shrink-0">
-          {finished ? (
-            <div className="text-right">
-              <span className="bg-blue-600/10 text-blue-400 border border-blue-500/20 font-mono font-black px-2.5 py-1 rounded text-xs block">
-                {m.scoreSummary}
-              </span>
-              {userRole === "admin" && (
-                <button 
-                  type="button"
-                  onClick={() => handleOpenScorer(m)}
-                  className="text-[10px] text-slate-500 hover:text-slate-300 font-semibold hover:underline mt-1 block w-full text-right"
-                >
-                  Corregir Marcador
-                </button>
-              )}
-            </div>
-          ) : (
-            <div className="flex gap-2">
-              <span className="text-xs text-slate-500 font-mono italic flex items-center">Por jugar</span>
-              {userRole === "admin" && (
-                <button
-                  type="button"
-                  onClick={() => handleOpenScorer(m)}
-                  className="bg-slate-800 hover:bg-slate-700 hover:text-blue-400 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition border border-slate-700 cursor-pointer"
-                >
-                  Cargar Resultado
-                </button>
-              )}
-            </div>
-          )}
-        </div>
+        {/* Admin actions block */}
+        {userRole === "admin" && (
+          <div className="mt-3 pt-3 border-t border-slate-850/85 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => handleOpenCourtAssigner(m)}
+              className="flex-1 bg-slate-950 hover:bg-slate-850 text-slate-350 hover:text-white border border-slate-800 hover:border-slate-700 text-[10px] font-mono font-bold py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer uppercase tracking-wider"
+            >
+              <Calendar className="w-3.5 h-3.5 text-cyan-400" />
+              {m.courtId ? "Programar" : "Asignar Cancha"}
+            </button>
+            <button
+              type="button"
+              onClick={() => handleOpenScorer(m)}
+              className="flex-1 bg-[#d4fc34]/10 hover:bg-[#d4fc34] text-[#d4fc34] hover:text-slate-950 border border-[#d4fc34]/20 hover:border-transparent text-[10px] font-mono font-bold py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer uppercase tracking-wider"
+            >
+              <Trophy className="w-3.5 h-3.5" />
+              {finished ? "Corregir" : "Cargar Score"}
+            </button>
+          </div>
+        )}
       </div>
     );
   };
@@ -717,8 +739,8 @@ export const MatchesTab: React.FC<MatchesTabProps> = ({
                             <span className="w-1.5 h-1.5 rounded-full bg-[#d4fc34]"></span>
                             {subKey}
                           </div>
-                          <div className="bg-slate-900 border border-slate-850 rounded-xl divide-y divide-slate-800/50 overflow-hidden shadow-inner mt-2">
-                            {subMatches.map(m => renderMatchRow(m))}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                            {subMatches.map(m => renderMatchCard(m))}
                           </div>
                         </div>
                       );
@@ -740,8 +762,8 @@ export const MatchesTab: React.FC<MatchesTabProps> = ({
                   </span>
                 </div>
 
-                <div className="bg-slate-900 border border-slate-800 rounded-2xl divide-y divide-slate-800/50 overflow-hidden shadow-inner">
-                  {groupMatches.map(m => renderMatchRow(m))}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                  {groupMatches.map(m => renderMatchCard(m))}
                 </div>
               </div>
             );

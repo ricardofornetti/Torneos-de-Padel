@@ -67,8 +67,11 @@ export function handleFirestoreError(error: any, operationType: OperationType, p
   };
 
   if (isPermissionError) {
+    // Diagnóstico completo solo en consola (nunca en la UI).
+    // El objeto errInfo contiene uid/email/providerData — datos de sesión
+    // que no deben aparecer en mensajes de error visibles al usuario.
     console.error('Firestore Error Captured: ', JSON.stringify(errInfo));
-    throw new Error(JSON.stringify(errInfo));
+    throw new Error('No tenés permisos para realizar esta acción. Verificá que hayas iniciado sesión correctamente.');
   } else {
     console.warn(`Firestore non-fatal issue (${errMsg}) at path: ${path}. Operating in Sandbox fallback.`);
   }
@@ -710,7 +713,8 @@ class PadelRepository {
   async getTournaments(): Promise<Tournament[]> {
     if (isRealFirebase) {
       try {
-        const snap = await withTimeout(getDocs(collection(db, "tournaments")), 5000);
+        const q = query(collection(db, "tournaments"), orderBy("startDate", "desc"), limit(200));
+        const snap = await withTimeout(getDocs(q), 5000);
         const list: Tournament[] = [];
         const mockTournamentIds = ["t_madrid_master", "t_sevilla_premier", "t_bcn_grand_slam"];
         snap.forEach(docSnap => {
@@ -783,7 +787,8 @@ class PadelRepository {
   async getPlayers(): Promise<Player[]> {
     if (isRealFirebase) {
       try {
-        const snap = await withTimeout(getDocs(collection(db, "players")), 5000);
+        const q = query(collection(db, "players"), orderBy("rankingPoints", "desc"), limit(500));
+        const snap = await withTimeout(getDocs(q), 5000);
         const list: Player[] = [];
         const mockPlayerIds = new Set(Array.from({ length: 20 }, (_, i) => `p${i + 1}`));
         snap.forEach(docSnap => {
@@ -986,7 +991,8 @@ class PadelRepository {
           const q = query(collection(db, "matches"), where("tournamentId", "==", tournamentId));
           snap = await withTimeout(getDocs(q), 5000);
         } else {
-          snap = await withTimeout(getDocs(collection(db, "matches")), 5000);
+          const qAll = query(collection(db, "matches"), limit(2000));
+          snap = await withTimeout(getDocs(qAll), 5000);
         }
         const list: Match[] = [];
         snap.forEach(docSnap => {
@@ -1154,7 +1160,8 @@ class PadelRepository {
   async getGalleryMedia(tournamentId?: string, matchId?: string): Promise<GalleryMedia[]> {
     if (isRealFirebase) {
       try {
-        const snap = await withTimeout(getDocs(collection(db, "galleryMedia")), 5000);
+        const q = query(collection(db, "galleryMedia"), orderBy("createdAt", "desc"), limit(200));
+        const snap = await withTimeout(getDocs(q), 5000);
         const list: GalleryMedia[] = [];
         snap.forEach(docSnap => {
           list.push(docSnap.data() as GalleryMedia);

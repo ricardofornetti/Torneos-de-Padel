@@ -140,6 +140,17 @@ service cloud.firestore {
         && g.createdAt is string && g.createdAt.size() <= 64;
     }
 
+    function isValidNotification(n) {
+      return n.keys().hasAll(['id', 'title', 'body', 'timestamp', 'type', 'read'])
+        && n.keys().size() == 6
+        && n.id is string && n.id.size() <= 64
+        && n.title is string && n.title.size() <= 120
+        && n.body is string && n.body.size() <= 500
+        && n.timestamp is string && n.timestamp.size() <= 64
+        && n.type is string && (n.type == 'info' || n.type == 'success' || n.type == 'warning')
+        && n.read is bool;
+    }
+
     // --- COLLECTION MATCH BLOCKS ---
 
     // Tournaments
@@ -224,8 +235,8 @@ service cloud.firestore {
     // Notifications
     match /notifications/{notifId} {
       allow read: if true;
-      allow create: if isValidId(notifId); // Allow creation by system processes
-      allow update: if isAdmin() || (isSignedIn() && incoming().diff(existing()).affectedKeys().hasOnly(['read']));
+      allow create: if isValidId(notifId) && isValidNotification(incoming());
+      allow update: if isAdmin() || (isSignedIn() && isValidNotification(incoming()) && incoming().diff(existing()).affectedKeys().hasOnly(['read']));
       allow delete: if isAdmin();
     }
   }
