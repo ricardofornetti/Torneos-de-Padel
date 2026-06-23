@@ -143,7 +143,7 @@ export default function App() {
   useEffect(() => {
     const checkRole = () => {
       const user = auth.currentUser;
-      if (user && user.email === 'fornettiricardo@gmail.com') {
+      if (user && user.emailVerified && user.email === 'fornettiricardo@gmail.com') {
         setUserRole("admin");
       } else {
         setUserRole("player");
