@@ -3207,9 +3207,9 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
             <div className="flex gap-2 border-b border-slate-850 pb-px overflow-x-auto scrollbar-none w-full">
               {[
                 { id: "inscriptions", label: "Inscripciones", icon: ClipboardList },
-                { id: "matches", label: "Partidos", icon: Calendar },
+                { id: "matches", label: "Partido", icon: Calendar },
                 { id: "standings", label: "Posiciones", icon: BarChart2 },
-                { id: "playoffs", label: "Cuadros", icon: GitBranch },
+                { id: "playoffs", label: "Cuadro", icon: GitBranch },
               ].map(tab => {
                 const isDisabled = (tab.id === "standings" || tab.id === "playoffs" || tab.id === "matches") && matches.filter(m => m.category === selectedCategory).length === 0;
                 return (
