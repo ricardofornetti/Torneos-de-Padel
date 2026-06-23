@@ -14,7 +14,7 @@ class ErrorBoundary extends Component<
   { children: React.ReactNode; fallbackView?: string },
   { hasError: boolean; error: Error | null }
 > {
-  constructor(props: any) {
+  constructor(props: { children: React.ReactNode; fallbackView?: string }) {
     super(props);
     this.state = { hasError: false, error: null };
   }
@@ -258,7 +258,7 @@ useEffect(() => {
                     <Dashboard 
                       userRole={userRole}
                       onNavigateToTournament={(id) => navigateTo("tournaments", id)}
-                      onNavigate={(view) => navigateTo(view as any, null)}
+                      onNavigate={(view) => navigateTo(view, null)}
                     />
                   </div>
                 )}
