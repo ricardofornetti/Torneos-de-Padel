@@ -227,7 +227,7 @@ export const MatchesTab: React.FC<MatchesTabProps> = ({
     return (
       <div 
         key={m.id}
-        className="bg-slate-900 border border-slate-800/80 rounded-xl p-4 flex flex-col justify-between hover:border-slate-700 transition relative group"
+        className="bg-slate-900 border border-slate-800/80 rounded-xl p-3 sm:p-4 flex flex-col justify-between hover:border-slate-700 transition relative group"
       >
         {/* Top labels */}
         <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono border-b border-slate-850/80 pb-2 mb-3.5">
@@ -245,7 +245,7 @@ export const MatchesTab: React.FC<MatchesTabProps> = ({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="text-[9px] bg-slate-800 w-4 h-4 text-slate-400 flex items-center justify-center rounded font-mono font-bold">A</span>
-              <span className={`text-[12px] font-bold ${finished && m.winnerPairId === m.pair1Id ? 'text-[#d4fc34] font-black' : 'text-slate-150'}`}>
+              <span className={`text-[10px] sm:text-[12px] font-bold ${finished && m.winnerPairId === m.pair1Id ? 'text-[#d4fc34] font-black' : 'text-slate-150'}`}>
                 {getPairName(m.pair1Id)}
               </span>
             </div>
@@ -260,7 +260,7 @@ export const MatchesTab: React.FC<MatchesTabProps> = ({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="text-[9px] bg-slate-800 w-4 h-4 text-slate-400 flex items-center justify-center rounded font-mono font-bold">B</span>
-              <span className={`text-[12px] font-bold ${finished && m.winnerPairId === m.pair2Id ? 'text-[#d4fc34] font-black' : 'text-slate-150'}`}>
+              <span className={`text-[10px] sm:text-[12px] font-bold ${finished && m.winnerPairId === m.pair2Id ? 'text-[#d4fc34] font-black' : 'text-slate-150'}`}>
                 {getPairName(m.pair2Id)}
               </span>
             </div>
@@ -762,9 +762,9 @@ export const MatchesTab: React.FC<MatchesTabProps> = ({
                   </span>
                 </div>
 
-                  <div className="grid grid-cols-2 gap-3 mt-2">
-                    {groupMatches.map(m => renderMatchCard(m))}
-                  </div>
+                <div className="grid grid-cols-2 gap-3 mt-2">
+                  {groupMatches.map(m => renderMatchCard(m))}
+                </div>
               </div>
             );
           })
@@ -809,3 +809,4 @@ export const MatchesTab: React.FC<MatchesTabProps> = ({
     </div>
   );
 };
+
