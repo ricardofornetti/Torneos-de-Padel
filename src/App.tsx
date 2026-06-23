@@ -2,7 +2,9 @@ import React, { useState, useEffect, Suspense, lazy, Component } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Dashboard } from './components/Dashboard';
 import { repository } from './lib/repository';
-import { auth } from './lib/firebase';
+import { auth, db, isRealFirebase } from './lib/firebase';
+import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
+import { AppNotification } from './types';
 import { AppView } from './lib/uiTypes';
 
 // ── Error Boundary ────────────────────────────────────────────────────────────
@@ -165,20 +167,45 @@ export default function App() {
   }, [selectedTournamentId]);
 
   const loadNotifications = async () => {
-    try {
-      const list = await repository.getNotifications();
-      setNotifications(list);
-    } catch (e) {
-      console.warn("Failed to load notifications: ", e);
-    }
-  };
+  try {
+    const list = await repository.getNotifications();
+    setNotifications(list);
+  } catch (e) {
+    console.warn("Failed to load notifications: ", e);
+  }
+};
 
-  useEffect(() => {
+useEffect(() => {
+  if (!isRealFirebase) {
+    // Modo sandbox (localStorage): carga una vez, sin polling
     loadNotifications();
-    // Refresh alerts periodically
-    const t = setInterval(loadNotifications, 5000);
-    return () => clearInterval(t);
-  }, []);
+    return;
+  }
+
+  // Modo Firebase real: listener en tiempo real
+  // onSnapshot mantiene una conexión abierta y solo notifica cuando hay cambios.
+  // No cobra reads innecesarios como el setInterval de 5 segundos.
+  const q = query(
+    collection(db, 'notifications'),
+    orderBy('timestamp', 'desc'),
+    limit(50)
+  );
+
+  const unsubscribe = onSnapshot(q,
+    (snap) => {
+      const list = snap.docs.map(d => d.data() as AppNotification);
+      setNotifications(list);
+    },
+    (error) => {
+      // Si falla el listener (ej. sin permisos), fallback silencioso a localStorage
+      console.warn('Notifications listener error, falling back:', error);
+      loadNotifications();
+    }
+  );
+
+  // Limpia la conexión cuando el componente se desmonta
+  return () => unsubscribe();
+}, []);
 
   const handleClearAlerts = async () => {
     await repository.clearNotifications();
