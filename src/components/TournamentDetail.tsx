@@ -3149,7 +3149,7 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
                 ) : activeTab === "matches" ? (
                   <>
                     <Calendar className="w-7 h-7 text-[#d4fc34]" />
-                    <span>Partidos</span>
+                    <span>Partido</span>
                   </>
                 ) : activeTab === "standings" ? (
                   <>
@@ -3159,7 +3159,7 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
                 ) : (
                   <>
                     <GitBranch className="w-7 h-7 text-[#d4fc34]" />
-                    <span>Cuadros</span>
+                    <span>Cuadro</span>
                   </>
                 )}
               </h1>
@@ -3167,7 +3167,7 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
                 {activeTab === "inscriptions" ? "Lista oficial de parejas inscritas y cargadas en esta categoría para este torneo." :
                  activeTab === "matches" ? "Cronograma oficial de juego, asignación de pistas y carga de resultados en tiempo real." :
                  activeTab === "standings" ? "Tabla de posiciones oficiales, de zonas y clasificación de la categoría activa." :
-                 "Cuadros de llaves principales, cruces directos y fase de eliminación playoffs."}
+                 "Cuadro de llaves principales, cruces directos y fase de eliminación playoffs."}
               </p>
             </div>
 
