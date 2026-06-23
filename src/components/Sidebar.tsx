@@ -356,7 +356,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               onClick={() => setShowRegisterModal(true)}
               className="p-1 px-2.5 bg-[#d4fc34]/15 text-[#d4fc34] border border-[#d4fc34]/20 rounded-lg text-[10px] font-mono font-bold tracking-wider uppercase ml-1 cursor-pointer"
             >
-              FICHARSE
+              INICIAR SESION
             </button>
           )}
         </div>
@@ -620,7 +620,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     className="w-full py-3 bg-[#d4fc34] hover:bg-[#bde61f] text-slate-950 font-black text-xs rounded-xl transition uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md cursor-pointer"
                   >
                     <LogIn className="w-4 h-4 text-slate-950 shrink-0" />
-                    <span>Ficharse</span>
+                    <span>Iniciar Sesion</span>
                   </button>
                 )}
               </div>
