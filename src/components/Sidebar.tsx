@@ -696,12 +696,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* REGISTRATION MODAL FORM */}
       <AnimatePresence>
         {showRegisterModal && (
-          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-start justify-center p-4 z-50 overflow-y-auto pt-4 sm:items-center sm:pt-4">
+          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-start justify-center z-[60] overflow-y-auto">
             <motion.div 
-              initial={{ scale: 0.95, opacity: 0, y: 15 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 15 }}
-              className="bg-slate-900 border border-slate-800/95 rounded-2xl max-w-md w-full overflow-hidden shadow-2xl relative my-2 sm:my-8"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="bg-slate-900 border border-slate-800/95 rounded-2xl max-w-md w-full overflow-hidden shadow-2xl relative mt-3 mb-24 mx-4 sm:my-8 sm:mx-auto"
             >
               <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950">
                 <div className="flex items-center gap-2">
@@ -723,7 +723,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </button>
               </div>
 
-              <div className="p-5 space-y-4 max-h-[70vh] sm:max-h-[75vh] overflow-y-auto">
+              <div className="p-5 space-y-4 max-h-[65vh] sm:max-h-[75vh] overflow-y-auto overscroll-contain">
                 <AnimatePresence mode="popLayout">
                   {regError && (
                     <motion.div 
