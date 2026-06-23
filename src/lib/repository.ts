@@ -112,6 +112,8 @@ const INITIAL_COURTS: Court[] = [];
 
 const INITIAL_MATCHES: Match[] = [];
 
+const INITIAL_NOTIFICATIONS: AppNotification[] = [];
+
 
 const INITIAL_MEDIA: GalleryMedia[] = [];
 
