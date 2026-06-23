@@ -67,6 +67,37 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const [isMockSession, setIsMockSession] = useState(false);
 
+  // Bloquear scroll del body cuando el modal está abierto
+  // Esto es la solución definitiva para iOS/Android donde fixed+scroll causa
+  // que el modal aparezca en la posición del scroll actual en vez del viewport
+  useEffect(() => {
+    if (showRegisterModal) {
+      const scrollY = window.scrollY;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.left = '0';
+      document.body.style.right = '0';
+      document.body.style.overflow = 'hidden';
+    } else {
+      const scrollY = document.body.style.top;
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.style.right = '';
+      document.body.style.overflow = '';
+      if (scrollY) {
+        window.scrollTo(0, parseInt(scrollY || '0') * -1);
+      }
+    }
+    return () => {
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.style.right = '';
+      document.body.style.overflow = '';
+    };
+  }, [showRegisterModal]);
+
   useEffect(() => {
     // Check mock login session
     const localUserJson = localStorage.getItem("padel_mgr_mock_user");
@@ -696,12 +727,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* REGISTRATION MODAL FORM */}
       <AnimatePresence>
         {showRegisterModal && (
-          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[60] flex items-start justify-center overflow-y-auto">
+          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[60] flex items-start justify-center pt-4 px-4 pb-28 overflow-y-auto">
             <motion.div 
-              initial={{ opacity: 0, y: -10 }}
+              initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="bg-slate-900 border border-slate-800/95 rounded-2xl max-w-md w-full overflow-hidden shadow-2xl relative mt-4 mb-28 mx-4 sm:my-8 sm:mx-auto"
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.2 }}
+              className="bg-slate-900 border border-slate-800/95 rounded-2xl max-w-md w-full overflow-hidden shadow-2xl relative"
             >
               <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950">
                 <div className="flex items-center gap-2">
@@ -723,7 +755,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </button>
               </div>
 
-              <div className="p-5 space-y-4 max-h-[65vh] sm:max-h-[75vh] overflow-y-auto overscroll-contain">
+              <div className="p-5 space-y-4">
                 <AnimatePresence mode="popLayout">
                   {regError && (
                     <motion.div 
