@@ -739,7 +739,7 @@ export const MatchesTab: React.FC<MatchesTabProps> = ({
                             <span className="w-1.5 h-1.5 rounded-full bg-[#d4fc34]"></span>
                             {subKey}
                           </div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                          <div className="grid grid-cols-2 gap-3 mt-2">
                             {subMatches.map(m => renderMatchCard(m))}
                           </div>
                         </div>
@@ -762,9 +762,9 @@ export const MatchesTab: React.FC<MatchesTabProps> = ({
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-                  {groupMatches.map(m => renderMatchCard(m))}
-                </div>
+                  <div className="grid grid-cols-2 gap-3 mt-2">
+                    {groupMatches.map(m => renderMatchCard(m))}
+                  </div>
               </div>
             );
           })
