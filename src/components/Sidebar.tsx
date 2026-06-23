@@ -353,8 +353,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             />
           ) : (
             <button 
-              onClick={() => setShowRegisterModal(true)}
-              className="p-1 px-2.5 bg-[#d4fc34]/15 text-[#d4fc34] border border-[#d4fc34]/20 rounded-lg text-[10px] font-mono font-bold tracking-wider uppercase ml-1 cursor-pointer"
+              onClick={() => { window.scrollTo(0, 0); setShowRegisterModal(true); }}
             >
               INICIAR SESION
             </button>
@@ -501,7 +500,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           ) : (
             <button
-              onClick={() => setShowRegisterModal(true)}
+              onClick={() => { window.scrollTo(0, 0); setShowRegisterModal(true); }}
               className="w-full flex items-center justify-center gap-2 px-3 py-3 bg-slate-900/60 hover:bg-slate-900 text-white text-xs font-bold rounded-xl transition border border-slate-800 cursor-pointer"
             >
               <LogIn className="w-4 h-4 text-[#d4fc34] shrink-0" />
@@ -614,6 +613,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 ) : (
                   <button
                     onClick={() => {
+                      window.scrollTo(0, 0);
                       setIsMobileOpen(false);
                       setShowRegisterModal(true);
                     }}
@@ -696,12 +696,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* REGISTRATION MODAL FORM */}
       <AnimatePresence>
         {showRegisterModal && (
-          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-start justify-center z-[60] overflow-y-auto">
+          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[60] flex items-start justify-center overflow-y-auto">
             <motion.div 
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="bg-slate-900 border border-slate-800/95 rounded-2xl max-w-md w-full overflow-hidden shadow-2xl relative mt-3 mb-24 mx-4 sm:my-8 sm:mx-auto"
+              className="bg-slate-900 border border-slate-800/95 rounded-2xl max-w-md w-full overflow-hidden shadow-2xl relative mt-4 mb-28 mx-4 sm:my-8 sm:mx-auto"
             >
               <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950">
                 <div className="flex items-center gap-2">
@@ -906,3 +906,4 @@ export const Sidebar: React.FC<SidebarProps> = ({
     </>
   );
 };
+
