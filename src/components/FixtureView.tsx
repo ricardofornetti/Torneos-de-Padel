@@ -297,13 +297,40 @@ export const FixtureView: React.FC<FixtureViewProps> = ({ onSelectTournament, on
             <div key={dateStr} className="space-y-3">
               
               {/* Date Header Tile */}
-              <div className="flex items-center gap-2">
-                <CalendarIcon className="w-4 h-4 text-[#d4fc34]" />
-                <h3 className="text-xs sm:text-sm font-black text-slate-100 uppercase tracking-wide">
-                  {formatDate(dateStr)}
-                </h3>
-                <div className="flex-1 h-px bg-slate-850"></div>
-                <span className="text-[10px] text-slate-500 font-mono font-bold uppercase">{dateMatches.length} partidos</span>
+              // DESPUÉS — fecha prominente arriba, rondas del día debajo:
+<div className="space-y-2">
+  {/* Fecha — prominente arriba a la izquierda */}
+  <div className="flex items-center gap-2">
+    <CalendarIcon className="w-4 h-4 text-[#d4fc34]" />
+    <h3 className="text-sm sm:text-base font-black text-white uppercase tracking-wide">
+      {formatDate(dateStr)}
+    </h3>
+    <div className="flex-1 h-px bg-slate-800"></div>
+    <span className="text-[10px] text-slate-500 font-mono font-bold uppercase">
+      {dateMatches.length} {dateMatches.length === 1 ? 'partido' : 'partidos'}
+    </span>
+  </div>
+
+  {/* Rondas del día — badges debajo de la fecha */}
+  {(() => {
+    const stages = [...new Set(dateMatches.map(m =>
+      m.phase === "group"
+        ? `Fase de Grupos · ${m.stageName}`
+        : m.stageName || "Playoffs"
+    ))];
+    return stages.length > 0 ? (
+      <div className="flex flex-wrap gap-1.5 pl-6">
+        {stages.map(s => (
+          <span key={s} className="text-[9px] font-mono font-bold uppercase tracking-wider
+                                   bg-slate-800 text-slate-400 border border-slate-700
+                                   px-2 py-0.5 rounded">
+            {s}
+          </span>
+        ))}
+      </div>
+    ) : null;
+  })()}
+</div>
                  {/* Grid of Matches */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {(() => {
