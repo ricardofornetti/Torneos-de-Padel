@@ -866,6 +866,19 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole, onBack }
         </div>
       )}
 
+      {/* BOTÓN FLOTANTE (FAB) — siempre visible sin importar el scroll */}
+      {/* Aparece solo cuando el usuario scrolleó suficiente para perder el botón del header */}
+      <button
+        onClick={handleOpenCreateForm}
+        className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-40 bg-[#d4fc34] hover:bg-[#cbf528] text-slate-950 font-black text-xs px-4 py-3 rounded-2xl shadow-2xl shadow-[#d4fc34]/30 flex items-center gap-2 transition-all hover:scale-105 active:scale-95 cursor-pointer"
+        title={userRole === "admin" ? "Registrar Jugador" : "Inscribirse como Jugador"}
+      >
+        <Plus className="w-4 h-4" />
+        <span className="hidden sm:inline uppercase tracking-widest">
+          {userRole === "admin" ? "Registrar Jugador" : "Inscribirse"}
+        </span>
+      </button>
+
       {/* FORM MODAL POPUP FOR CREATE / UPDATE */}
       {isFormOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
