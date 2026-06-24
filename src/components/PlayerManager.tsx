@@ -430,13 +430,15 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole, onBack }
                 <span>Cargar Ránking FIP</span>
               </button>
             )}
-            <button
-              onClick={handleOpenCreateForm}
-              className="bg-[#d4fc34] hover:bg-[#cbf528] text-slate-950 text-xs font-black px-5 py-3 rounded-xl uppercase tracking-widest flex items-center gap-2 transition-all cursor-pointer shadow-lg shadow-[#d4fc34]/10"
-            >
-              <Plus className="w-4 h-4 text-slate-950" />
-              <span>{userRole === "admin" ? "Registrar Jugador" : "Inscribirse como Jugador"}</span>
-            </button>
+            {userRole === "admin" && (
+              <button
+                onClick={handleOpenCreateForm}
+                className="bg-[#d4fc34] hover:bg-[#cbf528] text-slate-950 text-xs font-black px-5 py-3 rounded-xl uppercase tracking-widest flex items-center gap-2 transition-all cursor-pointer shadow-lg shadow-[#d4fc34]/10"
+              >
+                <Plus className="w-4 h-4 text-slate-950" />
+                <span>Registrar Jugador</span>
+              </button>
+            )}
           </div>
         </div>
         

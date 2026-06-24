@@ -57,7 +57,7 @@ export const StandingsTab: React.FC<StandingsTabProps> = ({
           <div className="flex gap-3 text-xs bg-slate-950 px-3.5 py-2 rounded-xl border border-slate-850 font-mono text-slate-400">
             <span>Zonas Totales: <strong className="text-white">8</strong></span>
             <span className="text-slate-700">|</span>
-            <span>Parejas Inscritas: <strong className="text-[#d4fc34]">24</strong></span>
+            <span>Parejas Inscriptas: <strong className="text-[#d4fc34]">24</strong></span>
           </div>
         </div>
 
@@ -337,7 +337,7 @@ export const StandingsTab: React.FC<StandingsTabProps> = ({
                 </p>
               </div>
               <div className="flex gap-3 text-xs bg-slate-950 px-3.5 py-2 rounded-xl border border-slate-850 font-mono text-slate-400">
-                <span>Parejas Inscritas: <strong className="text-white">{categoryPairs.length}</strong></span>
+                <span>Parejas Inscriptas: <strong className="text-white">{categoryPairs.length}</strong></span>
                 <span className="text-slate-700">|</span>
                 <span>Parejas Activas: <strong className="text-[#d4fc34]">{table.filter(t => !t.eliminated).length}</strong></span>
               </div>

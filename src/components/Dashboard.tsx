@@ -98,7 +98,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const completedMatchesCount = validMatches.filter(m => m.status === "completed" || m.status === "wo").length;
 
   // Stagger Container Animation
-  const containerVariants = {
+  const containerVariants: any = {
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
@@ -108,7 +108,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }
   };
 
-  const itemVariants = {
+  const itemVariants: any = {
     hidden: { opacity: 0, y: 15 },
     show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } }
   };
@@ -380,7 +380,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         <h3 className="font-extrabold text-slate-100 text-sm line-clamp-1">{t.name}</h3>
                         <p className="text-xs text-slate-400">{t.club} • <span className="text-amber-400 font-bold">{t.category}</span></p>
                         <span className="text-[10px] text-slate-500 font-mono">
-                          {tournamentPairs.length} / {t.maxPairs} parejas inscritas (Inscripción Oficial)
+                          {tournamentPairs.length} / {t.maxPairs} parejas inscriptas (Inscripción Oficial)
                         </span>
                       </div>
                       <button

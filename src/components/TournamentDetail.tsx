@@ -456,7 +456,7 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
 
     // Fallback if draw is not yet persisted but pairs exist
     if (Object.keys(map).length === 0 && filteredPairs.length > 0) {
-      map["Parejas Inscritas"] = filteredPairs;
+      map["Parejas Inscriptas"] = filteredPairs;
     }
 
     setGroupsMap(map);
@@ -492,10 +492,10 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
     let contentHtml = "";
 
     if (section === "inscriptions") {
-      title = "Parejas Inscritas";
+      title = "Parejas Inscriptas";
       let rowsHtml = "";
       if (catPairs.length === 0) {
-        rowsHtml = `<tr><td colspan="5" style="text-align: center; padding: 20px; color: #64748b; font-style: italic;">No hay parejas inscritas en esta categoría</td></tr>`;
+        rowsHtml = `<tr><td colspan="5" style="text-align: center; padding: 20px; color: #64748b; font-style: italic;">No hay parejas inscriptas en esta categoría</td></tr>`;
       } else {
         catPairs.forEach((pr, idx) => {
           const p1 = players.find(p => p.id === pr.player1Id);
@@ -523,7 +523,7 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
       }
 
       contentHtml = `
-        <div class="section-title">Nómina Oficial de Parejas Inscritas (${catPairs.length})</div>
+        <div class="section-title">Nómina Oficial de Parejas Inscriptas (${catPairs.length})</div>
         <table>
           <thead>
             <tr>
@@ -3164,7 +3164,7 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
                 )}
               </h1>
               <p className="text-xs text-slate-400">
-                {activeTab === "inscriptions" ? "Lista oficial de parejas inscritas y cargadas en esta categoría para este torneo." :
+                {activeTab === "inscriptions" ? "Lista oficial de parejas inscriptas y cargadas en esta categoría para este torneo." :
                  activeTab === "matches" ? "Cronograma oficial de juego, asignación de pistas y carga de resultados en tiempo real." :
                  activeTab === "standings" ? "Tabla de posiciones oficiales, de zonas y clasificación de la categoría activa." :
                  "Cuadro de llaves principales, cruces directos y fase de eliminación playoffs."}
@@ -3277,7 +3277,7 @@ export const TournamentDetail: React.FC<TournamentDetailProps> = ({
                   selectedCategory={selectedCategory}
                   userRole={userRole}
                   fixtureFilter={fixtureFilter}
-                  setFixtureFilter={setFixtureFilter}
+                  setFixtureFilter={setFixtureFilter as any}
                   getPairName={getPairName}
                   handleOpenCourtAssigner={handleOpenCourtAssigner}
                   handleOpenScorer={handleOpenScorer}

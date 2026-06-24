@@ -295,7 +295,7 @@ export const StatsView: React.FC = () => {
                         
                         <div className="flex items-center gap-1.5">
                           <span className="bg-cyan-500/10 text-cyan-400 font-mono text-[9px] px-1.5 py-0.5 rounded border border-cyan-500/20 font-bold block uppercase">
-                            {court.type === "glass" ? "Vidrio Pro" : "Muro oficial"}
+                            {(court as any).type === "glass" ? "Vidrio Pro" : "Muro oficial"}
                           </span>
                           <span className="text-[10px] text-slate-400 font-mono font-bold block">
                             {court.matchCount} Partidos

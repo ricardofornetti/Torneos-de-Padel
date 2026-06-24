@@ -48,7 +48,7 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
     errMsg.toLowerCase().includes("permission") || 
     errMsg.toLowerCase().includes("unauthenticated") || 
     errMsg.toLowerCase().includes("insufficient") ||
-    (error && error.code === "permission-denied");
+    (error && typeof error === 'object' && 'code' in error && (error as any).code === "permission-denied");
 
   const errInfo: FirestoreErrorInfo = {
     error: errMsg,

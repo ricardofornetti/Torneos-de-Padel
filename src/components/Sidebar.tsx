@@ -315,7 +315,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const unreadCount = notifications.filter(n => !n.read).length;
 
   const navItems: { id: AppView; label: string; icon: React.ComponentType<any> }[] = [
-    { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { id: "dashboard", label: "Inicio", icon: LayoutDashboard },
     { id: "tournaments", label: "Torneos", icon: Trophy },
     { id: "fixture", label: "Calendario", icon: Calendar },
     { id: "players", label: "Jugadores", icon: Users },
@@ -703,7 +703,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         <span className="font-bold text-xs text-slate-150">{notif.title}</span>
                         <span className="text-[8px] text-slate-550 font-mono">{notif.timestamp ? notif.timestamp.slice(11, 16) : ""} h</span>
                       </div>
-                      <p className="text-[11px] text-slate-400 leading-normal">{notif.message}</p>
+                      <p className="text-[11px] text-slate-400 leading-normal">{notif.body || (notif as any).message}</p>
                     </div>
                   ))
                 )}

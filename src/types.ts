@@ -46,6 +46,12 @@ export interface Player {
   setsLost: number;
   gamesWon: number;
   gamesLost: number;
+  // Optional private/additional fields
+  dni?: string;
+  email?: string;
+  phone?: string;
+  birthDate?: string;
+  gender?: string;
 }
 
 export interface PlayerPrivateData {
@@ -79,6 +85,7 @@ export interface Pair {
   category: string; // Tournament category
   combinedRanking: number; // player1 points + player2 points
   status: "registered" | "waitlist" | "confirmed";
+  name?: string;
 }
 
 export interface MatchScoreSet {

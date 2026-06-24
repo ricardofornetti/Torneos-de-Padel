@@ -190,7 +190,7 @@ export const TournamentDashboardView: React.FC<TournamentDashboardViewProps> = (
                   {categoryPairs.length} Parejas
                 </span>
               </div>
-              <h3 className="text-base font-extrabold text-white mb-2">Parejas Inscritas</h3>
+              <h3 className="text-base font-extrabold text-white mb-2">Parejas Inscriptas</h3>
               <p className="text-xs text-slate-400 leading-relaxed">
                 Planilla de participación para esta categoría. Modifica o elimina parejas, administra jugadores libres y realiza el sorteo de grupos de forma instantánea.
               </p>
@@ -223,7 +223,7 @@ export const TournamentDashboardView: React.FC<TournamentDashboardViewProps> = (
                   </span>
                 )}
               </div>
-              <h3 className="text-base font-extrabold text-[#d4fc34] mb-2 tracking-wider">Partidos</h3>
+              <h3 className="text-base font-extrabold text-white mb-2 tracking-wider">Partidos</h3>
               <p className="text-xs text-slate-400 leading-relaxed">
                 Cronograma oficial de juego para esta categoría. Controla la asignación de pistas, carga resultados de los sets y procesa abandonos o Walkovers.
               </p>
@@ -305,7 +305,7 @@ export const TournamentDashboardView: React.FC<TournamentDashboardViewProps> = (
                   </span>
                 )}
               </div>
-              <h3 className="text-base font-extrabold text-[#d4fc34] mb-2 tracking-wider">Cuadros</h3>
+              <h3 className="text-base font-extrabold text-white mb-2 tracking-wider">Cuadros</h3>
               <p className="text-xs text-slate-400 leading-relaxed">
                 Visualiza el bracket interactivo con los cruces directos y llaves de eliminación directa hasta coronar a los campeones.
               </p>
