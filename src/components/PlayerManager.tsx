@@ -97,34 +97,6 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole, onBack }
   };
 
   // Play handler to catch asynchronously
-  // Body scroll lock — se activa cuando el modal abre, se libera cuando cierra.
-  // Manejado via useEffect para no interferir con el ciclo de render de React.
-  useEffect(() => {
-    if (isFormOpen) {
-      const scrollY = window.scrollY;
-      document.body.style.position = 'fixed';
-      document.body.style.top = `-${scrollY}px`;
-      document.body.style.left = '0';
-      document.body.style.right = '0';
-      document.body.style.overflow = 'hidden';
-    } else {
-      const scrollY = document.body.style.top;
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.left = '';
-      document.body.style.right = '';
-      document.body.style.overflow = '';
-      if (scrollY) window.scrollTo(0, parseInt(scrollY || '0') * -1);
-    }
-    return () => {
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.left = '';
-      document.body.style.right = '';
-      document.body.style.overflow = '';
-    };
-  }, [isFormOpen]);
-
   useEffect(() => {
     if (isCameraActive && videoRef.current && streamRef.current) {
       videoRef.current.play().catch(e => console.error("Camera play failed", e));
@@ -1141,5 +1113,6 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole, onBack }
     </div>
   );
 };
+
 
 
