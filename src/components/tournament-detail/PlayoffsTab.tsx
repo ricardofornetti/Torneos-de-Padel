@@ -1,336 +1,567 @@
 import React, { useState } from 'react';
-import { 
-  Trophy, 
-  MapPin, 
-  Users, 
-  Calendar, 
-  ChevronRight, 
-  ArrowLeft,
-  Search
-} from 'lucide-react';
-import { Tournament, Pair, Match, Court } from '../../types';
-import { ALL_PADEL_CATEGORIES } from '../TournamentDetail';
-import { formatDate } from '../../lib/utils';
+import { Trophy, Filter } from 'lucide-react';
+import { Tournament, Pair, Match, Player } from '../../types';
 
-interface TournamentDashboardViewProps {
+interface PlayoffsTabProps {
   tournament: Tournament;
   pairs: Pair[];
   matches: Match[];
-  courts: Court[];
+  players: Player[];
   selectedCategory: string;
-  setSelectedCategory: (cat: string) => void;
-  setActiveTab: (tab: "inscriptions" | "groups" | "matches" | "standings" | "playoffs") => void;
-  setViewMode: (mode: "dashboard" | "isolated") => void;
   userRole: "admin" | "player";
-  onBack: () => void;
-  handleOpenFinishModal: () => void;
+  handleOpenScorer: (m: Match) => void;
 }
 
-export const TournamentDashboardView: React.FC<TournamentDashboardViewProps> = ({
+type PlayoffFilterType = "all" | "r1" | "r2" | "16avos" | "16vos" | "rc" | "8avos" | "4tos" | "semifinal" | "final";
+
+export const PlayoffsTab: React.FC<PlayoffsTabProps> = ({
   tournament,
   pairs,
   matches,
-  courts,
+  players,
   selectedCategory,
-  setSelectedCategory,
-  setActiveTab,
-  setViewMode,
   userRole,
-  onBack,
-  handleOpenFinishModal
+  handleOpenScorer
 }) => {
-  const [categorySearch, setCategorySearch] = useState("");
-  const categoryPairs = pairs.filter(p => p.category === selectedCategory);
+  const [playoffFilter, setPlayoffFilter] = useState<PlayoffFilterType>("all");
+
   const categoryMatches = matches.filter(m => m.category === selectedCategory);
-  const isNoMatches = categoryMatches.length === 0;
+  if (categoryMatches.length === 0) {
+    return (
+      <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-12 text-center text-slate-500 text-xs">
+        La eliminatoria directa de playoffs aún no se ha generado para {selectedCategory}. Termina los grupos y presiona lanzar eliminatorias en la pestaña Posiciones.
+      </div>
+    );
+  }
 
-  return (
-    <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in space-y-6">
-      {/* HEADER DE ACCIÓN */}
-      {userRole === "admin" && tournament.status === "in_progress" && (
-        <div className="flex items-center justify-end pb-4 border-b border-slate-900">
-          <button
-            id="finish-tournament-btn"
-            onClick={handleOpenFinishModal}
-            className="bg-red-950/20 hover:bg-red-900 border border-red-900/40 text-red-400 text-xs font-bold px-3.5 py-1.5 rounded-lg flex items-center gap-1 transition cursor-pointer uppercase tracking-wider shadow-md"
-          >
-            🏁 Finalizar Torneo
-          </button>
+  const categoryPairs = pairs.filter(p => p.category === selectedCategory);
+  const isSRTC16 = categoryPairs.length === 16;
+  const isSRTC32 = categoryPairs.length === 32;
+
+  const matches_r1 = (isSRTC16 || isSRTC32) 
+    ? categoryMatches.filter(m => m.roundNumber === 1 || m.stageName.toLowerCase().includes("ronda 1")) 
+    : [];
+  const matches_r2 = (isSRTC16 || isSRTC32) 
+    ? categoryMatches.filter(m => m.roundNumber === 2 || m.stageName.toLowerCase().includes("ronda 2")) 
+    : [];
+
+  const playoffMatches = categoryMatches.filter(m => m.phase === "playoff");
+  const has16 = playoffMatches.some(m => m.stageName.startsWith("16avos de Final") || m.stageName.startsWith("Dieciseisavos"));
+  const hasRc = playoffMatches.some(m => m.stageName.includes("Ronda Clasificatoria"));
+  
+  const has8 = isSRTC32 
+    ? categoryMatches.some(m => m.roundNumber === 3 || m.stageName.toLowerCase().includes("octavos") || m.stageName.toLowerCase().includes("8avos"))
+    : playoffMatches.some(m => m.stageName.startsWith("Octavos de Final") || m.stageName.startsWith("8avos de Final"));
+
+  const has4 = isSRTC16 
+    ? categoryMatches.some(m => m.roundNumber === 3)
+    : isSRTC32 
+    ? categoryMatches.some(m => m.roundNumber === 4)
+    : playoffMatches.some(m => m.stageName.startsWith("Cuartos") || m.stageName.startsWith("Cuartos de Final") || m.stageName.startsWith("4tos"));
+
+  const hasSf = isSRTC16
+    ? categoryMatches.some(m => m.roundNumber === 4)
+    : isSRTC32
+    ? categoryMatches.some(m => m.roundNumber === 5)
+    : playoffMatches.some(m => m.stageName.startsWith("Semifinal"));
+
+  const hasF = isSRTC16
+    ? categoryMatches.some(m => m.roundNumber === 5)
+    : isSRTC32
+    ? categoryMatches.some(m => m.roundNumber === 6)
+    : playoffMatches.some(m => m.stageName === "Final");
+
+  const matches_16avos = playoffMatches.filter(m => m.stageName.startsWith("16avos de Final") || m.stageName.startsWith("Dieciseisavos"));
+  const matches_rc = playoffMatches.filter(m => m.stageName.includes("Ronda Clasificatoria"));
+  
+  const matches_8avos = isSRTC32 
+    ? categoryMatches.filter(m => m.roundNumber === 3 || m.stageName.toLowerCase().includes("octavos") || m.stageName.toLowerCase().includes("8avos"))
+    : playoffMatches.filter(m => m.stageName.startsWith("Octavos de Final") || m.stageName.startsWith("8avos de Final"));
+
+  const matches_4tos = isSRTC16 
+    ? categoryMatches.filter(m => m.roundNumber === 3)
+    : isSRTC32 
+    ? categoryMatches.filter(m => m.roundNumber === 4)
+    : playoffMatches.filter(m => m.stageName.startsWith("Cuartos") || m.stageName.startsWith("Cuartos de Final") || m.stageName.startsWith("4tos"));
+
+  const matches_sf = isSRTC16
+    ? categoryMatches.filter(m => m.roundNumber === 4)
+    : isSRTC32
+    ? categoryMatches.filter(m => m.roundNumber === 5)
+    : playoffMatches.filter(m => m.stageName.startsWith("Semifinal"));
+
+  const matches_final = isSRTC16
+    ? categoryMatches.filter(m => m.roundNumber === 5)
+    : isSRTC32
+    ? categoryMatches.filter(m => m.roundNumber === 6)
+    : playoffMatches.filter(m => m.stageName === "Final");
+
+  const renderPlayoffMatchCard = (m: Match) => {
+    return (
+      <div 
+        key={m.id}
+        className="bg-slate-900 border border-slate-800/80 rounded-2xl overflow-hidden shadow-xl transition-all hover:border-slate-500/50 w-[245px] hover:shadow-2xl hover:bg-slate-900/95 duration-200"
+      >
+        <div className="p-2.5 border-b border-slate-850 bg-slate-950 font-mono text-[10px] text-center text-slate-400 font-bold flex items-center justify-between px-3.5">
+          <span className="uppercase tracking-wider font-extrabold">{m.stageName}</span>
+          {m.status !== "pending" && (
+            <span className="text-[8px] bg-[#d4fc34]/15 text-[#d4fc34] border border-[#d4fc34]/25 px-1.5 py-0.5 rounded font-black tracking-wider shadow-sm">OK</span>
+          )}
         </div>
-      )}
+        
+        <div className="p-3.5 space-y-3 text-xs">
+          {/* Pair 1 info with avatars */}
+          <div className="flex items-center justify-between gap-1.5 min-h-[1.75rem]">
+            {m.pair1Id ? (() => {
+              const pr = pairs.find(p => p.id === m.pair1Id);
+              const p1 = pr ? players.find(p => p.id === pr.player1Id) : null;
+              const p2 = pr ? players.find(p => p.id === pr.player2Id) : null;
+              
+              return (
+                <div className="flex items-center gap-1 truncate max-w-[210px] py-0.5">
+                  {/* Player 1 Avatar + Name */}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {p1?.photoUrl ? (
+                      <img 
+                        src={p1.photoUrl} 
+                        alt={p1.lastName} 
+                        className="w-5 h-5 rounded-full object-cover border border-slate-950 shrink-0 select-none shadow-sm"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <div className="w-5 h-5 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[8px] text-slate-400 font-bold shrink-0 select-none">
+                        {p1?.lastName?.[0]?.toUpperCase() || "?"}
+                      </div>
+                    )}
+                    <span className={`font-black tracking-tight text-xs truncate max-w-[76px] ${
+                      m.winnerPairId === m.pair1Id ? 'text-[#d4fc34]' : m.winnerPairId ? 'text-slate-500' : 'text-slate-200'
+                    }`}>
+                      {p1?.lastName || "???"}
+                    </span>
+                  </div>
 
-      {/* STYLE A HERO BANNER (No full-width gradient, no stickers) */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 w-full pt-2">
-        <div className="space-y-2">
-          <div className="flex flex-wrap items-center gap-2 mb-1">
-            <span className="bg-[#d4fc34]/15 text-[#d4fc34] border border-[#d4fc34]/20 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest font-mono">
-              {tournament.category}
-            </span>
-            <span className={`px-2.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest font-mono border ${
-              tournament.status === "registration" ? "bg-amber-500/10 text-amber-400 border-amber-500/20" :
-              tournament.status === "in_progress" ? "bg-green-500/10 text-green-400 border-green-500/20 animate-pulse" :
-              "bg-slate-500/10 text-slate-400 border-slate-500/20"
-            }`}>
-              {tournament.status === "registration" ? "● Inscripción Libre" :
-               tournament.status === "in_progress" ? "● Torneo en Juego" : "● Finalizado"}
-            </span>
+                  <span className="text-slate-700 font-bold select-none text-[9px] mx-0.5">/</span>
+
+                  {/* Player 2 Avatar + Name */}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {p2?.photoUrl ? (
+                      <img 
+                        src={p2.photoUrl} 
+                        alt={p2.lastName} 
+                        className="w-5 h-5 rounded-full object-cover border border-slate-950 shrink-0 select-none shadow-sm"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <div className="w-5 h-5 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[8px] text-slate-400 font-bold shrink-0 select-none">
+                        {p2?.lastName?.[0]?.toUpperCase() || "?"}
+                      </div>
+                    )}
+                    <span className={`font-black tracking-tight text-xs truncate max-w-[76px] ${
+                      m.winnerPairId === m.pair1Id ? 'text-[#d4fc34]' : m.winnerPairId ? 'text-slate-500' : 'text-slate-200'
+                    }`}>
+                      {p2?.lastName || "???"}
+                    </span>
+                  </div>
+                </div>
+              );
+            })() : (
+              <span className="text-slate-500 italic text-[11px] font-medium pl-1">Esperando...</span>
+            )}
+            {m.winnerPairId === m.pair1Id && <Trophy className="w-3.5 h-3.5 text-[#d4fc34] shrink-0 fill-[#d4fc34]/20 ml-auto pr-0.5" />}
+          </div>
+          
+          {/* Pair 2 info with avatars */}
+          <div className="flex items-center justify-between gap-1.5 min-h-[1.75rem] border-t border-slate-800/40 pt-2.5">
+            {m.pair2Id ? (() => {
+              const pr = pairs.find(p => p.id === m.pair2Id);
+              const p1 = pr ? players.find(p => p.id === pr.player1Id) : null;
+              const p2 = pr ? players.find(p => p.id === pr.player2Id) : null;
+              
+              return (
+                <div className="flex items-center gap-1 truncate max-w-[210px] py-0.5">
+                  {/* Player 1 Avatar + Name */}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {p1?.photoUrl ? (
+                      <img 
+                        src={p1.photoUrl} 
+                        alt={p1.lastName} 
+                        className="w-5 h-5 rounded-full object-cover border border-slate-950 shrink-0 select-none shadow-sm"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <div className="w-5 h-5 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[8px] text-slate-400 font-bold shrink-0 select-none">
+                        {p1?.lastName?.[0]?.toUpperCase() || "?"}
+                      </div>
+                    )}
+                    <span className={`font-black tracking-tight text-xs truncate max-w-[76px] ${
+                      m.winnerPairId === m.pair2Id ? 'text-[#d4fc34]' : m.winnerPairId ? 'text-slate-505' : 'text-slate-205'
+                    }`}>
+                      {p1?.lastName || "???"}
+                    </span>
+                  </div>
+
+                  <span className="text-slate-700 font-bold select-none text-[9px] mx-0.5">/</span>
+
+                  {/* Player 2 Avatar + Name */}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {p2?.photoUrl ? (
+                      <img 
+                        src={p2.photoUrl} 
+                        alt={p2.lastName} 
+                        className="w-5 h-5 rounded-full object-cover border border-slate-950 shrink-0 select-none shadow-sm"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <div className="w-5 h-5 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[8px] text-slate-400 font-bold shrink-0 select-none">
+                        {p2?.lastName?.[0]?.toUpperCase() || "?"}
+                      </div>
+                    )}
+                    <span className={`font-black tracking-tight text-xs truncate max-w-[76px] ${
+                      m.winnerPairId === m.pair2Id ? 'text-[#d4fc34]' : m.winnerPairId ? 'text-slate-505' : 'text-slate-205'
+                    }`}>
+                      {p2?.lastName || "???"}
+                    </span>
+                  </div>
+                </div>
+              );
+            })() : (
+              <span className="text-slate-500 italic text-[11px] font-medium pl-1">Esperando...</span>
+            )}
+            {m.winnerPairId === m.pair2Id && <Trophy className="w-3.5 h-3.5 text-[#d4fc34] shrink-0 fill-[#d4fc34]/20 ml-auto pr-0.5" />}
           </div>
 
-          <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black uppercase tracking-wider text-white flex items-center gap-2.5">
-            <Trophy className="w-7 h-7 text-[#d4fc34]" /> {tournament.name}
-          </h1>
+          {m.status !== "pending" && m.scoreSummary && (
+            <div className="mt-2.5 text-center pt-2 border-t border-slate-800/40">
+              <span className="bg-[#d4fc34]/10 border border-[#d4fc34]/25 text-[#d4fc34] font-mono text-[10px] py-0.5 px-2.5 rounded inline-block font-black shadow-sm">
+                Marcador: {m.scoreSummary}
+              </span>
+            </div>
+          )}
+        </div>
 
-          <p className="text-xs text-slate-400 flex items-center gap-1">
-            <MapPin className="w-3.5 h-3.5 text-slate-500" /> {tournament.club} — {tournament.city}
-          </p>
+        {userRole === "admin" && (
+          <button 
+            type="button"
+            onClick={() => handleOpenScorer(m)}
+            className="w-full bg-slate-950/60 hover:bg-slate-800 py-1.5 font-mono text-[9px] border-t border-slate-850 text-[#d4fc34] font-bold hover:text-white cursor-pointer transition-colors text-center"
+          >
+            Cargar Marcador
+          </button>
+        )}
+      </div>
+    );
+  };
 
-          {/* INDICADOR DE PROGRESO */}
-          <div className="mt-3 flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+        <h3 className="font-extrabold text-sm text-white flex items-center gap-1.5 border-none">
+          <Trophy className="w-4 h-4 text-indigo-400" /> Playoffs Eliminatorios: {selectedCategory}
+        </h3>
+      </div>
+
+      {/* Panel de Filtros de Playoffs */}
+      <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl shadow-md space-y-3.5">
+        <div className="flex items-center gap-2 text-xs font-mono font-black text-[#d4fc34] uppercase tracking-wider border-b border-slate-850 pb-2">
+          <Filter className="w-4 h-4" /> Filtros de Eliminación Directa
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <label className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block">Fase / Ronda Activa</label>
+          <div className="flex flex-nowrap gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
             {[
-              { label: "Inscripción", active: tournament.status === "registration" },
-              { label: "Sorteo", active: tournament.status === "in_progress" && isNoMatches },
-              { label: "Grupos", active: tournament.status === "in_progress" && !isNoMatches && matches.some(m => m.category === selectedCategory && (m.stageName.toLowerCase().includes("grupo") || m.stageName.toLowerCase().includes("zona"))) },
-              { label: "Playoffs", active: tournament.status === "in_progress" && !isNoMatches && matches.some(m => m.category === selectedCategory && (m.stageName.toLowerCase().includes("playoff") || m.stageName.toLowerCase().includes("ronda") || m.stageName.toLowerCase().includes("octavos") || m.stageName.toLowerCase().includes("cuartos") || m.stageName.toLowerCase().includes("final"))) },
-              { label: "Finalizado", active: tournament.status === "completed" }
-            ].map((step, idx) => (
-              <React.Fragment key={step.label}>
-                {idx > 0 && <span className="text-slate-700 text-[10px] select-none">→</span>}
-                <span className={`text-[9px] font-black uppercase tracking-wider font-mono px-2 py-0.5 rounded-md ${
-                  step.active
-                    ? "bg-[#d4fc34]/15 text-[#d4fc34] border border-[#d4fc34]/30"
-                    : "text-slate-600 border border-transparent"
-                }`}>
-                  {step.label}
-                </span>
-              </React.Fragment>
+              { id: "all", label: "Todas las Llaves" },
+              ...(matches_r1.length > 0 ? [{ id: "r1", label: "Ronda 1" }] : []),
+              ...(matches_r2.length > 0 ? [{ id: "r2", label: "Ronda 2" }] : []),
+              ...(has16 ? [{ id: "16vos", label: "Dieciseisavos" }] : []),
+              ...(has8 ? [{ id: "8avos", label: "Octavos" }] : []),
+              ...(has4 ? [{ id: "4tos", label: "Cuartos" }] : []),
+              ...(hasSf ? [{ id: "semifinal", label: "Semifinales" }] : []),
+              ...(hasF ? [{ id: "final", label: "Gran Final" }] : [])
+            ].map(r => (
+              <button
+                key={r.id}
+                type="button"
+                onClick={() => setPlayoffFilter(r.id as any)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all uppercase cursor-pointer whitespace-nowrap shrink-0 ${
+                  playoffFilter === r.id
+                    ? "bg-[#d4fc34] text-slate-950 shadow-md font-extrabold"
+                    : "bg-slate-950 text-slate-400 border border-slate-850 hover:text-white"
+                }`}
+              >
+                {r.label}
+              </button>
             ))}
           </div>
         </div>
-
-        {/* Right Side: Simplified Schedule Card */}
-        <div className="shrink-0 bg-slate-900 border border-slate-800 p-4 rounded-xl w-full md:w-auto">
-          <span className="block text-[8px] text-[#d4fc34] mb-0.5 font-mono uppercase tracking-widest font-black">📅 CRONOGRAMA</span>
-          <span className="block font-bold text-xs text-slate-200">
-            {formatDate(tournament.startDate)} • {formatDate(tournament.endDate)}
-          </span>
-          <span className="block text-[10px] text-slate-400 mt-1">
-            Zonas: {tournament.numGroups} Zonas • Canchas: {tournament.numCourts} Asignadas
-          </span>
         </div>
       </div>
 
-      <div className="space-y-6 pt-4">
-        {/* CENTRAL CATEGORY RIBBON */}
-        <div className="bg-slate-900 p-4 rounded-xl border border-slate-800 space-y-3 shadow-md">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] text-slate-400 font-mono tracking-widest font-bold uppercase block pl-1">
-              CATEGORÍAS DE ESTE TORNEO • Mostrando: <strong className="text-[#d4fc34]">{selectedCategory}</strong>
-            </span>
-            <span className="text-[10px] text-blue-400 font-mono font-bold uppercase tracking-wider">
-              Soporte Jerárquico Multicategoría
-            </span>
-          </div>
-
-          {/* Búsqueda de categoría */}
-          <div className="relative mb-3">
-            <Search className="w-4 h-4 text-slate-500 absolute left-3 top-2.5" />
-            <input 
-              type="text" 
-              placeholder="Buscar categoría..."
-              value={categorySearch} 
-              onChange={e => setCategorySearch(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 focus:border-[#d4fc34] rounded-lg pl-9 pr-3 py-2 text-xs text-slate-100 placeholder-slate-500 outline-none" 
-            />
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            {ALL_PADEL_CATEGORIES.filter(cat => 
-              cat.toLowerCase().includes(categorySearch.toLowerCase())
-            ).map(cat => {
-              const catPairs = pairs.filter(p => p.category === cat);
-              const active = selectedCategory === cat;
-              return (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`px-3.5 py-2 text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-1.5 border ${
-                    active
-                      ? "bg-[#d4fc34]/15 text-[#d4fc34] border-[#d4fc34]/30 font-black"
-                      : "bg-slate-950 text-slate-400 border-slate-900 hover:text-slate-200 hover:border-slate-800"
-                  }`}
-                >
-                  <span>{cat}</span>
-                  {catPairs.length > 0 && (
-                    <span className="bg-[#d4fc34] text-slate-950 font-black px-1.5 py-0.5 rounded-full text-[9px]">
-                      {catPairs.length}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-            {ALL_PADEL_CATEGORIES.filter(cat => 
-              cat.toLowerCase().includes(categorySearch.toLowerCase())
-            ).length === 0 && (
-              <span className="text-xs text-slate-500 italic px-2">No se encontraron categorías con ese nombre.</span>
-            )}
-          </div>
-        </div>
-
-        {/* DYNAMIC NAVIGATION GRID */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
+      <div className="py-2 overflow-x-auto">
+        <div className={`flex gap-5 pb-4 justify-start items-start ${
+          playoffFilter === "all" 
+            ? (isSRTC32 ? "min-w-[1950px]" : isSRTC16 ? "min-w-[1600px]" : "min-w-[1150px]") 
+            : "min-w-0"
+        }`}>
           
-          {/* Card 1: Inscriptions */}
-          <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 hover:border-[#22d3ee]/40 hover:bg-slate-900 transition duration-300 flex flex-col justify-between shadow-lg">
-            <div>
-              <div className="flex justify-between items-start mb-4">
-                <span className="p-3 bg-blue-500/10 text-blue-400 rounded-xl">
-                  <Users className="w-5 h-5" />
-                </span>
-                <span className="text-[11px] font-mono font-medium text-[#d4fc34] bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800">
-                  {categoryPairs.length} Parejas
-                </span>
+          {/* Ronda 1 Column */}
+          {matches_r1.length > 0 && (playoffFilter === "all" || playoffFilter === "r1") && (
+            <div className="space-y-6 w-[270px] shrink-0">
+              <span className="block text-[10px] text-[#d4fc34] uppercase tracking-widest font-mono text-center font-extrabold bg-slate-900/40 border border-slate-800 py-1.5 rounded-lg">Ronda 1</span>
+              <div className="space-y-4">
+                {matches_r1.map(m => renderPlayoffMatchCard(m))}
               </div>
-              <h3 className="text-base font-extrabold text-white mb-2">Parejas Inscritas</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Planilla de participación para esta categoría. Modifica o elimina parejas, administra jugadores libres y realiza el sorteo de grupos de forma instantánea.
-              </p>
             </div>
-            <button
-              onClick={() => {
-                setActiveTab("inscriptions");
-                setViewMode("isolated");
-              }}
-              className="mt-6 bg-slate-950 hover:bg-slate-850 hover:text-[#d4fc34] text-slate-350 border border-slate-800 py-3 px-4 rounded-xl text-xs font-black transition flex items-center justify-center gap-2 cursor-pointer uppercase tracking-wider"
-            >
-              Ingresar a Inscripciones <ChevronRight className="w-4 h-4 text-blue-400 animate-pulse" />
-            </button>
-          </div>
+          )}
 
-          {/* Card 2: Fixture */}
-          <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 hover:border-[#22d3ee]/40 hover:bg-slate-900 transition duration-300 flex flex-col justify-between shadow-lg">
-            <div>
-              <div className="flex justify-between items-start mb-4">
-                <span className="p-3 bg-blue-500/10 text-blue-400 rounded-xl">
-                  <Calendar className="w-5 h-5" />
-                </span>
-                {isNoMatches ? (
-                  <span className="bg-amber-500/10 text-amber-500 text-[8px] px-2 py-0.5 rounded uppercase font-black tracking-wider border border-amber-500/20">
-                    PENDIENTE DE SORTEO
-                  </span>
-                ) : (
-                  <span className="text-[11px] font-mono text-slate-400 bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800">
-                    {categoryMatches.length} Partidos Totales
-                  </span>
-                )}
-              </div>
-              <h3 className="text-base font-extrabold text-[#d4fc34] mb-2 tracking-wider">Partidos</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Cronograma oficial de juego para esta categoría. Controla la asignación de pistas, carga resultados de los sets y procesa abandonos o Walkovers.
-              </p>
-            </div>
-            <button
-              disabled={isNoMatches}
-              onClick={() => {
-                setActiveTab("matches");
-                setViewMode("isolated");
-              }}
-              className={`mt-6 py-3 px-4 rounded-xl text-xs font-black transition flex items-center justify-center gap-2 cursor-pointer uppercase tracking-wider ${
-                isNoMatches
-                  ? "bg-slate-950/40 text-slate-600 border-slate-900 cursor-not-allowed"
-                  : "bg-slate-950 hover:bg-slate-850 hover:text-[#d4fc34] text-slate-350 border border-slate-800"
-              }`}
-            >
-              {isNoMatches
-                ? "Fixture No Sorteado"
-                : "Explorar Partidos y Resultados"}
-              {!isNoMatches && <ChevronRight className="w-4 h-4 text-[#d4fc34]" />}
-            </button>
-          </div>
+          {/* Arrow Spacer */}
+          {matches_r1.length > 0 && playoffFilter === "all" && (
+            <div className="hidden md:flex self-center text-slate-700 font-extrabold shrink-0 text-sm">➔</div>
+          )}
 
-          {/* Card 3: Standings */}
-          <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 hover:border-[#22d3ee]/40 hover:bg-slate-900 transition duration-300 flex flex-col justify-between shadow-lg">
-            <div>
-              <div className="flex justify-between items-start mb-4">
-                <span className="p-3 bg-[#d4fc34]/10 text-[#d4fc34] rounded-xl border border-[#d4fc34]/20">
-                  <Trophy className="w-5 h-5" />
-                </span>
-                {isNoMatches ? (
-                  <span className="bg-slate-800 text-slate-500 text-[9px] px-2 py-0.5 rounded uppercase font-bold">
-                    PENDIENTE DE SORTEO
-                  </span>
-                ) : (
-                  <span className="text-[11px] font-mono text-slate-400 bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800">
-                    Cálculo Oficial de Puntos
-                  </span>
-                )}
+          {/* Ronda 2 Column */}
+          {matches_r2.length > 0 && (playoffFilter === "all" || playoffFilter === "r2") && (
+            <div className="space-y-6 w-[270px] shrink-0">
+              <span className="block text-[10px] text-[#d4fc34] uppercase tracking-widest font-mono text-center font-extrabold bg-slate-900/40 border border-slate-800 py-1.5 rounded-lg">Ronda 2</span>
+              <div className="space-y-4">
+                {matches_r2.map(m => renderPlayoffMatchCard(m))}
               </div>
-              <h3 className="text-base font-extrabold text-white mb-2">Tablas de Posiciones</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Tablas analíticas generadas automáticamente: rendimiento de zonas de grupos y la Tabla Unificada de Doble Eliminación srtc.
-              </p>
             </div>
-            <button
-              disabled={isNoMatches}
-              onClick={() => {
-                setActiveTab("standings");
-                setViewMode("isolated");
-              }}
-              className={`mt-6 py-3 px-4 rounded-xl text-xs font-black transition flex items-center justify-center gap-2 cursor-pointer uppercase tracking-wider ${
-                isNoMatches
-                  ? "bg-slate-950/40 text-slate-600 border-slate-900 cursor-not-allowed"
-                  : "bg-[#d4fc34]/10 hover:bg-[#d4fc34] hover:text-slate-950 text-[#d4fc34] border border-[#d4fc34]/20"
-              }`}
-            >
-              {isNoMatches
-                ? "Posiciones No Disponibles"
-                : "Ver Tablas de Clasificación"}
-              {!isNoMatches && <ChevronRight className="w-4 h-4 text-slate-950" />}
-            </button>
-          </div>
+          )}
 
-          {/* Card 4: Bracket */}
-          <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 hover:border-[#22d3ee]/40 hover:bg-slate-900 transition duration-300 flex flex-col justify-between shadow-lg">
-            <div>
-              <div className="flex justify-between items-start mb-4">
-                <span className="p-3 bg-[#d4fc34]/10 text-[#d4fc34] rounded-xl border border-[#d4fc34]/20">
-                  <Trophy className="w-5 h-5" />
-                </span>
-                {isNoMatches ? (
-                  <span className="bg-slate-800 text-slate-500 text-[9px] px-2 py-0.5 rounded uppercase font-bold">
-                    PENDIENTE DE SORTEO
-                  </span>
-                ) : (
-                  <span className="text-[11px] font-mono text-slate-400 bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800">
-                    Cuadros de Play-Offs
-                  </span>
-                )}
+          {/* Arrow Spacer */}
+          {matches_r2.length > 0 && playoffFilter === "all" && (
+            <div className="hidden md:flex self-center text-slate-700 font-extrabold shrink-0 text-sm">➔</div>
+          )}
+
+          {/* 16avos Column */}
+          {matches_16avos.length > 0 && (playoffFilter === "all" || playoffFilter === "16avos" || playoffFilter === "16vos") && (
+            <div className="space-y-6 w-[270px] shrink-0">
+              <span className="block text-[10px] text-slate-500 uppercase tracking-widest font-mono text-center font-extrabold bg-slate-900/40 py-1.5 rounded-lg">16avos de Final</span>
+              <div className="space-y-4">
+                {matches_16avos.map(m => renderPlayoffMatchCard(m))}
               </div>
-              <h3 className="text-base font-extrabold text-[#d4fc34] mb-2 tracking-wider">Cuadros</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Visualiza el bracket interactivo con los cruces directos y llaves de eliminación directa hasta coronar a los campeones.
-              </p>
             </div>
-            <button
-              disabled={isNoMatches}
-              onClick={() => {
-                setActiveTab("playoffs");
-                setViewMode("isolated");
-              }}
-              className={`mt-6 py-3 px-4 rounded-xl text-xs font-black transition flex items-center justify-center gap-2 cursor-pointer uppercase tracking-wider ${
-                isNoMatches
-                  ? "bg-slate-950/40 text-slate-600 border-slate-900 cursor-not-allowed"
-                  : "bg-[#d4fc34]/10 hover:bg-[#d4fc34] hover:text-slate-950 text-[#d4fc34] border border-[#d4fc34]/20"
-              }`}
-            >
-              {isNoMatches
-                ? "Bracket No Disponible"
-                : "Ver Cuadros / Llaves"}
-              {!isNoMatches && <ChevronRight className="w-4 h-4 text-slate-950" />}
-            </button>
-          </div>
+          )}
+
+          {/* Arrow Spacer */}
+          {matches_16avos.length > 0 && playoffFilter === "all" && (
+            <div className="hidden md:flex self-center text-slate-700 font-extrabold shrink-0 text-sm">➔</div>
+          )}
+
+          {/* Ronda Clasificatoria Column (SRTC-24) */}
+          {matches_rc.length > 0 && (playoffFilter === "all" || playoffFilter === "rc") && (
+            <div className="space-y-6 w-[270px] shrink-0">
+              <span className="block text-[10px] text-slate-400 uppercase tracking-widest font-mono text-center font-extrabold bg-slate-900/40 py-1.5 rounded-lg">Ronda Clasificatoria</span>
+              <div className="space-y-4">
+                {matches_rc.map(m => renderPlayoffMatchCard(m))}
+              </div>
+            </div>
+          )}
+
+          {/* Arrow Spacer */}
+          {matches_rc.length > 0 && playoffFilter === "all" && (
+            <div className="hidden md:flex self-center text-slate-700 font-extrabold shrink-0 text-sm">➔</div>
+          )}
+
+          {/* 8avos Column */}
+          {matches_8avos.length > 0 && (playoffFilter === "all" || playoffFilter === "8avos") && (
+            <div className="space-y-6 w-[270px] shrink-0">
+              <span className="block text-[10px] text-slate-450 uppercase tracking-widest font-mono text-center font-extrabold bg-slate-900/40 py-1.5 rounded-lg">8avos de Final</span>
+              <div className="space-y-4">
+                {matches_8avos.map(m => renderPlayoffMatchCard(m))}
+              </div>
+            </div>
+          )}
+
+          {/* Arrow Spacer */}
+          {matches_8avos.length > 0 && playoffFilter === "all" && (
+            <div className="hidden md:flex self-center text-slate-700 font-extrabold shrink-0 text-sm">➔</div>
+          )}
+
+          {/* Cuartos Column */}
+          {matches_4tos.length > 0 && (playoffFilter === "all" || playoffFilter === "4tos") && (
+            <div className="space-y-6 w-[270px] shrink-0">
+              <span className="block text-[10px] text-slate-300 uppercase tracking-widest font-mono text-center font-extrabold bg-slate-900/40 py-1.5 rounded-lg">Cuartos de Final</span>
+              <div className="space-y-4">
+                {matches_4tos.map(m => renderPlayoffMatchCard(m))}
+              </div>
+            </div>
+          )}
+
+          {/* Arrow Spacer */}
+          {matches_4tos.length > 0 && playoffFilter === "all" && (
+            <div className="hidden md:flex self-center text-slate-700 font-extrabold shrink-0 text-sm">➔</div>
+          )}
+
+          {/* Semifinals Column */}
+          {matches_sf.length > 0 && (playoffFilter === "all" || playoffFilter === "semifinal") && (
+            <div className="space-y-6 w-[270px] shrink-0">
+              <span className="block text-[10px] text-slate-200 uppercase tracking-widest font-mono text-center font-extrabold bg-slate-900/40 py-1.5 rounded-lg">Semifinales</span>
+              <div className="space-y-4">
+                {matches_sf.map(m => renderPlayoffMatchCard(m))}
+              </div>
+            </div>
+          )}
+
+          {/* Arrow Spacer */}
+          {matches_sf.length > 0 && playoffFilter === "all" && (
+            <div className="hidden md:flex self-center text-slate-700 font-extrabold shrink-0 text-sm">➔</div>
+          )}
+
+          {/* Final Column */}
+          {matches_final.length > 0 && (playoffFilter === "all" || playoffFilter === "final") && (
+            <div className="space-y-6 w-[290px] shrink-0">
+              <span className="block text-[10px] text-yellow-450 uppercase tracking-widest font-mono text-center font-extrabold bg-indigo-950/20 py-1.5 border border-indigo-500/10 rounded-lg">Gran Final</span>
+              <div className="space-y-4">
+                {matches_final.map(m => (
+                  <div 
+                    key={m.id}
+                    className="bg-indigo-950/20 border-2 border-indigo-500/20 rounded-2xl overflow-hidden shadow-xl"
+                  >
+                    <div className="p-2 border-b border-indigo-500/10 bg-indigo-950/40 font-mono text-[9px] text-center text-amber-400 font-black tracking-widest uppercase">
+                      MATCH POINT - FINAL
+                    </div>
+
+                    <div className="p-4 space-y-3.5 text-xs animate-fade-in">
+                      <div className="flex items-center justify-between gap-1.5 min-h-[1.75rem]">
+                        {m.pair1Id ? (() => {
+                          const pr = pairs.find(p => p.id === m.pair1Id);
+                          const p1 = pr ? players.find(p => p.id === pr.player1Id) : null;
+                          const p2 = pr ? players.find(p => p.id === pr.player2Id) : null;
+
+                          return (
+                            <div className="flex items-center gap-1.5 truncate max-w-[230px]">
+                              {/* Player 1 avatar + name */}
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                {p1?.photoUrl ? (
+                                  <img 
+                                    src={p1.photoUrl} 
+                                    alt={p1.lastName} 
+                                    className="w-5 h-5 rounded-full object-cover border border-slate-950 shrink-0 select-none shadow-sm"
+                                    referrerPolicy="no-referrer"
+                                  />
+                                ) : (
+                                  <div className="w-5 h-5 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[8px] text-slate-400 font-bold shrink-0 select-none">
+                                    {p1?.lastName?.[0]?.toUpperCase() || "?"}
+                                  </div>
+                                )}
+                                <span className={`font-black text-xs ${m.winnerPairId === m.pair1Id ? 'text-amber-400' : 'text-slate-100'}`}>
+                                  {p1?.lastName || "???"}
+                                </span>
+                              </div>
+
+                              <span className="text-slate-600 font-bold select-none text-[9px] mx-0.5">/</span>
+
+                              {/* Player 2 avatar + name */}
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                {p2?.photoUrl ? (
+                                  <img 
+                                    src={p2.photoUrl} 
+                                    alt={p2.lastName} 
+                                    className="w-5 h-5 rounded-full object-cover border border-slate-950 shrink-0 select-none shadow-sm"
+                                    referrerPolicy="no-referrer"
+                                  />
+                                ) : (
+                                  <div className="w-5 h-5 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[8px] text-slate-400 font-bold shrink-0 select-none">
+                                    {p2?.lastName?.[0]?.toUpperCase() || "?"}
+                                  </div>
+                                )}
+                                <span className={`font-black text-xs ${m.winnerPairId === m.pair1Id ? 'text-amber-400' : 'text-slate-100'}`}>
+                                  {p2?.lastName || "???"}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })() : (
+                          <span className="text-slate-500 italic text-[11px] pl-1">Por clasificar</span>
+                        )}
+                        {m.winnerPairId === m.pair1Id && <Trophy className="w-3.5 h-3.5 text-indigo-400 shrink-0 fill-indigo-400/20" />}
+                      </div>
+
+                      <div className="flex items-center justify-between gap-1.5 min-h-[1.75rem] border-t border-slate-800/60 pt-3">
+                        {m.pair2Id ? (() => {
+                          const pr = pairs.find(p => p.id === m.pair2Id);
+                          const p1 = pr ? players.find(p => p.id === pr.player1Id) : null;
+                          const p2 = pr ? players.find(p => p.id === pr.player2Id) : null;
+
+                          return (
+                            <div className="flex items-center gap-1.5 truncate max-w-[230px]">
+                              {/* Player 1 avatar + name */}
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                {p1?.photoUrl ? (
+                                  <img 
+                                    src={p1.photoUrl} 
+                                    alt={p1.lastName} 
+                                    className="w-5 h-5 rounded-full object-cover border border-slate-950 shrink-0 select-none shadow-sm"
+                                    referrerPolicy="no-referrer"
+                                  />
+                                ) : (
+                                  <div className="w-5 h-5 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[8px] text-slate-400 font-bold shrink-0 select-none">
+                                    {p1?.lastName?.[0]?.toUpperCase() || "?"}
+                                  </div>
+                                )}
+                                <span className={`font-black text-xs ${m.winnerPairId === m.pair2Id ? 'text-amber-400' : 'text-slate-100'}`}>
+                                  {p1?.lastName || "???"}
+                                </span>
+                              </div>
+
+                              <span className="text-slate-600 font-bold select-none text-[9px] mx-0.5">/</span>
+
+                              {/* Player 2 avatar + name */}
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                {p2?.photoUrl ? (
+                                  <img 
+                                    src={p2.photoUrl} 
+                                    alt={p2.lastName} 
+                                    className="w-5 h-5 rounded-full object-cover border border-slate-950 shrink-0 select-none shadow-sm"
+                                    referrerPolicy="no-referrer"
+                                  />
+                                ) : (
+                                  <div className="w-5 h-5 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[8px] text-slate-400 font-bold shrink-0 select-none">
+                                    {p2?.lastName?.[0]?.toUpperCase() || "?"}
+                                  </div>
+                                )}
+                                <span className={`font-black text-xs ${m.winnerPairId === m.pair2Id ? 'text-amber-400' : 'text-slate-100'}`}>
+                                  {p2?.lastName || "???"}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })() : (
+                          <span className="text-slate-500 italic text-[11px] pl-1">Por clasificar</span>
+                        )}
+                        {m.winnerPairId === m.pair2Id && <Trophy className="w-3.5 h-3.5 text-indigo-400 shrink-0 fill-indigo-400/20" />}
+                      </div>
+
+                      {m.status !== "pending" && m.scoreSummary && (
+                        <div className="mt-3.5 text-center pt-2 border-t border-slate-800/40">
+                          <span className="bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 font-mono font-black py-1 px-3.5 rounded-lg inline-block text-xs">
+                            Score: {m.scoreSummary}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {userRole === "admin" && (
+                      <button 
+                        type="button"
+                        onClick={() => handleOpenScorer(m)}
+                        className="w-full bg-indigo-900/30 hover:bg-slate-850 py-2.5 font-mono text-[10px] border-t border-indigo-500/10 text-white font-bold cursor-pointer transition-colors text-center"
+                      >
+                        Cargar Resultado Final
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
         </div>
       </div>
     </div>
   );
 };
+
