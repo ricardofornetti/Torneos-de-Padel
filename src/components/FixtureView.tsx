@@ -327,7 +327,8 @@ export const FixtureView: React.FC<FixtureViewProps> = ({ onSelectTournament, on
                   ) : null;
                 })()}
               </div>
-                 {/* Grid of Matches */}
+
+              {/* Grid of Matches */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {(() => {
                   let lastStageKey = "";
@@ -462,7 +463,6 @@ export const FixtureView: React.FC<FixtureViewProps> = ({ onSelectTournament, on
                   });
                 })()}
               </div>
-              </div>
 
             </div>
           ))}
@@ -484,4 +484,5 @@ export const FixtureView: React.FC<FixtureViewProps> = ({ onSelectTournament, on
     </div>
   );
 };
+
 
