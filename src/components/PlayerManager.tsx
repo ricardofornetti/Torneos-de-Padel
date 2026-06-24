@@ -842,7 +842,7 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole, onBack }
 
       {/* DELETE CONFIRMATION MODAL */}
       {deleteConfirm && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-[60] flex items-start justify-center bg-slate-950/80 backdrop-blur-sm overflow-y-auto pt-16 pb-20 px-4">
           <div className="bg-[#0f172a] border border-slate-900 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl p-6 space-y-6">
             <div className="text-center space-y-2">
               <div className="mx-auto w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center text-red-500">
@@ -878,8 +878,8 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole, onBack }
 
       {/* FORM MODAL POPUP FOR CREATE / UPDATE */}
       {isFormOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-slate-950/80 backdrop-blur-sm overflow-y-auto pt-6 pb-20 px-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col">
             
             {/* Header */}
             <div className="p-4 border-b border-slate-800 flex items-center justify-between">
@@ -1113,6 +1113,5 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole, onBack }
     </div>
   );
 };
-
 
 
