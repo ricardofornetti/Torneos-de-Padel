@@ -464,8 +464,9 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole, onBack }
           </div>
         </div>
         
-        {/* GENDER / RAMA TABS WITH ALIGNED REGISTRATION BUTTON */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between border-b border-slate-800 pb-px gap-3">
+        {/* GENDER / RAMA TABS WITH ALIGNED REGISTRATION BUTTON — sticky para que siempre esté visible */}
+        <div className="sticky top-0 z-30 bg-slate-950/95 backdrop-blur-sm -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-3 border-b border-slate-800 shadow-lg">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
           <div className="flex flex-wrap gap-1">
             <button
               onClick={() => {
@@ -507,6 +508,15 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole, onBack }
               Ver Todos
             </button>
           </div>
+          {/* Botón Registrar — dentro del sticky para siempre visible */}
+          <button
+            onClick={handleOpenCreateForm}
+            className="bg-[#d4fc34] hover:bg-[#cbf528] text-slate-950 text-xs font-black px-4 py-2.5 rounded-xl uppercase tracking-widest flex items-center gap-2 transition-all cursor-pointer shadow-lg shrink-0"
+          >
+            <Plus className="w-4 h-4 text-slate-950" />
+            <span>{userRole === "admin" ? "Registrar Jugador" : "Inscribirse"}</span>
+          </button>
+        </div>
         </div>
 
       {/* SEARCH AND FILTERS */}
@@ -890,19 +900,6 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole, onBack }
         </div>
       )}
 
-      {/* BOTÓN FLOTANTE (FAB) — siempre visible sin importar el scroll */}
-      {/* Aparece solo cuando el usuario scrolleó suficiente para perder el botón del header */}
-      <button
-        onClick={handleOpenCreateForm}
-        className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-40 bg-[#d4fc34] hover:bg-[#cbf528] text-slate-950 font-black text-xs px-4 py-3 rounded-2xl shadow-2xl shadow-[#d4fc34]/30 flex items-center gap-2 transition-all hover:scale-105 active:scale-95 cursor-pointer"
-        title={userRole === "admin" ? "Registrar Jugador" : "Inscribirse como Jugador"}
-      >
-        <Plus className="w-4 h-4" />
-        <span className="hidden sm:inline uppercase tracking-widest">
-          {userRole === "admin" ? "Registrar Jugador" : "Inscribirse"}
-        </span>
-      </button>
-
       {/* FORM MODAL POPUP FOR CREATE / UPDATE */}
       {isFormOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
@@ -1140,4 +1137,5 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole, onBack }
     </div>
   );
 };
+
 
