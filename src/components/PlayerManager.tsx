@@ -138,6 +138,7 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole, onBack }
   const handleCloseForm = () => {
     stopCamera();
     setIsFormOpen(false);
+    closeFormWithUnlock();
   };
   
   const [newPlayer, setNewPlayer] = useState({
@@ -199,6 +200,27 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole, onBack }
     return () => window.removeEventListener("storage", handleCheckUser);
   }, [players]);
 
+  // Bloquea el scroll del body al abrir el modal — fix definitivo para iOS/Android
+  // donde position:fixed se ancla al scroll actual en vez del viewport
+  const openFormWithLock = () => {
+    const scrollY = window.scrollY;
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.overflow = 'hidden';
+  };
+
+  const closeFormWithUnlock = () => {
+    const scrollY = document.body.style.top;
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.left = '';
+    document.body.style.right = '';
+    document.body.style.overflow = '';
+    if (scrollY) window.scrollTo(0, parseInt(scrollY || '0') * -1);
+  };
+
   const handleOpenCreateForm = () => {
     let prefilledEmail = "";
     const localUserJson = localStorage.getItem("padel_mgr_mock_user");
@@ -222,6 +244,7 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole, onBack }
       photoUrl: AVATARS[Math.floor(Math.random() * AVATARS.length)]
     });
     setIsFormOpen(true);
+    openFormWithLock();
   };
 
   const handleOpenEditForm = async (player: Player) => {
@@ -260,6 +283,7 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole, onBack }
       photoUrl: player.photoUrl
     });
     setIsFormOpen(true);
+    openFormWithLock();
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -1116,3 +1140,4 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole, onBack }
     </div>
   );
 };
+
