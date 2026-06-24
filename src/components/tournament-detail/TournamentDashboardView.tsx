@@ -334,4 +334,3 @@ export const TournamentDashboardView: React.FC<TournamentDashboardViewProps> = (
     </div>
   );
 };
-
