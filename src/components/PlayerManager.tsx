@@ -419,27 +419,6 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole, onBack }
               Ficha oficial unificada de competidores registrados y acumuladores de ranking anual en la liga.
             </p>
           </div>
-
-          <div className="flex flex-wrap items-center gap-2 md:gap-3 relative z-10">
-            {userRole === "admin" && (
-              <button
-                onClick={handleImportFIPPlayers}
-                className="bg-slate-900/90 hover:bg-slate-800 border border-slate-800 text-slate-300 text-xs font-bold px-4 py-3 rounded-xl flex items-center gap-1.5 transition cursor-pointer uppercase tracking-wider text-center backdrop-blur-md"
-                title="Cargar automáticamente 100 jugadores premium por categoría (700 jugadores en total: 50% de origen FIP real)"
-              >
-                <span>Cargar Ránking FIP</span>
-              </button>
-            )}
-            {userRole === "admin" && (
-              <button
-                onClick={handleOpenCreateForm}
-                className="bg-[#d4fc34] hover:bg-[#cbf528] text-slate-950 text-xs font-black px-5 py-3 rounded-xl uppercase tracking-widest flex items-center gap-2 transition-all cursor-pointer shadow-lg shadow-[#d4fc34]/10"
-              >
-                <Plus className="w-4 h-4 text-slate-950" />
-                <span>Registrar Jugador</span>
-              </button>
-            )}
-          </div>
         </div>
         
         {/* GENDER / RAMA TABS WITH ALIGNED REGISTRATION BUTTON — sticky para que siempre esté visible */}
@@ -486,14 +465,25 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole, onBack }
               Ver Todos
             </button>
           </div>
-          {/* Botón Registrar — dentro del sticky para siempre visible */}
-          <button
-            onClick={handleOpenCreateForm}
-            className="bg-[#d4fc34] hover:bg-[#cbf528] text-slate-950 text-xs font-black px-4 py-2.5 rounded-xl uppercase tracking-widest flex items-center gap-2 transition-all cursor-pointer shadow-lg shrink-0"
-          >
-            <Plus className="w-4 h-4 text-slate-950" />
-            <span>{userRole === "admin" ? "Registrar Jugador" : "Inscribirse"}</span>
-          </button>
+          {/* Botón Registrar e Importar FIP — dentro del sticky para siempre visible */}
+          <div className="flex items-center gap-2 shrink-0">
+            {userRole === "admin" && (
+              <button
+                onClick={handleImportFIPPlayers}
+                className="bg-slate-900/90 hover:bg-slate-800 border border-slate-800 text-slate-300 text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition cursor-pointer uppercase tracking-wider text-center backdrop-blur-md shrink-0 animate-fade-in"
+                title="Cargar automáticamente 100 jugadores premium por categoría (700 jugadores en total: 50% de origen FIP real)"
+              >
+                <span>Cargar Ránking FIP</span>
+              </button>
+            )}
+            <button
+              onClick={handleOpenCreateForm}
+              className="bg-[#d4fc34] hover:bg-[#cbf528] text-slate-950 text-xs font-black px-4 py-2.5 rounded-xl uppercase tracking-widest flex items-center gap-2 transition-all cursor-pointer shadow-lg shrink-0"
+            >
+              <Plus className="w-4 h-4 text-slate-950" />
+              <span>{userRole === "admin" ? "Registrar Jugador" : "Inscribirse"}</span>
+            </button>
+          </div>
         </div>
         </div>
 

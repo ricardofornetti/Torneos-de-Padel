@@ -378,15 +378,26 @@ class PadelRepository {
 
   async getPlayerPrivateData(playerId: string): Promise<PlayerPrivateData | null> {
     if (isRealFirebase) {
-      try {
-        const docSnap = await withTimeout(getDoc(doc(db, "playersPrivate", playerId)), 5000);
-        if (docSnap.exists()) {
-          return docSnap.data() as PlayerPrivateData;
+      const currentUser = auth?.currentUser;
+      const isOwner = currentUser && (
+        playerId === currentUser.uid ||
+        playerId === `p_google_${currentUser.uid}`
+      );
+      const isVerifiedAdmin = currentUser && currentUser.emailVerified && currentUser.email === 'fornettiricardo@gmail.com';
+
+      // Only attempt Firestore read if authenticated as the owner or verified admin
+      if (isOwner || isVerifiedAdmin) {
+        try {
+          const docSnap = await withTimeout(getDoc(doc(db, "playersPrivate", playerId)), 5000);
+          if (docSnap.exists()) {
+            return docSnap.data() as PlayerPrivateData;
+          }
+          return null;
+        } catch (err) {
+          // If a permissions error happens here, log it on console, but do NOT crash. Fall back to cache.
+          console.warn(`Firestore permission/read issue for playersPrivate/${playerId}:`, err);
+          return this.cache.playersPrivate.find(p => p.id === playerId) || null;
         }
-        return null;
-      } catch (err) {
-        handleFirestoreError(err, OperationType.GET, `playersPrivate/${playerId}`);
-        return this.cache.playersPrivate.find(p => p.id === playerId) || null;
       }
     }
     return this.cache.playersPrivate.find(p => p.id === playerId) || null;
