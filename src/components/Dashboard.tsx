@@ -396,6 +396,59 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
           </motion.div>
 
+          {/* TOP PLAYERS PERMANENT RANKING */}
+          <motion.div variants={itemVariants} className="sports-card p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Award className="w-4 h-4 text-[#d4fc34]" />
+                <h3 className="font-bold text-sm text-white font-display uppercase tracking-wider">Líderes de Ranking</h3>
+              </div>
+              <button 
+                onClick={() => onNavigate("rankings")} 
+                className="text-[11px] text-[#d4fc34] hover:underline hover:text-[#bde61f] font-bold transition-colors cursor-pointer"
+              >
+                Ver Todo
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {topPlayers.map((p, index) => {
+                const medals = ["1º", "2º", "3º", "4º"];
+                return (
+                  <div 
+                    key={p.id}
+                    className="flex items-center justify-between bg-slate-950 p-2.5 rounded-xl border border-slate-900 hover:border-[#d4fc34]/15 transition"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className="text-xs font-bold font-mono text-slate-500 w-4 block text-center">
+                        {medals[index] || `#${index + 1}`}
+                      </span>
+                      <img 
+                        src={p.photoUrl} 
+                        alt={`Foto de perfil de ${p.firstName} ${p.lastName}`} 
+                        className="w-8 h-8 rounded-full object-cover border border-slate-900 shrink-0" 
+                      />
+                      <div className="min-w-0">
+                        <span className="block font-bold text-xs text-slate-100 truncate">
+                          {p.firstName} {p.lastName}
+                        </span>
+                        <span className="text-[9px] text-slate-500 font-mono truncate block">
+                          {p.category} • {p.city}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <span className="font-mono text-xs font-black text-[#d4fc34] block leading-none">
+                        {p.rankingPoints}
+                      </span>
+                      <span className="text-[8px] text-slate-550 uppercase font-mono tracking-wider mt-0.5 block">Puntos</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </motion.div>
+
           {/* ADVANCED STATISTICS / CHART */}
           {userRole === "admin" && (
             <motion.div variants={itemVariants} className="sports-card p-5 space-y-4">
@@ -542,59 +595,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   );
                 });
               })()}
-            </div>
-          </motion.div>
-
-          {/* TOP PLAYERS PERMANENT RANKING */}
-          <motion.div variants={itemVariants} className="sports-card p-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Award className="w-4 h-4 text-[#d4fc34]" />
-                <h3 className="font-bold text-sm text-white font-display uppercase tracking-wider">Líderes de Ranking</h3>
-              </div>
-              <button 
-                onClick={() => onNavigate("rankings")} 
-                className="text-[11px] text-[#d4fc34] hover:underline hover:text-[#bde61f] font-bold transition-colors cursor-pointer"
-              >
-                Ver Todo
-              </button>
-            </div>
-
-            <div className="space-y-3">
-              {topPlayers.map((p, index) => {
-                const medals = ["1º", "2º", "3º", "4º"];
-                return (
-                  <div 
-                    key={p.id}
-                    className="flex items-center justify-between bg-slate-950 p-2.5 rounded-xl border border-slate-900 hover:border-[#d4fc34]/15 transition"
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <span className="text-xs font-bold font-mono text-slate-500 w-4 block text-center">
-                        {medals[index] || `#${index + 1}`}
-                      </span>
-                      <img 
-                        src={p.photoUrl} 
-                        alt={`Foto de perfil de ${p.firstName} ${p.lastName}`} 
-                        className="w-8 h-8 rounded-full object-cover border border-slate-900 shrink-0" 
-                      />
-                      <div className="min-w-0">
-                        <span className="block font-bold text-xs text-slate-100 truncate">
-                          {p.firstName} {p.lastName}
-                        </span>
-                        <span className="text-[9px] text-slate-500 font-mono truncate block">
-                          {p.category} • {p.city}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <span className="font-mono text-xs font-black text-[#d4fc34] block leading-none">
-                        {p.rankingPoints}
-                      </span>
-                      <span className="text-[8px] text-slate-550 uppercase font-mono tracking-wider mt-0.5 block">Puntos</span>
-                    </div>
-                  </div>
-                );
-              })}
             </div>
           </motion.div>
 

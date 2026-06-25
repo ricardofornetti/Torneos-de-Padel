@@ -175,9 +175,60 @@ class PadelRepository {
     // Keep LocalStorage populated/snyced
     this.saveAllToStorage();
 
+    // Clean up Ricardo Fornetti player from cache and database
+    this.cleanUpFornettiRicardoPlayer();
+
     // Bootstrap Firestore async if real Firebase is available
     if (isRealFirebase) {
       this.bootstrapFirebaseIfNeeded();
+    }
+  }
+
+  async cleanUpFornettiRicardoPlayer() {
+    try {
+      // 1. Clean up from local cache
+      const initialCount = this.cache.players.length;
+      this.cache.players = this.cache.players.filter(p => {
+        const matchesEmail = p.email === 'fornettiricardo@gmail.com';
+        const matchesName = 
+          (p.firstName?.toLowerCase() === 'ricardo' && p.lastName?.toLowerCase() === 'fornetti') ||
+          (p.firstName?.toLowerCase() === 'fornetti' && p.lastName?.toLowerCase() === 'ricardo') ||
+          `${p.firstName} ${p.lastName}`.toLowerCase().includes("ricardo fornetti") ||
+          `${p.firstName} ${p.lastName}`.toLowerCase().includes("fornetti ricardo");
+        return !matchesEmail && !matchesName;
+      });
+
+      this.cache.playersPrivate = this.cache.playersPrivate.filter(p => p.email !== 'fornettiricardo@gmail.com');
+
+      if (this.cache.players.length !== initialCount) {
+        this.saveAllToStorage();
+        console.log("Deleted Ricardo Fornetti from local players cache.");
+      }
+
+      // 2. Clean up from Firestore if online
+      if (isRealFirebase) {
+        const q = query(collection(db, "players"));
+        const snap = await withTimeout(getDocs(q), 5000).catch(() => null);
+        if (snap) {
+          snap.forEach(async (docSnap) => {
+            const p = docSnap.data() as Player;
+            const matchesEmail = p.email === 'fornettiricardo@gmail.com';
+            const matchesName = 
+              (p.firstName?.toLowerCase() === 'ricardo' && p.lastName?.toLowerCase() === 'fornetti') ||
+              (p.firstName?.toLowerCase() === 'fornetti' && p.lastName?.toLowerCase() === 'ricardo') ||
+              `${p.firstName} ${p.lastName}`.toLowerCase().includes("ricardo fornetti") ||
+              `${p.firstName} ${p.lastName}`.toLowerCase().includes("fornetti ricardo");
+              
+            if (matchesEmail || matchesName) {
+              console.log("Removing player Ricardo Fornetti from Firestore:", docSnap.id);
+              await deleteDoc(doc(db, "players", docSnap.id)).catch(() => {});
+              await deleteDoc(doc(db, "playersPrivate", docSnap.id)).catch(() => {});
+            }
+          });
+        }
+      }
+    } catch (err) {
+      console.warn("Could not auto-clean Ricardo Fornetti:", err);
     }
   }
 
