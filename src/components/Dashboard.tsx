@@ -397,61 +397,63 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </motion.div>
 
           {/* ADVANCED STATISTICS / CHART */}
-          <motion.div variants={itemVariants} className="sports-card p-5 space-y-4">
-            <div className="flex items-center gap-2">
-              <Target className="w-4 h-4 text-[#d4fc34]" />
-              <h3 className="font-bold text-sm text-white font-display uppercase tracking-wider">Carga y Rendimiento de Pistas (Estadísticas de Uso)</h3>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-              <div className="space-y-4">
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Densidad horaria analizada por pista del complejo para optimizar la rotación y evitar encabalgamientos de canchas en rondas críticas.
-                </p>
-                <div className="space-y-3">
-                  {courts.slice(0, 3).map((court, index) => {
-                    const courtMatches = matches.filter(m => m.courtId === court.id).length;
-                    const pct = totalMatchesCount > 0 ? (courtMatches / totalMatchesCount) * 100 : 0;
-                    const colors = ["bg-[#d4fc34]", "bg-indigo-400", "bg-emerald-400"];
-                    return (
-                      <div key={court.id} className="text-xs">
-                        <div className="flex justify-between text-[11px] text-slate-300 mb-1 font-sans">
-                          <span className="font-bold">{court.name}</span>
-                          <span className="font-semibold font-mono text-slate-400">{courtMatches} partidos ({pct.toFixed(0)}%)</span>
-                        </div>
-                        <div className="w-full bg-slate-950 rounded-full h-1.5 overflow-hidden border border-slate-900/60">
-                          <div className={`h-full ${colors[index % 3]}`} style={{ width: `${pct}%` }}></div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+          {userRole === "admin" && (
+            <motion.div variants={itemVariants} className="sports-card p-5 space-y-4">
+              <div className="flex items-center gap-2">
+                <Target className="w-4 h-4 text-[#d4fc34]" />
+                <h3 className="font-bold text-sm text-white font-display uppercase tracking-wider">Carga y Rendimiento de Pistas (Estadísticas de Uso)</h3>
               </div>
-
-              {/* Custom Padel Equipment Profile Card */}
-              <div className="bg-slate-950 rounded-2xl overflow-hidden border border-slate-800/60 flex flex-col justify-between p-4 space-y-4 select-none">
-                <span className="text-[9px] text-[#d4fc34] uppercase tracking-widest font-mono font-black block">Reglamentación Oficial Srtc</span>
-                <div className="flex gap-4 items-center">
-                  <img 
-                    src="/src/assets/images/gear_showcase_1781911001400.webp" 
-                    alt="Paleta de carbono y pelota de pádel Srtc oficial homologada" 
-                    className="w-14 h-14 rounded-2xl object-cover border border-slate-800 shadow-md shrink-0"
-                    referrerPolicy="no-referrer"
-                  />
-                  <div className="space-y-0.5">
-                    <h4 className="text-[11px] font-bold text-white uppercase tracking-wide">Pelotas y Palas de Competición</h4>
-                    <p className="text-[10px] text-slate-400 leading-relaxed font-sans">
-                      Pelotas amarillas de alta presión homologadas FIP y palas de carbono amortiguadas homologadas para evitar lesiones.
-                    </p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                <div className="space-y-4">
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Densidad horaria analizada por pista del complejo para optimizar la rotación and evitar encabalgamientos de canchas en rondas críticas.
+                  </p>
+                  <div className="space-y-3">
+                    {courts.slice(0, 3).map((court, index) => {
+                      const courtMatches = matches.filter(m => m.courtId === court.id).length;
+                      const pct = totalMatchesCount > 0 ? (courtMatches / totalMatchesCount) * 100 : 0;
+                      const colors = ["bg-[#d4fc34]", "bg-indigo-400", "bg-emerald-400"];
+                      return (
+                        <div key={court.id} className="text-xs">
+                          <div className="flex justify-between text-[11px] text-slate-300 mb-1 font-sans">
+                            <span className="font-bold">{court.name}</span>
+                            <span className="font-semibold font-mono text-slate-400">{courtMatches} partidos ({pct.toFixed(0)}%)</span>
+                          </div>
+                          <div className="w-full bg-slate-950 rounded-full h-1.5 overflow-hidden border border-slate-900/60">
+                            <div className={`h-full ${colors[index % 3]}`} style={{ width: `${pct}%` }}></div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
-                <div className="bg-slate-900/50 p-2.5 rounded-xl text-[9px] text-slate-400 flex items-center justify-between border border-slate-900">
-                  <span className="font-bold text-slate-500 uppercase">Sede Oficial</span>
-                  <span className="text-[#d4fc34] font-black uppercase">Complejo Arena Padel</span>
+
+                {/* Custom Padel Equipment Profile Card */}
+                <div className="bg-slate-950 rounded-2xl overflow-hidden border border-slate-800/60 flex flex-col justify-between p-4 space-y-4 select-none">
+                  <span className="text-[9px] text-[#d4fc34] uppercase tracking-widest font-mono font-black block">Reglamentación Oficial Srtc</span>
+                  <div className="flex gap-4 items-center">
+                    <img 
+                      src="/src/assets/images/gear_showcase_1781911001400.webp" 
+                      alt="Paleta de carbono y pelota de pádel Srtc oficial homologada" 
+                      className="w-14 h-14 rounded-2xl object-cover border border-slate-800 shadow-md shrink-0"
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="space-y-0.5">
+                      <h4 className="text-[11px] font-bold text-white uppercase tracking-wide">Pelotas y Palas de Competición</h4>
+                      <p className="text-[10px] text-slate-400 leading-relaxed font-sans">
+                        Pelotas amarillas de alta presión homologadas FIP y palas de carbono amortiguadas homologadas para evitar lesiones.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="bg-slate-900/50 p-2.5 rounded-xl text-[9px] text-slate-400 flex items-center justify-between border border-slate-900">
+                    <span className="font-bold text-slate-500 uppercase">Sede Oficial</span>
+                    <span className="text-[#d4fc34] font-black uppercase">Complejo Arena Padel</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          </motion.div>
+            </motion.div>
+          )}
 
         </div>
 

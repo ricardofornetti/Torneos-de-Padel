@@ -145,7 +145,8 @@ export default function App() {
   useEffect(() => {
     const checkRole = () => {
       const user = auth.currentUser;
-      if (user && user.emailVerified && user.email === 'fornettiricardo@gmail.com') {
+      const padelAdminSession = sessionStorage.getItem("padel_admin_session");
+      if ((user && user.emailVerified && user.email === 'fornettiricardo@gmail.com') || padelAdminSession === "granted") {
         setUserRole("admin");
       } else {
         setUserRole("player");
@@ -227,6 +228,7 @@ useEffect(() => {
       {/* Visual Navigation Sidebar */}
       <Sidebar 
         userRole={userRole} 
+        onChangeRole={setUserRole}
         onNavigate={handleSidebarNavigation}
         activeView={selectedTournamentId ? "tournaments" : activeView}
         notifications={notifications}
@@ -285,11 +287,21 @@ useEffect(() => {
                   />
                 )}
 
-                {activeView === "courts" && (
+                {activeView === "courts" && userRole === "admin" && (
                   <CourtManager 
                     userRole={userRole}
                     onBack={() => handleSidebarNavigation("dashboard")}
                   />
+                )}
+
+                {activeView === "courts" && userRole !== "admin" && (
+                  <div className="max-w-lg mx-auto mt-20 px-6 text-center space-y-4">
+                    <div className="w-16 h-16 bg-slate-900 border border-slate-800 rounded-2xl flex items-center justify-center mx-auto text-3xl">
+                      🏟️
+                    </div>
+                    <h2 className="text-white font-black text-lg uppercase tracking-wider">Sección restringida</h2>
+                    <p className="text-slate-400 text-sm">La gestión de canchas y complejos está disponible solo para organizadores.</p>
+                  </div>
                 )}
 
                 {activeView === "gallery" && (

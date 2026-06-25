@@ -19,7 +19,10 @@ import {
   Shield,
   Zap,
   Award,
-  AlertTriangle
+  AlertTriangle,
+  ShieldCheck,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { repository } from '../lib/repository';
@@ -30,6 +33,7 @@ import { AppView } from '../lib/uiTypes';
 
 interface SidebarProps {
   userRole: "admin" | "player";
+  onChangeRole: (role: "admin" | "player") => void;
   onNavigate: (view: AppView) => void;
   activeView: AppView;
   notifications?: AppNotification[];
@@ -39,6 +43,7 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ 
   userRole, 
+  onChangeRole,
   onNavigate,
   activeView,
   notifications = [],
@@ -49,6 +54,30 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
+
+  // Detectar si la sesión admin actual es por contraseña local (no Google)
+  const isPasswordSession = userRole === "admin" && !currentUser;
+
+  const [adminKeyInput, setAdminKeyInput] = useState("");
+  const [showAdminKey, setShowAdminKey] = useState(false);
+
+  // Contraseña temporal de acceso admin — reemplaza Google Sign-In
+  const ADMIN_PASSWORD = "complejocenter2026";
+
+  const handleTryAdminKey = () => {
+    if (adminKeyInput === ADMIN_PASSWORD) {
+      sessionStorage.setItem("padel_admin_session", "granted");
+      onChangeRole("admin");
+      setAdminKeyInput("");
+      setShowRegisterModal(false);
+      setRegError("");
+      // Confirmación de ingreso exitoso
+      alert("✅ Acceso de organizador concedido. Bienvenido al panel de administración.");
+    } else {
+      setRegError("Contraseña incorrecta. Intentá de nuevo.");
+      setAdminKeyInput("");
+    }
+  };
 
   // Registration Modal State
   const [showRegisterModal, setShowRegisterModal] = useState(false);
@@ -141,7 +170,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         const existingPlayers = await repository.getPlayers();
         const exists = existingPlayers.some(p => p.id === `p_google_${user.uid}`);
         
-        if (!exists && user.email) {
+        if (!exists && user.email && user.email !== 'fornettiricardo@gmail.com') {
           const parts = (user.displayName || "Jugador Gmail").split(" ");
           const fName = (parts[0] || "Gmail").slice(0, 45);
           const lName = (parts.slice(1).join(" ") || "Usuario").slice(0, 45);
@@ -300,6 +329,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const handleLogout = async () => {
     localStorage.removeItem("padel_mgr_mock_user");
+    sessionStorage.removeItem("padel_admin_session");
+    onChangeRole("player");
     setCurrentUser(null);
     setIsMockSession(false);
     window.dispatchEvent(new Event("storage"));
@@ -530,13 +561,32 @@ export const Sidebar: React.FC<SidebarProps> = ({
               )}
             </div>
           ) : (
-            <button
-              onClick={() => { window.scrollTo(0, 0); setShowRegisterModal(true); }}
-              className="w-full flex items-center justify-center gap-2 px-3 py-3 bg-slate-900/60 hover:bg-slate-900 text-white text-xs font-bold rounded-xl transition border border-slate-800 cursor-pointer"
-            >
-              <LogIn className="w-4 h-4 text-[#d4fc34] shrink-0" />
-              {!isCollapsed && <span className="font-display font-medium">Ingresar Gmail</span>}
-            </button>
+            <div className="space-y-2 w-full">
+              {isPasswordSession && (
+                <button
+                  onClick={() => {
+                    sessionStorage.removeItem("padel_admin_session");
+                    onChangeRole("player");
+                    alert("Sesión de organizador cerrada.");
+                  }}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2.5
+                             bg-red-950/30 hover:bg-red-900/40 text-red-400 hover:text-red-300
+                             border border-red-900/40 rounded-xl text-xs font-bold
+                             uppercase tracking-wider transition cursor-pointer"
+                  title="Cerrar sesión admin"
+                >
+                  <LogOut className="w-3.5 h-3.5 shrink-0" />
+                  {!isCollapsed && <span className="truncate">Cerrar sesión admin</span>}
+                </button>
+              )}
+              <button
+                onClick={() => { window.scrollTo(0, 0); setShowRegisterModal(true); }}
+                className="w-full flex items-center justify-center gap-2 px-3 py-3 bg-slate-900/60 hover:bg-slate-900 text-white text-xs font-bold rounded-xl transition border border-slate-800 cursor-pointer"
+              >
+                <LogIn className="w-4 h-4 text-[#d4fc34] shrink-0" />
+                {!isCollapsed && <span className="font-display font-medium">Ingresar Gmail</span>}
+              </button>
+            </div>
           )}
         </div>
       </aside>
@@ -642,17 +692,33 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     </div>
                   </div>
                 ) : (
-                  <button
-                    onClick={() => {
-                      window.scrollTo(0, 0);
-                      setIsMobileOpen(false);
-                      setShowRegisterModal(true);
-                    }}
-                    className="w-full py-3 bg-[#d4fc34] hover:bg-[#bde61f] text-slate-950 font-black text-xs rounded-xl transition uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md cursor-pointer"
-                  >
-                    <LogIn className="w-4 h-4 text-slate-950 shrink-0" />
-                    <span>Iniciar Sesion</span>
-                  </button>
+                  <div className="space-y-2 w-full">
+                    {isPasswordSession && (
+                      <button
+                        onClick={() => {
+                          sessionStorage.removeItem("padel_admin_session");
+                          onChangeRole("player");
+                          setIsMobileOpen(false);
+                          alert("Sesión de organizador cerrada.");
+                        }}
+                        className="w-full py-2.5 px-3 bg-red-950/20 text-red-400 hover:bg-red-950/40 rounded-xl border border-red-900/20 flex items-center justify-center gap-1.5 font-bold uppercase cursor-pointer text-xs"
+                      >
+                        <LogOut className="w-3.5 h-3.5 shrink-0" />
+                        <span>Cerrar sesión admin</span>
+                      </button>
+                    )}
+                    <button
+                      onClick={() => {
+                        window.scrollTo(0, 0);
+                        setIsMobileOpen(false);
+                        setShowRegisterModal(true);
+                      }}
+                      className="w-full py-3 bg-[#d4fc34] hover:bg-[#bde61f] text-slate-950 font-black text-xs rounded-xl transition uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md cursor-pointer"
+                    >
+                      <LogIn className="w-4 h-4 text-slate-950 shrink-0" />
+                      <span>Iniciar Sesion</span>
+                    </button>
+                  </div>
                 )}
               </div>
             </motion.aside>
@@ -779,21 +845,38 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   )}
                 </AnimatePresence>
 
-                <div className="space-y-1.5">
-                  <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest font-mono block">MÉTODO AUTOMÁTICO RECOMENDADO:</span>
-                  <button
-                    type="button"
-                    onClick={handleGoogleLogin}
-                    disabled={googleLoading}
-                    className="w-full py-2.5 bg-white hover:bg-gray-100 text-slate-950 font-black text-xs rounded-xl transition cursor-pointer flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 uppercase tracking-wider"
-                  >
-                    <img 
-                      src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" 
-                      alt="Google" 
-                      className="w-4 h-4"
-                    />
-                    <span>{googleLoading ? 'Iniciando sesión...' : 'Ingresar con cuenta Google'}</span>
-                  </button>
+                <div className="space-y-3">
+                  <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest font-mono block">ACCESO DE ORGANIZADOR:</span>
+                  <div className="space-y-2">
+                    <div className="relative">
+                      <input
+                        type={showAdminKey ? "text" : "password"}
+                        value={adminKeyInput}
+                        onChange={e => { setAdminKeyInput(e.target.value); setRegError(""); }}
+                        onKeyDown={e => e.key === "Enter" && handleTryAdminKey()}
+                        placeholder="Contraseña de organizador"
+                        autoComplete="off"
+                        className="w-full bg-slate-950 border border-slate-700 focus:border-[#d4fc34] rounded-xl px-3 py-3 text-sm text-white outline-none pr-10 font-mono placeholder-slate-600 transition"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowAdminKey(v => !v)}
+                        className="absolute right-3 top-3 text-slate-500 hover:text-slate-300 transition"
+                        aria-label={showAdminKey ? "Ocultar contraseña" : "Mostrar contraseña"}
+                      >
+                        {showAdminKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleTryAdminKey}
+                      disabled={adminKeyInput.length < 6}
+                      className="w-full py-2.5 bg-[#d4fc34] hover:bg-[#cbf528] disabled:opacity-40 disabled:cursor-not-allowed text-slate-950 font-black text-xs rounded-xl transition flex items-center justify-center gap-2 uppercase tracking-wider cursor-pointer"
+                    >
+                      <ShieldCheck className="w-4 h-4" />
+                      Ingresar como Organizador
+                    </button>
+                  </div>
                 </div>
 
                 {!showManualForm ? (
