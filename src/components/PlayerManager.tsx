@@ -481,7 +481,7 @@ export const PlayerManager: React.FC<PlayerManagerProps> = ({ userRole, onBack }
               className="bg-[#d4fc34] hover:bg-[#cbf528] text-slate-950 text-xs font-black px-4 py-2.5 rounded-xl uppercase tracking-widest flex items-center gap-2 transition-all cursor-pointer shadow-lg shrink-0"
             >
               <Plus className="w-4 h-4 text-slate-950" />
-              <span>{userRole === "admin" ? "Registrar Jugador" : "Inscribirse"}</span>
+              <span>Registrar Jugador</span>
             </button>
           </div>
         </div>
